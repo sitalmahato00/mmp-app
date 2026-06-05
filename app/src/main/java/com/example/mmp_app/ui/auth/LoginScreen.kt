@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -50,14 +51,15 @@ fun LoginScreen(
             // Logo
             Surface(
                 modifier = Modifier.size(100.dp),
-                shape = RoundedCornerShape(50.dp),
+                shape = RoundedCornerShape(12.dp),
                 tonalElevation = 2.dp,
                 shadowElevation = 4.dp
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground), // Fallback to icon
+                    painter = painterResource(id = R.drawable.mmplogo),
                     contentDescription = "MMP Logo",
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
+                    contentScale = ContentScale.Fit
                 )
             }
 
@@ -211,7 +213,7 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     MMPAppTheme {
         LoginScreen(
-            email = "student@mmp.edu.np",
+            email = "",
             onEmailChange = {},
             password = "",
             onPasswordChange = {},

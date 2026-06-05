@@ -62,7 +62,7 @@ fun OtpVerificationScreen(
                 shadowElevation = 4.dp
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground), // Fallback to icon
+                    painter = painterResource(id = R.drawable.mmplogo),
                     contentDescription = "MMP Logo",
                     modifier = Modifier.padding(8.dp)
                 )

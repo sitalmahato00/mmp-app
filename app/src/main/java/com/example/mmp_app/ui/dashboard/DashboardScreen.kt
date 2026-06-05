@@ -135,12 +135,12 @@ fun DashboardContent(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                            painter = painterResource(id = R.drawable.mmplogo),
                             contentDescription = null,
                             modifier = Modifier
                                 .size(40.dp)
-                                .clip(CircleShape)
-                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.width(12.dp))
