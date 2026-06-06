@@ -13,7 +13,8 @@ import com.example.mmp_app.data.repository.AuthRepository
 import com.example.mmp_app.ui.auth.AuthViewModel
 import com.example.mmp_app.ui.auth.LoginScreen
 import com.example.mmp_app.ui.auth.OtpVerificationScreen
-import com.example.mmp_app.ui.dashboard.DashboardScreen
+import com.example.mmp_app.ui.auth.SplashScreen
+import com.example.mmp_app.ui.dashboard.*
 import com.example.mmp_app.ui.navigation.*
 import com.example.mmp_app.ui.theme.MMPAppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,9 +40,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) {
+    var splashFinished by remember { mutableStateOf(false) }
     val navigationState = rememberNavigationState(
-        startRoute = Routes.Login,
-        topLevelRoutes = setOf(Routes.Login, Routes.Dashboard)
+        startRoute = Routes.Splash,
+        topLevelRoutes = setOf(Routes.Splash, Routes.Login, Routes.Dashboard)
     )
     val navigator = remember { Navigator(navigationState) }
     val authViewModel: AuthViewModel = hiltViewModel()
@@ -62,7 +64,8 @@ fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) 
         }
     }
 
-    LaunchedEffect(isLoggedIn, userProfile) {
+    LaunchedEffect(isLoggedIn, userProfile, splashFinished) {
+        if (!splashFinished) return@LaunchedEffect
         if (isLoggedIn || userProfile != null) {
             navigator.replace(Routes.Dashboard)
         } else {
@@ -71,6 +74,11 @@ fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) 
     }
 
     val entryProvider = entryProvider<Routes> {
+        entry<Routes.Splash> {
+            SplashScreen(onNavigateNext = {
+                splashFinished = true
+            })
+        }
         entry<Routes.Login> {
             LoginScreen(
                 email = email,
@@ -104,7 +112,51 @@ fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) 
                         authRepository.logout()
                         authViewModel.resetAuthState()
                     }
+                },
+                onNavigateToAttendance = { navigator.navigate(Routes.Attendance) },
+                onNavigateToMarks = { navigator.navigate(Routes.Marks) },
+                onNavigateToAssignments = { navigator.navigate(Routes.Assignments) },
+                onNavigateToFees = { navigator.navigate(Routes.Fees) },
+                onNavigateToNotices = { navigator.navigate(Routes.Notices) },
+                onRecordAttendance = { classId, subject -> 
+                    navigator.navigate(Routes.RecordAttendance(classId, subject)) 
+                },
+                onRecordMarks = { classId, subject -> 
+                    navigator.navigate(Routes.RecordMarks(classId, subject)) 
+                },
+                onNavigateToChildDetails = { childId, name ->
+                    navigator.navigate(Routes.ChildDetails(childId, name))
                 }
+            )
+        }
+        entry<Routes.Attendance> {
+            AttendanceScreen(onBack = { navigator.goBack() })
+        }
+        entry<Routes.Marks> {
+            MarksScreen(onBack = { navigator.goBack() })
+        }
+        entry<Routes.Assignments> {
+            AssignmentsScreen(onBack = { navigator.goBack() })
+        }
+        entry<Routes.RecordAttendance> { route ->
+            TeacherAttendanceScreen(
+                classId = route.classId,
+                subject = route.subject,
+                onBack = { navigator.goBack() }
+            )
+        }
+        entry<Routes.RecordMarks> { route ->
+            TeacherMarksScreen(
+                classId = route.classId,
+                subject = route.subject,
+                onBack = { navigator.goBack() }
+            )
+        }
+        entry<Routes.ChildDetails> { route ->
+            ChildDetailsScreen(
+                childId = route.childId,
+                name = route.name,
+                onBack = { navigator.goBack() }
             )
         }
     }

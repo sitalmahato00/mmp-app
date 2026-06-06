@@ -1,13 +1,9 @@
 package com.example.mmp_app.data.repository
 
 import com.example.mmp_app.data.local.dao.DashboardDao
-import com.example.mmp_app.data.local.entity.NoticeEntity
-import com.example.mmp_app.data.local.entity.StudentDashboardEntity
+import com.example.mmp_app.data.local.entity.*
 import com.example.mmp_app.data.remote.MmpApiService
-import com.example.mmp_app.data.remote.model.HodDashboardDto
-import com.example.mmp_app.data.remote.model.ParentDashboardDto
-import com.example.mmp_app.data.remote.model.StudentDashboardDto
-import com.example.mmp_app.data.remote.model.TeacherDashboardDto
+import com.example.mmp_app.data.remote.model.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -18,7 +14,17 @@ interface DashboardRepository {
     fun getStudentDashboard(): Flow<Result<StudentDashboardDto>>
     fun getTeacherDashboard(): Flow<Result<TeacherDashboardDto>>
     fun getParentDashboard(): Flow<Result<ParentDashboardDto>>
-    fun getHodDashboard(): Flow<Result<HodDashboardDto>>
+    fun getStudentMarks(): Flow<Result<List<MarkDto>>>
+    fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>>
+    fun getStudentAttendance(): Flow<Result<List<AttendanceDto>>>
+    fun getStudentAttendanceSummary(): Flow<Result<AttendanceSummaryDto>>
+    fun getStudentAttendanceBySubject(subjectId: Int): Flow<Result<AttendanceBySubjectDto>>
+    fun getStudentSubjects(): Flow<Result<List<SubjectDto>>>
+    fun getStudentNotices(): Flow<Result<List<NoticeDto>>>
+    suspend fun recordAttendance(request: AttendanceRecordRequest): Result<Unit>
+    suspend fun recordMarks(request: MarkRecordRequest): Result<Unit>
+    suspend fun getClassStudents(classId: Int): Result<List<UserDto>>
+    fun getChildDashboard(childId: Int): Flow<Result<StudentDashboardDto>>
 }
 
 @Singleton
@@ -28,51 +34,15 @@ class DashboardRepositoryImpl @Inject constructor(
 ) : DashboardRepository {
 
     override fun getStudentDashboard(): Flow<Result<StudentDashboardDto>> = flow {
-        // Emit cached data first
-        val cachedStats = dashboardDao.getStudentDashboard().first()
-        val cachedNotices = dashboardDao.getNotices().first()
-        
-        if (cachedStats != null) {
-            emit(Result.success(StudentDashboardDto(
-                attendancePercentage = cachedStats.attendancePercentage,
-                averageMarks = cachedStats.averageMarks,
-                pendingAssignments = cachedStats.pendingAssignments,
-                unreadNotices = cachedStats.unreadNotices,
-                recentNotices = cachedNotices.map { 
-                    com.example.mmp_app.data.remote.model.NoticeDto(
-                        it.id, it.title, it.content, it.date, it.type
-                    )
-                }
-            )))
-        }
-
-        // Fetch from network
         try {
             val response = apiService.getStudentDashboard()
             if (response.isSuccessful && response.body()?.success == true) {
-                val data = response.body()!!.data!!
-                
-                // Update cache
-                dashboardDao.insertStudentDashboard(StudentDashboardEntity(
-                    attendancePercentage = data.attendancePercentage,
-                    averageMarks = data.averageMarks,
-                    pendingAssignments = data.pendingAssignments,
-                    unreadNotices = data.unreadNotices
-                ))
-                dashboardDao.insertNotices(data.recentNotices.map {
-                    NoticeEntity(it.id, it.title, it.content, it.date, it.type)
-                })
-                
-                emit(Result.success(data))
+                emit(Result.success(response.body()!!.data!!))
             } else {
-                if (cachedStats == null) {
-                    emit(Result.failure(Exception(response.body()?.message ?: "Failed to fetch dashboard")))
-                }
+                emit(Result.failure(Exception(response.body()?.message ?: "Failed to fetch dashboard")))
             }
         } catch (e: Exception) {
-            if (cachedStats == null) {
-                emit(Result.failure(e))
-            }
+            emit(Result.failure(e))
         }
     }
 
@@ -102,13 +72,149 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getHodDashboard(): Flow<Result<HodDashboardDto>> = flow {
+    override fun getStudentMarks(): Flow<Result<List<MarkDto>>> = flow {
         try {
-            val response = apiService.getHodDashboard()
+            val summaryResponse = apiService.getStudentMarksSummary()
+            if (summaryResponse.isSuccessful && summaryResponse.body()?.success == true) {
+                val exams = summaryResponse.body()!!.data!!.exams
+                // In a real app, we might fetch detail for each exam, but for now let's map what we have or just use dummy marks
+                // The API GET /marks/summary has an exams list
+                val marks = exams.map { 
+                    MarkDto(subject = it.examName, score = it.obtainedMarks, total = it.totalMarks.toFloat(), percentage = it.percentage)
+                }
+                emit(Result.success(marks))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch marks summary")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>> = flow {
+        try {
+            val response = apiService.getStudentAssignments()
             if (response.isSuccessful && response.body()?.success == true) {
                 emit(Result.success(response.body()!!.data!!))
             } else {
-                emit(Result.failure(Exception(response.body()?.message ?: "Failed to fetch HOD dashboard")))
+                emit(Result.failure(Exception("Failed to fetch assignments")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentAttendance(): Flow<Result<List<AttendanceDto>>> = flow {
+        try {
+            val response = apiService.getStudentAttendanceDetail()
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(Result.success(response.body()!!.data!!))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch attendance detail")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentAttendanceSummary(): Flow<Result<AttendanceSummaryDto>> = flow {
+        try {
+            val response = apiService.getStudentAttendanceSummary()
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(Result.success(response.body()!!.data!!))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch attendance summary")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentAttendanceBySubject(subjectId: Int): Flow<Result<AttendanceBySubjectDto>> = flow {
+        try {
+            val response = apiService.getAttendanceBySubject(subjectId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(Result.success(response.body()!!.data!!))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch attendance by subject")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentSubjects(): Flow<Result<List<SubjectDto>>> = flow {
+        try {
+            val response = apiService.getStudentSubjects()
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(Result.success(response.body()!!.data!!))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch subjects")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentNotices(): Flow<Result<List<NoticeDto>>> = flow {
+        try {
+            val response = apiService.getStudentNotices()
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(Result.success(response.body()!!.data!!))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch notices")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override suspend fun recordAttendance(request: AttendanceRecordRequest): Result<Unit> {
+        return try {
+            val response = apiService.recordAttendance(request)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Failed to record attendance"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun recordMarks(request: MarkRecordRequest): Result<Unit> {
+        return try {
+            val response = apiService.recordMarks(request)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Failed to record marks"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getClassStudents(classId: Int): Result<List<UserDto>> {
+        return try {
+            val response = apiService.getClassStudents(classId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Failed to fetch students"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getChildDashboard(childId: Int): Flow<Result<StudentDashboardDto>> = flow {
+        try {
+            val response = apiService.getChildDashboard(childId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                emit(Result.success(response.body()!!.data!!))
+            } else {
+                emit(Result.failure(Exception(response.body()?.message ?: "Failed to fetch child dashboard")))
             }
         } catch (e: Exception) {
             emit(Result.failure(e))

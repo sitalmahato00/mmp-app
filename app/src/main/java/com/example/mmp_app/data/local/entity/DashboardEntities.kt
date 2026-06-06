@@ -30,3 +30,29 @@ data class StudentDashboardEntity(
     val pendingAssignments: Int,
     val unreadNotices: Int
 )
+
+@Entity(tableName = "marks")
+data class MarkEntity(
+    @PrimaryKey val id: Int,
+    val subject: String,
+    val score: Float,
+    val total: Float,
+    val date: String
+)
+
+@Entity(tableName = "assignments")
+data class AssignmentEntity(
+    @PrimaryKey val id: Int,
+    val title: String,
+    val subject: String,
+    val dueDate: String,
+    val status: String // Pending, Submitted, etc.
+)
+
+@Entity(tableName = "attendance_records")
+data class AttendanceRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val date: String,
+    val status: String,
+    val subject: String?
+)

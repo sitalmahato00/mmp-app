@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/mmplogo"
-    android:insetLeft="30dp"
-    android:insetTop="30dp"
-    android:insetRight="30dp"
-    android:insetBottom="30dp" />
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="56dp"
+        android:height="56dp"
+        android:gravity="center">
+        <bitmap
+            android:src="@drawable/mmplogo"
+            android:filter="true" />
+    </item>
+</layer-list>

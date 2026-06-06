@@ -2,11 +2,12 @@ package com.example.mmp_app.data.remote.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class BaseResponse<T>(
     @SerialName("success") val success: Boolean,
-    @SerialName("message") val message: String,
+    @SerialName("message") val message: String? = null,
     @SerialName("requires_2fa") val requires2fa: Boolean? = false,
     @SerialName("data") val data: T? = null,
     @SerialName("errors") val errors: Map<String, List<String>>? = null

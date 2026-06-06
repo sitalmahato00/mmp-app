@@ -19,7 +19,11 @@ import com.example.mmp_app.ui.dashboard.components.KpiCard
 import com.example.mmp_app.ui.theme.MMPAppTheme
 
 @Composable
-fun TeacherDashboard(data: TeacherDashboardDto) {
+fun TeacherDashboard(
+    data: TeacherDashboardDto,
+    onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
+    onRecordMarks: (Int, String) -> Unit = { _, _ -> }
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -62,25 +66,47 @@ fun TeacherDashboard(data: TeacherDashboardDto) {
         }
 
         items(data.todayClasses) { classItem ->
-            ClassItem(classItem = classItem)
+            ClassItem(
+                classItem = classItem,
+                onAttendanceClick = { onRecordAttendance(classItem.id, classItem.subject) },
+                onMarksClick = { onRecordMarks(classItem.id, classItem.subject) }
+            )
         }
     }
 }
 
 @Composable
-fun ClassItem(classItem: ClassDto) {
+fun ClassItem(
+    classItem: ClassDto,
+    onAttendanceClick: () -> Unit,
+    onMarksClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-        ) {
-            Column {
-                Text(text = classItem.subject, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text(text = "${classItem.time} | Room: ${classItem.room}", style = MaterialTheme.typography.bodyMedium)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = classItem.subject, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            Text(text = "${classItem.time} | Room: ${classItem.room}", style = MaterialTheme.typography.bodyMedium)
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = onAttendanceClick,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text("Attendance", style = MaterialTheme.typography.labelMedium)
+                }
+                Button(
+                    onClick = onMarksClick,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text("Marks", style = MaterialTheme.typography.labelMedium)
+                }
             }
         }
     }
@@ -92,11 +118,15 @@ fun TeacherDashboardPreview() {
     MMPAppTheme {
         TeacherDashboard(
             data = TeacherDashboardDto(
+                teacherName = "John Doe",
+                totalClasses = 5,
+                totalStudents = 120,
+                pendingMarks = 3,
+                pendingAssignments = 2,
                 todayClasses = listOf(
                     ClassDto(1, "Advanced Mathematics", "09:00 AM - 10:30 AM", "Room 301"),
                     ClassDto(2, "Physics Practical", "11:00 AM - 12:30 PM", "Lab 2")
-                ),
-                totalStudents = 120
+                )
             )
         )
     }

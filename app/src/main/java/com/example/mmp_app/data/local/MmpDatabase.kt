@@ -4,19 +4,19 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.mmp_app.data.local.dao.DashboardDao
 import com.example.mmp_app.data.local.dao.UserProfileDao
-import com.example.mmp_app.data.local.entity.AttendanceSummaryEntity
-import com.example.mmp_app.data.local.entity.NoticeEntity
-import com.example.mmp_app.data.local.entity.StudentDashboardEntity
-import com.example.mmp_app.data.local.entity.UserProfileEntity
+import com.example.mmp_app.data.local.entity.*
 
 @Database(
     entities = [
         UserProfileEntity::class,
         NoticeEntity::class,
         AttendanceSummaryEntity::class,
-        StudentDashboardEntity::class
+        StudentDashboardEntity::class,
+        MarkEntity::class,
+        AssignmentEntity::class,
+        AttendanceRecordEntity::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 abstract class MmpDatabase : RoomDatabase() {

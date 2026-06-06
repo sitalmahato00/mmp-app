@@ -3,6 +3,7 @@ package com.example.mmp_app.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mmp_app.data.repository.AuthRepository
+import com.example.mmp_app.data.repository.LoginResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,11 +55,14 @@ class AuthViewModel @Inject constructor(
             _errorMessage.value = null
             val result = repository.login(_email.value, _password.value)
             _isLoading.value = false
-            result.onSuccess { otpData ->
-                if (otpData.role?.lowercase() == "admin") {
-                    _errorMessage.value = "Admin login coming soon!"
-                } else {
-                    _otpSent.value = true
+            result.onSuccess { loginResult ->
+                when (loginResult) {
+                    is LoginResult.OtpRequired -> {
+                        _otpSent.value = true
+                    }
+                    is LoginResult.Success -> {
+                        _isLoggedIn.value = true
+                    }
                 }
             }.onFailure {
                 _errorMessage.value = it.message ?: "An unknown error occurred"

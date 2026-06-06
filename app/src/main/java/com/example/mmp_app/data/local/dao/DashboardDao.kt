@@ -1,9 +1,7 @@
 package com.example.mmp_app.data.local.dao
 
 import androidx.room.*
-import com.example.mmp_app.data.local.entity.AttendanceSummaryEntity
-import com.example.mmp_app.data.local.entity.NoticeEntity
-import com.example.mmp_app.data.local.entity.StudentDashboardEntity
+import com.example.mmp_app.data.local.entity.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -22,4 +20,22 @@ interface DashboardDao {
 
     @Query("DELETE FROM notices")
     suspend fun clearNotices()
+
+    @Query("SELECT * FROM marks")
+    fun getMarks(): Flow<List<MarkEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMarks(marks: List<MarkEntity>)
+
+    @Query("SELECT * FROM assignments")
+    fun getAssignments(): Flow<List<AssignmentEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAssignments(assignments: List<AssignmentEntity>)
+
+    @Query("SELECT * FROM attendance_records ORDER BY date DESC")
+    fun getAttendanceRecords(): Flow<List<AttendanceRecordEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAttendanceRecords(records: List<AttendanceRecordEntity>)
 }

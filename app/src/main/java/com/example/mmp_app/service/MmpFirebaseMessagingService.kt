@@ -49,7 +49,7 @@ class MmpFirebaseMessagingService : FirebaseMessagingService() {
 
         val channelId = "mmp_notifications"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher) // Fallback to app icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground_inset) // Fallback to app icon
             .setContentTitle(title ?: "MMP Update")
             .setContentText(message)
             .setAutoCancel(true)

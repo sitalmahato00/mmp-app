@@ -1,71 +1,113 @@
 package com.example.mmp_app.ui.dashboard
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.example.mmp_app.R
 import com.example.mmp_app.data.local.entity.UserProfileEntity
-import com.example.mmp_app.data.remote.model.HodDashboardDto
+import com.example.mmp_app.data.remote.model.NoticeDto
 import com.example.mmp_app.data.remote.model.ParentDashboardDto
 import com.example.mmp_app.data.remote.model.StudentDashboardDto
 import com.example.mmp_app.data.remote.model.TeacherDashboardDto
 import com.example.mmp_app.ui.theme.MMPAppTheme
+import kotlinx.coroutines.launch
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.material.icons.rounded.Dashboard
-import androidx.compose.material.icons.rounded.People
-import androidx.compose.material.icons.rounded.School
-import androidx.compose.material.icons.rounded.SupervisedUserCircle
-import androidx.compose.material.icons.automirrored.rounded.Logout
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.Alignment
-import com.example.mmp_app.R
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     userProfile: UserProfileEntity?,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToAttendance: () -> Unit = {},
+    onNavigateToMarks: () -> Unit = {},
+    onNavigateToAssignments: () -> Unit = {},
+    onNavigateToFees: () -> Unit = {},
+    onNavigateToNotices: () -> Unit = {},
+    onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
+    onRecordMarks: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToChildDetails: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToRoutines: () -> Unit = {},
+    onNavigateToExams: () -> Unit = {},
+    onNavigateToResults: () -> Unit = {},
+    onNavigateToSubjects: () -> Unit = {},
+    onNavigateToTimetable: () -> Unit = {},
+    onNavigateToDownloads: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
 ) {
     val viewModel: DashboardViewModel = hiltViewModel()
     val studentData by viewModel.studentDashboard.collectAsState()
+    val notices by viewModel.notices.collectAsState()
     val teacherData by viewModel.teacherDashboard.collectAsState()
     val parentData by viewModel.parentDashboard.collectAsState()
-    val hodData by viewModel.hodDashboard.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     LaunchedEffect(userProfile) {
-        when (userProfile?.role) {
-            "Student" -> viewModel.loadStudentDashboard()
-            "Teacher" -> viewModel.loadTeacherDashboard()
-            "Parent" -> viewModel.loadParentDashboard()
-            "HOD" -> viewModel.loadHodDashboard()
+        when (userProfile?.role?.lowercase()) {
+            "student" -> {
+                viewModel.loadStudentDashboard()
+                viewModel.loadStudentNotices()
+            }
+            "teacher" -> viewModel.loadTeacherDashboard()
+            "parent" -> viewModel.loadParentDashboard()
         }
     }
 
     DashboardAdaptiveContent(
         userProfile = userProfile,
         studentData = studentData,
+        recentNotices = notices,
         teacherData = teacherData,
         parentData = parentData,
-        hodData = hodData,
         isLoading = isLoading,
-        onLogout = onLogout
+        error = error,
+        onLogout = onLogout,
+        onRetry = {
+            when (userProfile?.role?.lowercase()) {
+                "student" -> {
+                    viewModel.loadStudentDashboard()
+                    viewModel.loadStudentNotices()
+                }
+                "teacher" -> viewModel.loadTeacherDashboard()
+                "parent" -> viewModel.loadParentDashboard()
+            }
+        },
+        onNavigateToAttendance = onNavigateToAttendance,
+        onNavigateToMarks = onNavigateToMarks,
+        onNavigateToAssignments = onNavigateToAssignments,
+        onNavigateToFees = onNavigateToFees,
+        onNavigateToNotices = onNavigateToNotices,
+        onRecordAttendance = onRecordAttendance,
+        onRecordMarks = onRecordMarks,
+        onNavigateToChildDetails = onNavigateToChildDetails,
+        onNavigateToRoutines = onNavigateToRoutines,
+        onNavigateToExams = onNavigateToExams,
+        onNavigateToResults = onNavigateToResults,
+        onNavigateToSubjects = onNavigateToSubjects,
+        onNavigateToTimetable = onNavigateToTimetable,
+        onNavigateToDownloads = onNavigateToDownloads,
+        onNavigateToProfile = onNavigateToProfile,
+        onNavigateToSettings = onNavigateToSettings
     )
 }
 
@@ -73,11 +115,29 @@ fun DashboardScreen(
 fun DashboardAdaptiveContent(
     userProfile: UserProfileEntity?,
     studentData: StudentDashboardDto?,
+    recentNotices: List<NoticeDto> = emptyList(),
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
-    hodData: HodDashboardDto?,
     isLoading: Boolean,
-    onLogout: () -> Unit
+    error: String? = null,
+    onLogout: () -> Unit,
+    onRetry: () -> Unit = {},
+    onNavigateToAttendance: () -> Unit = {},
+    onNavigateToMarks: () -> Unit = {},
+    onNavigateToAssignments: () -> Unit = {},
+    onNavigateToFees: () -> Unit = {},
+    onNavigateToNotices: () -> Unit = {},
+    onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
+    onRecordMarks: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToChildDetails: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToRoutines: () -> Unit = {},
+    onNavigateToExams: () -> Unit = {},
+    onNavigateToResults: () -> Unit = {},
+    onNavigateToSubjects: () -> Unit = {},
+    onNavigateToTimetable: () -> Unit = {},
+    onNavigateToDownloads: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
 ) {
     var selectedItem by remember { mutableIntStateOf(0) }
     val adaptiveInfo = currentWindowAdaptiveInfo()
@@ -106,15 +166,82 @@ fun DashboardAdaptiveContent(
             )
         }
     ) {
-        DashboardContent(
-            userProfile = userProfile,
-            studentData = studentData,
-            teacherData = teacherData,
-            parentData = parentData,
-            hodData = hodData,
-            isLoading = isLoading,
-            onLogout = onLogout
-        )
+        when (selectedItem) {
+            0 -> DashboardContent(
+                userProfile = userProfile,
+                studentData = studentData,
+                recentNotices = recentNotices,
+                teacherData = teacherData,
+                parentData = parentData,
+                isLoading = isLoading,
+                error = error,
+                onLogout = onLogout,
+                onRetry = onRetry,
+                onNavigateToAttendance = onNavigateToAttendance,
+                onNavigateToMarks = onNavigateToMarks,
+                onNavigateToAssignments = onNavigateToAssignments,
+                onNavigateToFees = onNavigateToFees,
+                onNavigateToNotices = onNavigateToNotices,
+                onRecordAttendance = onRecordAttendance,
+                onRecordMarks = onRecordMarks,
+                onNavigateToChildDetails = onNavigateToChildDetails,
+                onNavigateToRoutines = onNavigateToRoutines,
+                onNavigateToExams = onNavigateToExams,
+                onNavigateToResults = onNavigateToResults,
+                onNavigateToSubjects = onNavigateToSubjects,
+                onNavigateToTimetable = onNavigateToTimetable,
+                onNavigateToDownloads = onNavigateToDownloads,
+                onNavigateToProfile = onNavigateToProfile,
+                onNavigateToSettings = onNavigateToSettings
+            )
+            1 -> UsersScreenContent(userProfile = userProfile)
+            else -> DashboardContent(
+                userProfile = userProfile,
+                studentData = studentData,
+                teacherData = teacherData,
+                parentData = parentData,
+                isLoading = isLoading,
+                error = error,
+                onLogout = onLogout,
+                onRetry = onRetry
+            )
+        }
+    }
+}
+
+@Composable
+fun UsersScreenContent(userProfile: UserProfileEntity?) {
+    Scaffold(
+        topBar = {
+            @OptIn(ExperimentalMaterial3Api::class)
+            TopAppBar(title = { Text("Users") })
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Rounded.People, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = when(userProfile?.role?.lowercase()) {
+                    "student" -> "Classmates & Teachers"
+                    "teacher" -> "My Students"
+                    else -> "Users Directory"
+                },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Connect with your classmates and teachers.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+        }
     }
 }
 
@@ -123,59 +250,326 @@ fun DashboardAdaptiveContent(
 fun DashboardContent(
     userProfile: UserProfileEntity?,
     studentData: StudentDashboardDto?,
+    recentNotices: List<NoticeDto> = emptyList(),
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
-    hodData: HodDashboardDto?,
     isLoading: Boolean,
-    onLogout: () -> Unit
+    error: String? = null,
+    onLogout: () -> Unit,
+    onRetry: () -> Unit = {},
+    onNavigateToAttendance: () -> Unit = {},
+    onNavigateToMarks: () -> Unit = {},
+    onNavigateToAssignments: () -> Unit = {},
+    onNavigateToFees: () -> Unit = {},
+    onNavigateToNotices: () -> Unit = {},
+    onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
+    onRecordMarks: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToChildDetails: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToRoutines: () -> Unit = {},
+    onNavigateToExams: () -> Unit = {},
+    onNavigateToResults: () -> Unit = {},
+    onNavigateToSubjects: () -> Unit = {},
+    onNavigateToTimetable: () -> Unit = {},
+    onNavigateToDownloads: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.mmplogo),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(text = "MMP College", style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = userProfile?.role ?: "Dashboard",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Spacer(modifier = Modifier.height(16.dp))
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 28.dp, vertical = 16.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.mmplogo),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = userProfile?.name ?: "Guest User",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = userProfile?.email ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                NavigationDrawerItem(
+                    label = { Text("Dashboard") },
+                    selected = true,
+                    onClick = { scope.launch { drawerState.close() } },
+                    icon = { Icon(Icons.Rounded.Dashboard, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                
+                if (userProfile?.role?.lowercase() == "student") {
+                    NavigationDrawerItem(
+                        label = { Text("Attendance") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToAttendance()
+                        },
+                        icon = { Icon(Icons.Rounded.CalendarToday, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Marks / Results") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToResults()
+                        },
+                        icon = { Icon(Icons.Rounded.Star, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Subjects") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToSubjects()
+                        },
+                        icon = { Icon(Icons.Rounded.Book, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Assignments") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToAssignments()
+                        },
+                        icon = { Icon(Icons.Rounded.Assignment, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Timetable") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToTimetable()
+                        },
+                        icon = { Icon(Icons.Rounded.Schedule, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Study Materials") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToDownloads()
+                        },
+                        icon = { Icon(Icons.Rounded.Download, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Notices / News") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToNotices()
+                        },
+                        icon = { Icon(Icons.Rounded.Notifications, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    NavigationDrawerItem(
+                        label = { Text("Profile") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToProfile()
+                        },
+                        icon = { Icon(Icons.Rounded.Person, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Settings") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToSettings()
+                        },
+                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                } else {
+                    NavigationDrawerItem(
+                        label = { Text("Attendance") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToAttendance()
+                        },
+                        icon = { Icon(Icons.Rounded.DateRange, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Marks & Results") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch { drawerState.close() }
+                            onNavigateToMarks()
+                        },
+                        icon = { Icon(Icons.Rounded.Star, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                NavigationDrawerItem(
+                    label = { Text("Logout") },
+                    selected = false,
+                    onClick = { 
+                        scope.launch { drawerState.close() }
+                        onLogout()
+                    },
+                    icon = { Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(imageVector = Icons.Rounded.Menu, contentDescription = "Menu")
+                        }
+                    },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(id = R.drawable.mmplogo),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(6.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(text = "MMP College", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    text = userProfile?.role ?: "Dashboard",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onNavigateToNotices) {
+                            Icon(imageVector = Icons.Rounded.Notifications, contentDescription = null)
+                        }
+                        IconButton(onClick = onNavigateToProfile) {
+                            AsyncImage(
+                                model = (if (userProfile?.role?.lowercase() == "student") studentData?.avatarUrl else null) 
+                                    ?: userProfile?.avatarUrl 
+                                    ?: "https://ui-avatars.com/api/?name=${userProfile?.name}&background=random",
+                                contentDescription = "Profile",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.LightGray),
+                                contentScale = ContentScale.Crop
                             )
                         }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(imageVector = Icons.Rounded.Notifications, contentDescription = null)
-                    }
-                    IconButton(onClick = { }) {
-                        Icon(imageVector = Icons.Rounded.AccountCircle, contentDescription = null)
-                    }
-                }
-            )
-        }
-    ) { padding ->
+                )
+            }
+        ) { padding ->
         Box(modifier = Modifier
             .padding(padding)
             .fillMaxSize()) {
-            if (isLoading && studentData == null && teacherData == null && parentData == null && hodData == null) {
+            if (isLoading && studentData == null && teacherData == null && parentData == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (error != null && studentData == null && teacherData == null && parentData == null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Rounded.ErrorOutline, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = "Something went wrong", style = MaterialTheme.typography.titleLarge)
+                    Text(text = error!!, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                    Button(onClick = onRetry, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("Retry")
+                    }
+                }
             } else {
-                when (userProfile?.role) {
-                    "Student" -> studentData?.let { StudentDashboard(data = it) }
-                    "Teacher" -> teacherData?.let { TeacherDashboard(data = it) }
-                    "Parent" -> parentData?.let { ParentDashboard(data = it) }
-                    "HOD" -> hodData?.let { HodDashboard(data = it) }
+                when (userProfile?.role?.lowercase()) {
+                    "student" -> {
+                        if (studentData != null) {
+                            StudentDashboard(
+                                data = studentData,
+                                recentNotices = recentNotices,
+                                todayClasses = emptyList(), // Replace with real data if available
+                                onAttendanceClick = onNavigateToAttendance,
+                                onMarksClick = onNavigateToMarks,
+                                onAssignmentsClick = onNavigateToAssignments,
+                                onNoticesClick = onNavigateToNotices,
+                                onFeesClick = onNavigateToFees,
+                                onRoutineClick = onNavigateToRoutines,
+                                onExamsClick = onNavigateToExams,
+                                onResultsClick = onNavigateToResults
+                            )
+                        } else {
+                            // Empty state if role is student but data is null
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No student data found.")
+                            }
+                        }
+                    }
+                    "teacher" -> {
+                        if (teacherData != null) {
+                            TeacherDashboard(
+                                data = teacherData,
+                                onRecordAttendance = onRecordAttendance,
+                                onRecordMarks = onRecordMarks
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No teacher data found.")
+                            }
+                        }
+                    }
+                    "parent" -> {
+                        if (parentData != null) {
+                            ParentDashboard(
+                                data = parentData,
+                                onChildClick = onNavigateToChildDetails
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("No parent data found.")
+                            }
+                        }
+                    }
                     else -> {
                         Column(
                             modifier = Modifier
@@ -195,6 +589,7 @@ fun DashboardContent(
         }
     }
 }
+}
 
 @Preview(showBackground = true, widthDp = 1000, heightDp = 600)
 @Composable
@@ -203,20 +598,13 @@ fun DashboardAdaptivePreview() {
         DashboardAdaptiveContent(
             userProfile = UserProfileEntity(
                 id = 1,
-                name = "HOD Admin",
-                email = "hod@mmp.edu.np",
-                role = "HOD"
+                name = "Student User",
+                email = "student@mmp.edu.np",
+                role = "Student"
             ),
             studentData = null,
             teacherData = null,
             parentData = null,
-            hodData = HodDashboardDto(
-                departmentName = "Computer Science",
-                totalTeachers = 12,
-                totalStudents = 350,
-                pendingApprovals = 3,
-                recentNotices = emptyList()
-            ),
             isLoading = false,
             onLogout = {}
         )

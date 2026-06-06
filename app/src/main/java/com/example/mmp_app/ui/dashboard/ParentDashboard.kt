@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ChildCare
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -19,7 +18,10 @@ import com.example.mmp_app.ui.dashboard.components.KpiCard
 import com.example.mmp_app.ui.theme.MMPAppTheme
 
 @Composable
-fun ParentDashboard(data: ParentDashboardDto) {
+fun ParentDashboard(
+    data: ParentDashboardDto,
+    onChildClick: (Int, String) -> Unit = { _, _ -> }
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -34,17 +36,24 @@ fun ParentDashboard(data: ParentDashboardDto) {
         }
 
         items(data.children) { child ->
-            ChildCard(child = child)
+            ChildCard(
+                child = child,
+                onClick = { onChildClick(child.id, child.name) }
+            )
         }
     }
 }
 
 @Composable
-fun ChildCard(child: ChildDto) {
+fun ChildCard(
+    child: ChildDto,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -79,6 +88,7 @@ fun ParentDashboardPreview() {
     MMPAppTheme {
         ParentDashboard(
             data = ParentDashboardDto(
+                childrenCount = 2,
                 children = listOf(
                     ChildDto(1, "Alice Smith", "Student", 92f, 88.5f),
                     ChildDto(2, "Bob Smith", "Student", 85f, 76f)

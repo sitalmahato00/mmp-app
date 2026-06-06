@@ -6,12 +6,18 @@ import com.example.mmp_app.data.remote.MmpApiService
 import com.example.mmp_app.data.remote.model.*
 import com.example.mmp_app.utils.SessionManager
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
+sealed class LoginResult {
+    data class OtpRequired(val email: String) : LoginResult()
+    data class Success(val loginResponse: LoginResponse) : LoginResult()
+}
+
 interface AuthRepository {
-    suspend fun login(email: String, password: String): Result<OtpResponse>
+    suspend fun login(email: String, password: String): Result<LoginResult>
     suspend fun verifyOtp(email: String, otp: String): Result<LoginResponse>
     suspend fun logout()
 }
@@ -23,15 +29,21 @@ class AuthRepositoryImpl @Inject constructor(
     private val sessionManager: SessionManager,
     private val json: Json
 ) : AuthRepository {
-    override suspend fun login(email: String, password: String): Result<OtpResponse> {
+    override suspend fun login(email: String, password: String): Result<LoginResult> {
         return try {
-            val response: Response<BaseResponse<OtpResponse>> = apiService.login(LoginRequest(email, password))
+            val response = apiService.login(LoginRequest(email, password))
             val body = response.body()
             if (response.isSuccessful && body != null) {
-                if (body.success || body.requires2fa == true) {
-                    Result.success(body.data ?: OtpResponse(otpSent = true))
+                if (body.success) {
+                    if (body.requires2fa == true) {
+                        Result.success(LoginResult.OtpRequired(email))
+                    } else {
+                        val loginData = json.decodeFromJsonElement<LoginResponse>(body.data!!)
+                        saveUserSession(loginData)
+                        Result.success(LoginResult.Success(loginData))
+                    }
                 } else {
-                    Result.failure(Exception(body.message))
+                    Result.failure(Exception(body.message ?: "Login failed"))
                 }
             } else {
                 val errorMsg = parseError(response)
@@ -42,23 +54,26 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    private suspend fun saveUserSession(loginData: LoginResponse) {
+        sessionManager.saveAuthToken(loginData.accessToken)
+        val user = loginData.user
+        userProfileDao.insertProfile(
+            UserProfileEntity(
+                id = user.id,
+                name = user.name,
+                email = user.email,
+                role = user.role,
+                avatarUrl = user.avatarUrl
+            )
+        )
+    }
+
     override suspend fun verifyOtp(email: String, otp: String): Result<LoginResponse> {
         return try {
             val response: Response<BaseResponse<LoginResponse>> = apiService.verifyOtp(OtpVerifyRequest(email, otp))
             if (response.isSuccessful && response.body()?.success == true) {
                 val loginData = response.body()!!.data!!
-                sessionManager.saveAuthToken(loginData.accessToken)
-                
-                val user = loginData.user
-                userProfileDao.insertProfile(
-                    UserProfileEntity(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        role = user.role,
-                        avatarUrl = user.avatarUrl
-                    )
-                )
+                saveUserSession(loginData)
                 Result.success(loginData)
             } else {
                 val errorMsg = parseError(response)
@@ -79,7 +94,7 @@ class AuthRepositoryImpl @Inject constructor(
                 if (!baseResponse.errors.isNullOrEmpty()) {
                     baseResponse.errors.values.flatten().joinToString("\n")
                 } else {
-                    baseResponse.message
+                    baseResponse.message ?: "An unknown error occurred"
                 }
             } else {
                 "An unknown error occurred (Code: ${response.code()})"
