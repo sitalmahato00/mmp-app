@@ -4,7 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
@@ -126,7 +135,15 @@ fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) 
                 },
                 onNavigateToChildDetails = { childId, name ->
                     navigator.navigate(Routes.ChildDetails(childId, name))
-                }
+                },
+                onNavigateToRoutines = { navigator.navigate(Routes.Routines) },
+                onNavigateToExams = { navigator.navigate(Routes.Exams) },
+                onNavigateToResults = { navigator.navigate(Routes.Results) },
+                onNavigateToSubjects = { navigator.navigate(Routes.Subjects) },
+                onNavigateToTimetable = { navigator.navigate(Routes.Timetable) },
+                onNavigateToDownloads = { navigator.navigate(Routes.Downloads) },
+                onNavigateToProfile = { navigator.navigate(Routes.Profile) },
+                onNavigateToSettings = { navigator.navigate(Routes.Settings) }
             )
         }
         entry<Routes.Attendance> {
@@ -135,9 +152,36 @@ fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) 
         entry<Routes.Marks> {
             MarksScreen(onBack = { navigator.goBack() })
         }
+        entry<Routes.Results> {
+            MarksScreen(onBack = { navigator.goBack() })
+        }
         entry<Routes.Assignments> {
             AssignmentsScreen(onBack = { navigator.goBack() })
         }
+        entry<Routes.Subjects> {
+            SubjectsScreen(
+                onBack = { navigator.goBack() },
+                onSubjectClick = { id, name, code ->
+                    navigator.navigate(Routes.SubjectDetail(id, name, code))
+                }
+            )
+        }
+        entry<Routes.SubjectDetail> { route ->
+            SubjectDetailScreen(
+                subjectId = route.subjectId,
+                subjectName = route.subjectName,
+                subjectCode = route.subjectCode,
+                onBack = { navigator.goBack() }
+            )
+        }
+        entry<Routes.Routines> { PlaceholderScreen("Routines", onBack = { navigator.goBack() }) }
+        entry<Routes.Exams> { PlaceholderScreen("Exams", onBack = { navigator.goBack() }) }
+        entry<Routes.Timetable> { PlaceholderScreen("Timetable", onBack = { navigator.goBack() }) }
+        entry<Routes.Downloads> { PlaceholderScreen("Study Materials", onBack = { navigator.goBack() }) }
+        entry<Routes.Profile> { PlaceholderScreen("Profile", onBack = { navigator.goBack() }) }
+        entry<Routes.Settings> { PlaceholderScreen("Settings", onBack = { navigator.goBack() }) }
+        entry<Routes.Fees> { PlaceholderScreen("Fees", onBack = { navigator.goBack() }) }
+        entry<Routes.Notices> { PlaceholderScreen("Notices", onBack = { navigator.goBack() }) }
         entry<Routes.RecordAttendance> { route ->
             TeacherAttendanceScreen(
                 classId = route.classId,
@@ -168,4 +212,33 @@ fun MainContent(userProfileDao: UserProfileDao, authRepository: AuthRepository) 
         onBack = { navigator.goBack() },
         entryProvider = entryProvider
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun PlaceholderScreen(title: String, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "$title Screen is coming soon!", color = Color.Gray)
+        }
+    }
 }

@@ -27,6 +27,18 @@ class DashboardViewModel @Inject constructor(
     private val _marks = MutableStateFlow<List<MarkDto>>(emptyList())
     val marks = _marks.asStateFlow()
 
+    private val _marksSummary = MutableStateFlow<MarksSummaryDto?>(null)
+    val marksSummary = _marksSummary.asStateFlow()
+
+    private val _examDetail = MutableStateFlow<ExamDetailDto?>(null)
+    val examDetail = _examDetail.asStateFlow()
+
+    private val _subjectMarks = MutableStateFlow<SubjectMarkDto?>(null)
+    val subjectMarks = _subjectMarks.asStateFlow()
+
+    private val _marksheet = MutableStateFlow<MarksheetDto?>(null)
+    val marksheet = _marksheet.asStateFlow()
+
     private val _assignments = MutableStateFlow<List<AssignmentDto>>(emptyList())
     val assignments = _assignments.asStateFlow()
 
@@ -110,10 +122,55 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
-            repository.getStudentMarks().collect { result ->
+            repository.getStudentMarksSummary().collect { result ->
                 _isLoading.value = false
                 result.onSuccess {
-                    _marks.value = it
+                    _marksSummary.value = it
+                }.onFailure {
+                    _error.value = it.message
+                }
+            }
+        }
+    }
+
+    fun loadMarksByExam(examId: Int) {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            repository.getMarksByExam(examId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess {
+                    _examDetail.value = it
+                }.onFailure {
+                    _error.value = it.message
+                }
+            }
+        }
+    }
+
+    fun loadMarksBySubject(subjectId: Int) {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            repository.getMarksBySubject(subjectId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess {
+                    _subjectMarks.value = it
+                }.onFailure {
+                    _error.value = it.message
+                }
+            }
+        }
+    }
+
+    fun downloadMarksheet() {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            repository.getMarksheet().collect { result ->
+                _isLoading.value = false
+                result.onSuccess {
+                    _marksheet.value = it
                 }.onFailure {
                     _error.value = it.message
                 }
