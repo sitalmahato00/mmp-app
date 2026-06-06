@@ -147,6 +147,13 @@ data class StudentAttendanceItem(
 )
 
 @Serializable
+data class AttendanceRecordRequest(
+    @SerialName("class_id") val classId: Int,
+    @SerialName("date") val date: String,
+    @SerialName("attendance") val attendance: List<StudentAttendanceItem>
+)
+
+@Serializable
 data class MarkRecordRequest(
     @SerialName("class_id") val classId: Int,
     @SerialName("subject") val subject: String,

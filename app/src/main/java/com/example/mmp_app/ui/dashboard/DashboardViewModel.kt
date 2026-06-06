@@ -36,6 +36,12 @@ class DashboardViewModel @Inject constructor(
     private val _attendanceSummary = MutableStateFlow<AttendanceSummaryDto?>(null)
     val attendanceSummary = _attendanceSummary.asStateFlow()
 
+    private val _attendanceBySubject = MutableStateFlow<AttendanceBySubjectDto?>(null)
+    val attendanceBySubject = _attendanceBySubject.asStateFlow()
+
+    private val _subjects = MutableStateFlow<List<SubjectDto>>(emptyList())
+    val subjects = _subjects.asStateFlow()
+
     private val _notices = MutableStateFlow<List<NoticeDto>>(emptyList())
     val notices = _notices.asStateFlow()
 
@@ -51,8 +57,13 @@ class DashboardViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    fun clearError() {
+        _error.value = null
+    }
+
     fun loadStudentDashboard() {
         viewModelScope.launch {
+            _error.value = null
             _isLoading.value = true
             repository.getStudentDashboard().collect { result ->
                 _isLoading.value = false
@@ -67,6 +78,7 @@ class DashboardViewModel @Inject constructor(
 
     fun loadTeacherDashboard() {
         viewModelScope.launch {
+            _error.value = null
             _isLoading.value = true
             repository.getTeacherDashboard().collect { result ->
                 _isLoading.value = false
@@ -81,6 +93,7 @@ class DashboardViewModel @Inject constructor(
 
     fun loadParentDashboard() {
         viewModelScope.launch {
+            _error.value = null
             _isLoading.value = true
             repository.getParentDashboard().collect { result ->
                 _isLoading.value = false
@@ -95,6 +108,7 @@ class DashboardViewModel @Inject constructor(
 
     fun loadStudentMarks() {
         viewModelScope.launch {
+            _error.value = null
             _isLoading.value = true
             repository.getStudentMarks().collect { result ->
                 _isLoading.value = false
@@ -109,6 +123,7 @@ class DashboardViewModel @Inject constructor(
 
     fun loadStudentAssignments() {
         viewModelScope.launch {
+            _error.value = null
             _isLoading.value = true
             repository.getStudentAssignments().collect { result ->
                 _isLoading.value = false
@@ -123,9 +138,9 @@ class DashboardViewModel @Inject constructor(
 
     fun loadStudentAttendance() {
         viewModelScope.launch {
+            _error.value = null
             _isLoading.value = true
             repository.getStudentAttendance().collect { result ->
-                _isLoading.value = false
                 result.onSuccess {
                     _attendance.value = it
                 }.onFailure {
@@ -133,8 +148,41 @@ class DashboardViewModel @Inject constructor(
                 }
             }
             repository.getStudentAttendanceSummary().collect { result ->
+                _isLoading.value = false
                 result.onSuccess {
                     _attendanceSummary.value = it
+                }.onFailure {
+                    _error.value = it.message
+                }
+            }
+        }
+    }
+
+    fun loadStudentSubjects() {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            repository.getStudentSubjects().collect { result ->
+                _isLoading.value = false
+                result.onSuccess {
+                    _subjects.value = it
+                }.onFailure {
+                    _error.value = it.message
+                }
+            }
+        }
+    }
+
+    fun loadAttendanceBySubject(subjectId: Int) {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            repository.getStudentAttendanceBySubject(subjectId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess {
+                    _attendanceBySubject.value = it
+                }.onFailure {
+                    _error.value = it.message
                 }
             }
         }
@@ -142,6 +190,7 @@ class DashboardViewModel @Inject constructor(
 
     fun loadStudentNotices() {
         viewModelScope.launch {
+            // Not clearing error here because it often runs in parallel with dashboard
             _isLoading.value = true
             repository.getStudentNotices().collect { result ->
                 _isLoading.value = false

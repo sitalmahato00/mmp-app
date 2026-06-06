@@ -45,6 +45,7 @@ fun AttendanceScreen(
     val tabs = listOf("Summary", "Detail", "By Subject")
 
     LaunchedEffect(Unit) {
+        viewModel.clearError()
         viewModel.loadStudentAttendance() // This loads detail and summary
     }
 
@@ -156,20 +157,17 @@ fun AttendanceDetailView(
 
 @Composable
 fun AttendanceBySubjectView(viewModel: DashboardViewModel) {
-    // This needs a subject list and a way to fetch by subject
-    // For now, let's implement the UI and assuming we'll update VM
+    val subjects by viewModel.subjects.collectAsState()
+    val subjectAttendance by viewModel.attendanceBySubject.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     
     var expanded by remember { mutableStateOf(false) }
     var selectedSubject by remember { mutableStateOf<SubjectDto?>(null) }
-    var subjectAttendance by remember { mutableStateOf<AttendanceBySubjectDto?>(null) }
-    var subjects by remember { mutableStateOf<List<SubjectDto>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
     
-    val scope = rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        viewModel.loadStudentSubjects()
+    }
 
-    // Fetch subjects on start
-    // Note: In real app, this should be in ViewModel
-    
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Select Subject", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
@@ -191,7 +189,7 @@ fun AttendanceBySubjectView(viewModel: DashboardViewModel) {
                         onClick = {
                             selectedSubject = subject
                             expanded = false
-                            // Trigger fetch for this subject
+                            viewModel.loadAttendanceBySubject(subject.id)
                         }
                     )
                 }
@@ -200,8 +198,10 @@ fun AttendanceBySubjectView(viewModel: DashboardViewModel) {
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        if (isLoading && subjectAttendance == null) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
         } else if (subjectAttendance != null) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 AttendancePercentageCard(subjectAttendance!!.attendancePercentage, "Subject Percentage")
