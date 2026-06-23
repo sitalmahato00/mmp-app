@@ -453,6 +453,7 @@ fun MainDashboardContent(
                     onTimetableClick = onNavigateToTimetable,
                     onDownloadsClick = onNavigateToDownloads,
                     onProfileClick = onNavigateToProfile,
+                    onLogoutClick = onLogout,
                     isDarkTheme = isDarkTheme,
                     onToggleTheme = onToggleTheme
                 )
