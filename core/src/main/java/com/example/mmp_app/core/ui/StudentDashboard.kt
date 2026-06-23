@@ -34,6 +34,7 @@ import com.example.mmp_app.core.ui.theme.MMPAppTheme
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.core.ui.theme.*
 import com.example.mmp_app.core.R
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -216,23 +217,6 @@ fun StudentDashboard(
                     }
                 }
             },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { /* Action */ },
-                    containerColor = Color.Transparent,
-                    contentColor = Color.White,
-                    modifier = Modifier
-                        .padding(bottom = 90.dp)
-                        .size(56.dp)
-                        .background(
-                            brush = Brush.verticalGradient(listOf(primaryColor, secondaryColor)),
-                            shape = CircleShape
-                        )
-                        .shadow(4.dp, CircleShape)
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Quick Actions")
-                }
-            },
             containerColor = backgroundColor
         ) { paddingValues ->
             LazyColumn(
@@ -244,7 +228,7 @@ fun StudentDashboard(
             ) {
                 // 1. Premium Profile Card
                 item {
-                    ProfileGradientCard(data, subjects.size, primaryColor, textColor)
+                    ProfileGradientCard(data, subjects.size, primaryColor, textColor, isDarkTheme)
                 }
 
                 // Quick Action Cards
@@ -270,12 +254,12 @@ fun StudentDashboard(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            StatsSummaryCard("Unread Notices", data.kpiCards?.unreadNotices?.toString() ?: "0", Icons.Rounded.NotificationsActive, primaryColor, cardBgColor, Modifier.weight(1f), onNoticesClick)
+                            StatsSummaryCard("Unread Notices", data.kpiCards.unreadNotices.toString(), Icons.Rounded.NotificationsActive, primaryColor, cardBgColor, Modifier.weight(1f), onNoticesClick)
                             StatsSummaryCard("Downloads", materialCount.toString(), Icons.Rounded.CloudDownload, Color(0xFF0EA5E9), cardBgColor, Modifier.weight(1f), onDownloadsClick)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             StatsSummaryCard("Subjects", subjects.size.toString(), Icons.Rounded.Book, primaryColor, cardBgColor, Modifier.weight(1f), onSubjectsClick)
-                            StatsSummaryCard("Pending Tasks", assignments.count { it.status.lowercase() == "pending" }.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), cardBgColor, Modifier.weight(1f), onAssignmentsClick)
+                            StatsSummaryCard("Pending Tasks", data.kpiCards.pendingAssignments.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), cardBgColor, Modifier.weight(1f), onAssignmentsClick)
                         }
                     }
                 }
@@ -343,23 +327,31 @@ fun DrawerMenuItem(label: String, icon: ImageVector, onClick: () -> Unit) {
 }
 
 @Composable
-fun ProfileGradientCard(data: StudentDashboardDto, subjectCount: Int, primaryColor: Color, textColor: Color) {
+fun ProfileGradientCard(data: StudentDashboardDto, subjectCount: Int, primaryColor: Color, textColor: Color, isDarkTheme: Boolean) {
+    val gradientColors = if (isDarkTheme) {
+        listOf(Color(0xFF1E293B), Color(0xFF0F172A), Color(0xFF1E293B))
+    } else {
+        listOf(Color(0xFFF1F5F9), Color(0xFFDBEAFE), Color(0xFFEFF6FF))
+    }
+
+    val contentTextColor = if (isDarkTheme) Color.White else Color(0xFF1E293B)
+    val subTextColor = if (isDarkTheme) Color.White.copy(alpha = 0.7f) else Color(0xFF1E293B).copy(alpha = 0.6f)
+    val badgeBgColor = if (isDarkTheme) Color.White.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.85f)
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
             .shadow(12.dp, RoundedCornerShape(24.dp))
             .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFFF1F5F9), Color(0xFFDBEAFE), Color(0xFFEFF6FF))
-                ),
+                brush = Brush.linearGradient(colors = gradientColors),
                 shape = RoundedCornerShape(24.dp)
             )
             .clip(RoundedCornerShape(24.dp))
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
-                color = Color(0xFF2563EB).copy(alpha = 0.05f),
+                color = primaryColor.copy(alpha = 0.05f),
                 radius = 350f,
                 center = androidx.compose.ui.geometry.Offset(size.width * 1.1f, -size.height * 0.2f)
             )
@@ -372,17 +364,26 @@ fun ProfileGradientCard(data: StudentDashboardDto, subjectCount: Int, primaryCol
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = "Good Morning 👋", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF1E293B).copy(alpha = 0.6f))
-                    Text(text = data.studentName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B), maxLines = 1)
+                    Text(text = "Good Morning 👋", style = MaterialTheme.typography.bodyMedium, color = subTextColor)
+                    Text(text = data.studentName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = contentTextColor, maxLines = 1)
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = "${data.program} • Semester ${data.semester}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF1E293B).copy(alpha = 0.8f))
+                    Text(text = "${data.program} • Semester ${data.semester}", style = MaterialTheme.typography.bodySmall, color = subTextColor)
                 }
-                Surface(modifier = Modifier.size(60.dp), shape = CircleShape, color = Color.White, shadowElevation = 4.dp) {
-                    Icon(Icons.Rounded.Person, contentDescription = null, modifier = Modifier.padding(14.dp), tint = primaryColor)
+                Surface(modifier = Modifier.size(60.dp), shape = CircleShape, color = if (isDarkTheme) Color(0xFF334155) else Color.White, shadowElevation = 4.dp) {
+                    if (!data.avatarUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = data.avatarUrl,
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(Icons.Rounded.Person, contentDescription = null, modifier = Modifier.padding(14.dp), tint = primaryColor)
+                    }
                 }
             }
             Spacer(modifier = Modifier.weight(1f))
-            Surface(color = Color.White.copy(alpha = 0.85f), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.1f))) {
+            Surface(color = badgeBgColor, shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.1f))) {
                 Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.AutoStories, contentDescription = null, modifier = Modifier.size(16.dp), tint = primaryColor)
                     Spacer(Modifier.width(8.dp))

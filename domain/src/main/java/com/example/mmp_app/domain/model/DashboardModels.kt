@@ -73,10 +73,10 @@ data class MarkDto(
 data class AssignmentDto(
     @SerialName("id") val id: Int,
     @SerialName("title") val title: String,
-    @SerialName("subject") val subject: String,
+    @SerialName("subject") val subject: String = "",
     @SerialName("description") val description: String? = null,
-    @SerialName("due_date") val dueDate: String,
-    @SerialName("max_marks") val maxMarks: Int,
+    @SerialName("due_date") val dueDate: String = "",
+    @SerialName("max_marks") val maxMarks: Int = 100,
     @SerialName("status") val status: String,
     @SerialName("attachment_url") val attachmentUrl: String? = null,
     @SerialName("submission") val submission: SubmissionDto? = null

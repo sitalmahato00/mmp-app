@@ -161,213 +161,223 @@ fun DashboardAdaptiveContent(
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
 ) {
-    var selectedItem by remember { mutableIntStateOf(0) }
-    val isStudent = userProfile?.role?.lowercase() == "student"
+    MMPAppTheme(darkTheme = isDarkTheme) {
+        var selectedItem by remember { mutableIntStateOf(0) }
+        val isStudent = userProfile?.role?.lowercase() == "student"
 
-    // If it's a student, we don't need the parent Scaffold/Drawer at all
-    // because StudentDashboard provides its own full-screen UI with Drawer and Scaffold.
-    if (isStudent && selectedItem == 0) {
-        MainDashboardContent(
-            userProfile, studentData, recentNotices, attendanceSummary, 
-            subjects, assignments, timetable, teacherData, parentData,
-            onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-            onNavigateToFees, onNavigateToNotices, onRecordAttendance,
-            onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
-            onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-            onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
-            onLogout
-        )
-        return
-    }
+        if (isStudent && selectedItem == 0) {
+            MainDashboardContent(
+                userProfile, studentData, recentNotices, attendanceSummary, 
+                subjects, assignments, timetable, teacherData, parentData,
+                onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
+                onNavigateToFees, onNavigateToNotices, onRecordAttendance,
+                onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
+                onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
+                onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
+                onLogout, isDarkTheme, onToggleTheme
+            )
+        } else {
+            // Otherwise, use the standard adaptive layout
+            val adaptiveInfo = currentWindowAdaptiveInfo()
+            val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
+            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+            val scope = rememberCoroutineScope()
 
-    // Otherwise, use the standard adaptive layout
-    val adaptiveInfo = currentWindowAdaptiveInfo()
-    val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet {
-                Spacer(modifier = Modifier.height(16.dp))
-                Column(
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.mmplogo),
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = userProfile?.name ?: "Guest User",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = userProfile?.email ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                NavigationDrawerItem(
-                    label = { Text("Dashboard") },
-                    selected = selectedItem == 0,
-                    onClick = { 
-                        selectedItem = 0
-                        scope.launch { drawerState.close() }
-                    },
-                    icon = { Icon(Icons.Rounded.Dashboard, null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                
-                NavigationDrawerItem(
-                    label = { Text("Logout") },
-                    selected = false,
-                    onClick = { 
-                        scope.launch { drawerState.close() }
-                        onLogout()
-                    },
-                    icon = { Icon(Icons.AutoMirrored.Rounded.Logout, null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-            }
-        }
-    ) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                CenterAlignedTopAppBar(
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                    ),
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Rounded.Menu, "Menu", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painter = painterResource(id = R.drawable.mmplogo),
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    ModalDrawerSheet {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp)
+                        ) {
+                            Surface(modifier = Modifier.size(64.dp), shape = CircleShape) {
+                                if (!userProfile?.avatarUrl.isNullOrEmpty()) {
+                                    AsyncImage(
+                                        model = userProfile?.avatarUrl,
+                                        contentDescription = "Profile Picture",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.mmplogo),
+                                        contentDescription = "College Logo",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "MMP College", 
-                                style = MaterialTheme.typography.titleMedium,
+                                text = userProfile?.name ?: "Guest User",
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onToggleTheme) {
-                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
-                        }
-                        IconButton(onClick = onNavigateToNotices) {
-                            Icon(Icons.Rounded.NotificationsNone, null)
-                        }
-                    }
-                )
-            },
-            bottomBar = {
-                if (navSuiteType == NavigationSuiteType.NavigationBar) {
-                    Surface(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 16.dp)
-                            .navigationBarsPadding(),
-                        shape = RoundedCornerShape(24.dp),
-                        tonalElevation = 8.dp,
-                        shadowElevation = 8.dp,
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        NavigationBar(
-                            containerColor = Color.Transparent,
-                            modifier = Modifier.height(72.dp)
-                        ) {
-                            NavigationBarItem(
-                                selected = selectedItem == 0,
-                                onClick = { selectedItem = 0 },
-                                icon = { Icon(Icons.Rounded.Dashboard, null) },
-                                label = { Text("Home") }
-                            )
-                            if (userProfile?.role?.lowercase() == "student") {
-                                NavigationBarItem(
-                                    selected = selectedItem == 1,
-                                    onClick = { selectedItem = 1 },
-                                    icon = { Icon(Icons.Rounded.AutoStories, null) },
-                                    label = { Text("Courses") }
-                                )
-                                NavigationBarItem(
-                                    selected = selectedItem == 2,
-                                    onClick = { selectedItem = 2 },
-                                    icon = { Icon(Icons.Rounded.EventNote, null) },
-                                    label = { Text("Schedule") }
-                                )
-                            } else {
-                                NavigationBarItem(
-                                    selected = selectedItem == 1,
-                                    onClick = { selectedItem = 1 },
-                                    icon = { Icon(Icons.Rounded.Groups, null) },
-                                    label = { Text("Users") }
-                                )
-                            }
-                            NavigationBarItem(
-                                selected = selectedItem == 3,
-                                onClick = { selectedItem = 3 },
-                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
-                                label = { Text("Profile") }
+                            Text(
+                                text = userProfile?.email ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                }
-            }
-        ) { padding ->
-            Row(modifier = Modifier.padding(padding).fillMaxSize()) {
-                if (navSuiteType == NavigationSuiteType.NavigationRail) {
-                    NavigationRail(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ) {
-                        NavigationRailItem(
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        
+                        NavigationDrawerItem(
+                            label = { Text("Dashboard") },
                             selected = selectedItem == 0,
-                            onClick = { selectedItem = 0 },
+                            onClick = { 
+                                selectedItem = 0
+                                scope.launch { drawerState.close() }
+                            },
                             icon = { Icon(Icons.Rounded.Dashboard, null) },
-                            label = { Text("Home") }
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        )
+                        
+                        NavigationDrawerItem(
+                            label = { Text("Logout") },
+                            selected = false,
+                            onClick = { 
+                                scope.launch { drawerState.close() }
+                                onLogout()
+                            },
+                            icon = { Icon(Icons.AutoMirrored.Rounded.Logout, null) },
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
                     }
                 }
-                
-                Box(modifier = Modifier.fillMaxSize()) {
-                    if (isLoading && studentData == null && teacherData == null && parentData == null) {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                    } else if (error != null && studentData == null && teacherData == null && parentData == null) {
-                        ErrorState(error!!, onRetry)
-                    } else {
-                        when (selectedItem) {
-                            0 -> MainDashboardContent(
-                                userProfile, studentData, recentNotices, attendanceSummary, 
-                                subjects, assignments, timetable, teacherData, parentData,
-                                onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                                onNavigateToFees, onNavigateToNotices, onRecordAttendance,
-                                onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
-                                onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                                onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
-                                onLogout
-                            )
-                            1 -> if (userProfile?.role?.lowercase() == "student") {
-                                SubjectsScreenContent(onNavigateToSubjects)
-                            } else {
-                                UsersScreenContent(userProfile)
+            ) {
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    topBar = {
+                        CenterAlignedTopAppBar(
+                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.background,
+                            ),
+                            navigationIcon = {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(Icons.Rounded.Menu, "Menu", tint = MaterialTheme.colorScheme.primary)
+                                }
+                            },
+                            title = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.mmplogo),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "MMP College", 
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = onToggleTheme) {
+                                    Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                                }
+                                IconButton(onClick = onNavigateToNotices) {
+                                    Icon(Icons.Rounded.NotificationsNone, null)
+                                }
                             }
-                            2 -> TimetableScreenContent(onNavigateToTimetable)
-                            3 -> ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
+                        )
+                    },
+                    bottomBar = {
+                        if (navSuiteType == NavigationSuiteType.NavigationBar) {
+                            Surface(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 16.dp)
+                                    .navigationBarsPadding(),
+                                shape = RoundedCornerShape(24.dp),
+                                tonalElevation = 8.dp,
+                                shadowElevation = 8.dp,
+                                color = MaterialTheme.colorScheme.surface
+                            ) {
+                                NavigationBar(
+                                    containerColor = Color.Transparent,
+                                    modifier = Modifier.height(72.dp)
+                                ) {
+                                    NavigationBarItem(
+                                        selected = selectedItem == 0,
+                                        onClick = { selectedItem = 0 },
+                                        icon = { Icon(Icons.Rounded.Dashboard, null) },
+                                        label = { Text("Home") }
+                                    )
+                                    if (userProfile?.role?.lowercase() == "student") {
+                                        NavigationBarItem(
+                                            selected = selectedItem == 1,
+                                            onClick = { selectedItem = 1 },
+                                            icon = { Icon(Icons.Rounded.AutoStories, null) },
+                                            label = { Text("Courses") }
+                                        )
+                                        NavigationBarItem(
+                                            selected = selectedItem == 2,
+                                            onClick = { selectedItem = 2 },
+                                            icon = { Icon(Icons.Rounded.EventNote, null) },
+                                            label = { Text("Schedule") }
+                                        )
+                                    } else {
+                                        NavigationBarItem(
+                                            selected = selectedItem == 1,
+                                            onClick = { selectedItem = 1 },
+                                            icon = { Icon(Icons.Rounded.Groups, null) },
+                                            label = { Text("Users") }
+                                        )
+                                    }
+                                    NavigationBarItem(
+                                        selected = selectedItem == 3,
+                                        onClick = { selectedItem = 3 },
+                                        icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                        label = { Text("Profile") }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                ) { padding ->
+                    Row(modifier = Modifier.padding(padding).fillMaxSize()) {
+                        if (navSuiteType == NavigationSuiteType.NavigationRail) {
+                            NavigationRail(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                            ) {
+                                NavigationRailItem(
+                                    selected = selectedItem == 0,
+                                    onClick = { selectedItem = 0 },
+                                    icon = { Icon(Icons.Rounded.Dashboard, null) },
+                                    label = { Text("Home") }
+                                )
+                            }
+                        }
+                        
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            if (isLoading && studentData == null && teacherData == null && parentData == null) {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            } else if (error != null && studentData == null && teacherData == null && parentData == null) {
+                                ErrorState(error!!, onRetry)
+                            } else {
+                                when (selectedItem) {
+                                    0 -> MainDashboardContent(
+                                        userProfile, studentData, recentNotices, attendanceSummary, 
+                                        subjects, assignments, timetable, teacherData, parentData,
+                                        onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
+                                        onNavigateToFees, onNavigateToNotices, onRecordAttendance,
+                                        onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
+                                        onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
+                                        onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
+                                        onLogout, isDarkTheme, onToggleTheme
+                                    )
+                                    1 -> if (userProfile?.role?.lowercase() == "student") {
+                                        SubjectsScreenContent(onNavigateToSubjects)
+                                    } else {
+                                        UsersScreenContent(userProfile)
+                                    }
+                                    2 -> TimetableScreenContent(onNavigateToTimetable)
+                                    3 -> ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
+                                }
+                            }
                         }
                     }
                 }
@@ -380,14 +390,12 @@ fun DashboardAdaptiveContent(
 fun ErrorState(error: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Rounded.ErrorOutline, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)
+        Text(text = error, color = MaterialTheme.colorScheme.error)
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Something went wrong", style = MaterialTheme.typography.titleLarge)
-        Text(text = error, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-        Button(onClick = onRetry, modifier = Modifier.padding(top = 16.dp)) {
+        Button(onClick = onRetry) {
             Text("Retry")
         }
     }
@@ -419,7 +427,9 @@ fun MainDashboardContent(
     onNavigateToTimetable: () -> Unit,
     onNavigateToDownloads: () -> Unit,
     onNavigateToProfile: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     when (userProfile?.role?.lowercase()) {
         "student" -> {
@@ -442,7 +452,9 @@ fun MainDashboardContent(
                     onSubjectsClick = onNavigateToSubjects,
                     onTimetableClick = onNavigateToTimetable,
                     onDownloadsClick = onNavigateToDownloads,
-                    onProfileClick = onNavigateToProfile
+                    onProfileClick = onNavigateToProfile,
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme
                 )
             }
         }
@@ -465,7 +477,7 @@ fun MainDashboardContent(
         }
         else -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Button(onClick = onLogout) { Text("Logout") }
+                Text("Dashboard for ${userProfile?.role ?: "Guest"}")
             }
         }
     }
@@ -473,105 +485,102 @@ fun MainDashboardContent(
 
 @Composable
 fun SubjectsScreenContent(onNavigateToSubjects: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(Icons.Rounded.Book, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.secondary)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Your Academic Courses", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Button(onClick = onNavigateToSubjects, modifier = Modifier.padding(top = 16.dp)) {
-            Text("View Full Curriculum")
-        }
-    }
-}
-
-@Composable
-fun TimetableScreenContent(onNavigateToTimetable: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(Icons.Rounded.Schedule, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.tertiary)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Class Timetable", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Button(onClick = onNavigateToTimetable, modifier = Modifier.padding(top = 16.dp)) {
-            Text("Open Full Timetable")
-        }
-    }
-}
-
-@Composable
-fun ProfileScreenContent(userProfile: UserProfile?, onLogout: () -> Unit, onSettingsClick: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        AsyncImage(
-            model = userProfile?.avatarUrl ?: "https://ui-avatars.com/api/?name=${userProfile?.name}&background=random",
-            contentDescription = "Profile",
-            modifier = Modifier.size(120.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(userProfile?.name ?: "User", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text(userProfile?.email ?: "", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                ListItem(
-                    headlineContent = { Text("Settings") },
-                    leadingContent = { Icon(Icons.Rounded.Settings, null) },
-                    modifier = Modifier.clickable { onSettingsClick() }
-                )
-                HorizontalDivider()
-                ListItem(
-                    headlineContent = { Text("Sign Out") },
-                    leadingContent = { Icon(Icons.AutoMirrored.Rounded.Logout, null, tint = MaterialTheme.colorScheme.error) },
-                    modifier = Modifier.clickable { onLogout() }
-                )
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Subjects Screen")
+            Button(onClick = onNavigateToSubjects) {
+                Text("View Detailed Subjects")
             }
         }
     }
 }
 
 @Composable
-fun UsersScreenContent(userProfile: UserProfile?) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(Icons.Rounded.People, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = when(userProfile?.role?.lowercase()) {
-                "student" -> "Classmates & Teachers"
-                "teacher" -> "My Students"
-                else -> "Users Directory"
-            },
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(text = "Connect with your classmates and teachers.", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+fun TimetableScreenContent(onNavigateToTimetable: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Timetable Screen")
+            Button(onClick = onNavigateToTimetable) {
+                Text("View Detailed Timetable")
+            }
+        }
     }
 }
 
-@Preview(showBackground = true, widthDp = 1000, heightDp = 600)
+@Composable
+fun ProfileScreenContent(userProfile: UserProfile?, onLogout: () -> Unit, onNavigateToSettings: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier.size(100.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            if (!userProfile?.avatarUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = userProfile?.avatarUrl,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    Icons.Rounded.Person,
+                    null,
+                    modifier = Modifier.padding(24.dp).fillMaxSize(),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = userProfile?.name ?: "Guest", style = MaterialTheme.typography.headlineMedium)
+        Text(text = userProfile?.email ?: "", style = MaterialTheme.typography.bodyLarge)
+        Text(text = "Role: ${userProfile?.role?.uppercase()}", style = MaterialTheme.typography.labelLarge)
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Button(
+            onClick = onNavigateToSettings,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Rounded.Settings, null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Settings")
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        OutlinedButton(
+            onClick = onLogout,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.AutoMirrored.Rounded.Logout, null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Logout")
+        }
+    }
+}
+
+@Composable
+fun UsersScreenContent(userProfile: UserProfile?) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("User Management Screen (Role: ${userProfile?.role})")
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 fun DashboardAdaptivePreview() {
     MMPAppTheme {
         DashboardAdaptiveContent(
-            userProfile = UserProfile(id = 1, name = "Student User", email = "student@mmp.edu.np", role = "Student"),
-            studentData = null, teacherData = null, parentData = null, isLoading = false, onLogout = {}
+            userProfile = UserProfile(1, "John Student", "john@example.com", "student"),
+            studentData = null,
+            teacherData = null,
+            parentData = null,
+            isLoading = false,
+            onLogout = {}
         )
     }
 }
