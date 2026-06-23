@@ -48,7 +48,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MMPAppTheme {
+            val themeViewModel: ThemeViewModel = hiltViewModel()
+            val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+            
+            MMPAppTheme(darkTheme = isDarkTheme) {
                 MainContent(authRepository)
             }
         }

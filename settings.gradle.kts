@@ -23,5 +23,15 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "mmp-app"
-include(":app")
+include(":core")
+include(":domain")
+include(":data")
+include(":feature:auth")
+include(":feature:student")
+include(":feature:teacher")
+include(":feature:parent")
+include(":feature:admin")
+include(":feature:public")
+
+
  

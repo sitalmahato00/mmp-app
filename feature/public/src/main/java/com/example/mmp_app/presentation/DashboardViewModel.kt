@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.joinAll
 import javax.inject.Inject
 
 @HiltViewModel
@@ -55,6 +56,9 @@ class DashboardViewModel @Inject constructor(
     private val _subjects = MutableStateFlow<List<SubjectDto>>(emptyList())
     val subjects = _subjects.asStateFlow()
 
+    private val _timetable = MutableStateFlow<List<ClassDto>>(emptyList())
+    val timetable = _timetable.asStateFlow()
+
     private val _notices = MutableStateFlow<List<NoticeDto>>(emptyList())
     val notices = _notices.asStateFlow()
 
@@ -72,6 +76,71 @@ class DashboardViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+
+    fun loadStudentDashboardData() {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            
+            // We run these in parallel
+            val jobs = listOf(
+                launch { fetchStudentDashboard() },
+                launch { fetchStudentNotices() },
+                launch { fetchStudentAttendance() },
+                launch { fetchStudentSubjects() },
+                launch { fetchStudentAssignments() },
+                launch { fetchStudentTimetable() }
+            )
+            
+            jobs.joinAll()
+            _isLoading.value = false
+        }
+    }
+
+    private suspend fun fetchStudentDashboard() {
+        repository.getStudentDashboard().collect { result ->
+            result.onSuccess { _studentDashboard.value = it }
+                .onFailure { _error.value = it.message }
+        }
+    }
+
+    private suspend fun fetchStudentNotices() {
+        repository.getStudentNotices().collect { result ->
+            result.onSuccess { _notices.value = it }
+                .onFailure { _error.value = it.message }
+        }
+    }
+
+    private suspend fun fetchStudentAttendance() {
+        repository.getStudentAttendanceSummary().collect { result ->
+            result.onSuccess { _attendanceSummary.value = it }
+                .onFailure { _error.value = it.message }
+        }
+        repository.getStudentAttendance().collect { result ->
+            result.onSuccess { _attendance.value = it }
+        }
+    }
+
+    private suspend fun fetchStudentSubjects() {
+        repository.getStudentSubjects().collect { result ->
+            result.onSuccess { _subjects.value = it }
+                .onFailure { _error.value = it.message }
+        }
+    }
+
+    private suspend fun fetchStudentAssignments() {
+        repository.getStudentAssignments().collect { result ->
+            result.onSuccess { _assignments.value = it }
+                .onFailure { _error.value = it.message }
+        }
+    }
+
+    private suspend fun fetchStudentTimetable() {
+        repository.getStudentTimetable().collect { result ->
+            result.onSuccess { _timetable.value = it }
+                .onFailure { _error.value = it.message }
+        }
     }
 
     fun loadStudentDashboard() {
@@ -224,6 +293,21 @@ class DashboardViewModel @Inject constructor(
                 _isLoading.value = false
                 result.onSuccess {
                     _subjects.value = it
+                }.onFailure {
+                    _error.value = it.message
+                }
+            }
+        }
+    }
+
+    fun loadStudentTimetable() {
+        viewModelScope.launch {
+            _error.value = null
+            _isLoading.value = true
+            repository.getStudentTimetable().collect { result ->
+                _isLoading.value = false
+                result.onSuccess {
+                    _timetable.value = it
                 }.onFailure {
                     _error.value = it.message
                 }

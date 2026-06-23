@@ -14,12 +14,14 @@ interface DashboardRepository {
     fun getMarksheet(): Flow<Result<MarksheetDto>>
     fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>>
     fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDto>>
-    suspend fun submitAssignment(id: Int, content: String?, filePart: okhttp3.MultipartBody.Part?): Result<SubmissionDto>
+    suspend fun submitAssignment(id: Int, content: String?, filePart: Any?): Result<SubmissionDto>
+
     fun getSubmissionStatus(id: Int): Flow<Result<SubmissionDto>>
     fun getStudentAttendance(): Flow<Result<List<AttendanceDto>>>
     fun getStudentAttendanceSummary(): Flow<Result<AttendanceSummaryDto>>
     fun getStudentAttendanceBySubject(subjectId: Int): Flow<Result<AttendanceBySubjectDto>>
     fun getStudentSubjects(): Flow<Result<List<SubjectDto>>>
+    fun getStudentTimetable(): Flow<Result<List<ClassDto>>>
     fun getStudentNotices(): Flow<Result<List<NoticeDto>>>
     suspend fun recordAttendance(request: AttendanceRecordRequest): Result<Unit>
     suspend fun recordMarks(request: MarkRecordRequest): Result<Unit>

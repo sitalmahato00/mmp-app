@@ -3,7 +3,8 @@ package com.example.mmp_app.feature.student.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mmp_app.domain.model.*
-import com.example.mmp_app.data.repository.DashboardRepository
+import com.example.mmp_app.domain.repository.DashboardRepository
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +21,16 @@ class StudentViewModel @Inject constructor(
 
     private val _marksSummary = MutableStateFlow<MarksSummaryDto?>(null)
     val marksSummary = _marksSummary.asStateFlow()
+
+    private val _examDetail = MutableStateFlow<ExamDetailDto?>(null)
+    val examDetail = _examDetail.asStateFlow()
+
+    private val _subjectMarks = MutableStateFlow<SubjectMarkDto?>(null)
+    val subjectMarks = _subjectMarks.asStateFlow()
+
+    private val _marksheet = MutableStateFlow<MarksheetDto?>(null)
+    val marksheet = _marksheet.asStateFlow()
+
 
     private val _assignments = MutableStateFlow<List<AssignmentDto>>(emptyList())
     val assignments = _assignments.asStateFlow()
@@ -42,15 +53,46 @@ class StudentViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
-    fun loadStudentDashboard() {
+    fun loadStudentMarks() {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.getStudentDashboard().collect { result ->
+            repository.getStudentMarksSummary().collect { result ->
                 _isLoading.value = false
-                result.onSuccess { _studentDashboard.value = it }.onFailure { _error.value = it.message }
+                result.onSuccess { _marksSummary.value = it }.onFailure { _error.value = it.message }
             }
         }
     }
+
+    fun loadMarksByExam(examId: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getMarksByExam(examId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _examDetail.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun loadMarksBySubject(subjectId: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getMarksBySubject(subjectId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _subjectMarks.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun downloadMarksheet() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getMarksheet().collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _marksheet.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
 
     fun loadStudentAttendance() {
         viewModelScope.launch {
@@ -98,4 +140,16 @@ class StudentViewModel @Inject constructor(
     fun clearError() {
         _error.value = null
     }
+
+    fun loadStudentDashboard() {
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getStudentDashboard().collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _studentDashboard.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
 }

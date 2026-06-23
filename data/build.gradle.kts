@@ -20,6 +20,11 @@ android {
     }
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
+
 dependencies {
     implementation(project(":domain"))
     implementation(project(":core"))
@@ -35,6 +40,10 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
 
+    // Serialization
+    implementation(libs.kotlinx.serialization.json)
+    
     implementation(libs.hilt.android)
+
     ksp(libs.hilt.compiler)
 }

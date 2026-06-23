@@ -17,12 +17,24 @@ android {
     buildFeatures { compose = true }
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
+
 dependencies {
     implementation(project(":domain"))
     implementation(project(":core"))
+    implementation(project(":data")) // Auth often needs data for repo impl if not using interface strictly yet, but better keep domain
+    
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
 }
+
