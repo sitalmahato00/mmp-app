@@ -11,7 +11,6 @@ import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.*
@@ -163,6 +162,25 @@ fun DashboardAdaptiveContent(
     onToggleTheme: () -> Unit = {},
 ) {
     var selectedItem by remember { mutableIntStateOf(0) }
+    val isStudent = userProfile?.role?.lowercase() == "student"
+
+    // If it's a student, we don't need the parent Scaffold/Drawer at all
+    // because StudentDashboard provides its own full-screen UI with Drawer and Scaffold.
+    if (isStudent && selectedItem == 0) {
+        MainDashboardContent(
+            userProfile, studentData, recentNotices, attendanceSummary, 
+            subjects, assignments, timetable, teacherData, parentData,
+            onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
+            onNavigateToFees, onNavigateToNotices, onRecordAttendance,
+            onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
+            onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
+            onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
+            onLogout
+        )
+        return
+    }
+
+    // Otherwise, use the standard adaptive layout
     val adaptiveInfo = currentWindowAdaptiveInfo()
     val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -207,7 +225,6 @@ fun DashboardAdaptiveContent(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 
-                // Add other drawer items if needed...
                 NavigationDrawerItem(
                     label = { Text("Logout") },
                     selected = false,
@@ -324,7 +341,6 @@ fun DashboardAdaptiveContent(
                             icon = { Icon(Icons.Rounded.Dashboard, null) },
                             label = { Text("Home") }
                         )
-                        // Rail items matching bottom nav...
                     }
                 }
                 

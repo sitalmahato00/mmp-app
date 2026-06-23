@@ -2,51 +2,56 @@ package com.example.mmp_app.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Modern Material 3 Purple Palette (2025 Design)
-val PrimaryLight = Color(0xFF6750A4) // Requested Purple
+// Modern Blue Theme (Material 3) - Redesigned
+val PrimaryBlue = Color(0xFF2563EB)
+val SecondaryBlue = Color(0xFF60A5FA)
+val BackgroundLight = Color(0xFFF8FAFC)
+val SurfaceLight = Color(0xFFFFFFFF)
+val AccentBlue = Color(0xFFDBEAFE)
+
+val PrimaryLight = PrimaryBlue
 val OnPrimaryLight = Color(0xFFFFFFFF)
-val PrimaryContainerLight = Color(0xFFEADDFF)
-val OnPrimaryContainerLight = Color(0xFF21005D)
+val PrimaryContainerLight = AccentBlue
+val OnPrimaryContainerLight = PrimaryBlue
 
-val SecondaryLight = Color(0xFF625B71)
+val SecondaryLight = SecondaryBlue
 val OnSecondaryLight = Color(0xFFFFFFFF)
-val SecondaryContainerLight = Color(0xFFE8DEF8)
-val OnSecondaryContainerLight = Color(0xFF1D192B)
+val SecondaryContainerLight = AccentBlue.copy(alpha = 0.5f)
+val OnSecondaryContainerLight = PrimaryBlue
 
-val TertiaryLight = Color(0xFF7D5260)
+val TertiaryLight = Color(0xFF3B82F6)
 val OnTertiaryLight = Color(0xFFFFFFFF)
 
 // Professional grayscale for Light Theme
-val SurfaceLight = Color(0xFFFEF7FF)
-val OnSurfaceLight = Color(0xFF1D1B20)
-val BackgroundLight = Color(0xFFFFFFFF)
-val OnBackgroundLight = Color(0xFF1D1B20)
-val SurfaceVariantLight = Color(0xFFE7E0EB)
-val OnSurfaceVariantLight = Color(0xFF49454F)
-val OutlineLight = Color(0xFF79747E)
+val OnSurfaceLight = Color(0xFF1E293B)
+val OnBackgroundLight = Color(0xFF1E293B)
+val SurfaceVariantLight = Color(0xFFF1F5F9)
+val OnSurfaceVariantLight = Color(0xFF64748B)
+val OutlineLight = Color(0xFFE2E8F0)
 
 // Welcome Card Gradient
-val WelcomeGradientStart = Color(0xFFF8F5FF)
-val WelcomeGradientEnd = Color(0xFFFFFFFF)
+val WelcomeGradientStart = Color(0xFF2563EB)
+val WelcomeGradientEnd = Color(0xFF60A5FA)
+val WelcomeGradientAccent = Color(0xFF3B82F6).copy(alpha = 0.8f)
 
-// Dark Theme Palette
-val PrimaryDark = Color(0xFF818CF8)
-val OnPrimaryDark = Color(0xFF1E1B4B)
-val PrimaryContainerDark = Color(0xFF312E81)
-val OnPrimaryContainerDark = Color(0xFFE0E7FF)
+// Dark Theme Palette (Keeping for now, though focus is Blue)
+val PrimaryDark = Color(0xFF93C5FD)
+val OnPrimaryDark = Color(0xFF1E3A8A)
+val PrimaryContainerDark = Color(0xFF1E3A8A)
+val OnPrimaryContainerDark = Color(0xFFDBEAFE)
 
-val SecondaryDark = Color(0xFFA78BFA)
-val OnSecondaryDark = Color(0xFF2E1065)
-val SecondaryContainerDark = Color(0xFF4C1D95)
-val OnSecondaryContainerDark = Color(0xFFEDE9FE)
+val SecondaryDark = Color(0xFF60A5FA)
+val OnSecondaryDark = Color(0xFF1E3A8A)
+val SecondaryContainerDark = Color(0xFF1E3A8A)
+val OnSecondaryContainerDark = Color(0xFFDBEAFE)
 
-val SurfaceDark = Color(0xFF030712)
-val OnSurfaceDark = Color(0xFFF9FAFB)
-val BackgroundDark = Color(0xFF030712)
-val OnBackgroundDark = Color(0xFFF9FAFB)
-val SurfaceVariantDark = Color(0xFF1F2937)
-val OnSurfaceVariantDark = Color(0xFF9CA3AF)
-val OutlineDark = Color(0xFF374151)
+val SurfaceDark = Color(0xFF0F172A)
+val OnSurfaceDark = Color(0xFFF1F5F9)
+val BackgroundDark = Color(0xFF0F172A)
+val OnBackgroundDark = Color(0xFFF1F5F9)
+val SurfaceVariantDark = Color(0xFF1E293B)
+val OnSurfaceVariantDark = Color(0xFF94A3B8)
+val OutlineDark = Color(0xFF334155)
 
 // Status Colors
 val Error = Color(0xFFEF4444)

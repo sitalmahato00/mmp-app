@@ -1,11 +1,11 @@
 package com.example.mmp_app.core.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,28 +13,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mmp_app.core.ui.MeasurableProgressBar
 import com.example.mmp_app.core.ui.theme.MMPAppTheme
 import com.example.mmp_app.domain.model.*
-
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.text.TextStyle
 import com.example.mmp_app.core.ui.theme.*
+import com.example.mmp_app.core.R
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentDashboard(
     data: StudentDashboardDto,
@@ -56,131 +57,289 @@ fun StudentDashboard(
     onSubjectsClick: () -> Unit = {},
     onTimetableClick: () -> Unit = {},
     onDownloadsClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
+    onIdCardClick: () -> Unit = {}
 ) {
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val textColor = MaterialTheme.colorScheme.onSurface
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    
+    val primaryColor = Color(0xFF2563EB) // Modern Blue
+    val secondaryColor = Color(0xFF60A5FA)
+    val backgroundColor = Color(0xFFF8FAFC)
+    val textColor = Color(0xFF1E293B)
+    val accentColor = Color(0xFFDBEAFE)
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundColor),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        // 1. Smart Welcome Card
-        item {
-            WelcomeCard(data, subjects.size, primaryColor, textColor)
-        }
-
-        // Quick Actions Row
-        item {
-            QuickActionsRow(
-                onAttendanceClick,
-                onAssignmentsClick,
-                onResultsClick,
-                onSubjectsClick
-            )
-        }
-
-        // 2. Academic Overview Card
-        item {
-            AcademicOverviewCard(
-                attendanceSummary ?: AttendanceSummaryDto(
-                    totalClasses = 20,
-                    present = 16,
-                    absent = 2,
-                    late = 0,
-                    attendancePercentage = 80f,
-                    status = "Good"
-                ),
-                primaryColor, textColor
-            )
-        }
-
-        // 3. Academic Snapshot Cards (Statistics)
-        item {
-            AcademicSnapshotGrid(
-                data = data,
-                subjectCount = subjects.size,
-                assignmentCount = assignments.size,
-                materialCount = materialCount,
-                onDownloadsClick = onDownloadsClick
-            )
-        }
-
-        // 4. Enrolled Subjects
-        if (subjects.isNotEmpty()) {
-            item {
-                EnrolledSubjectsSection(
-                    subjects = subjects,
-                    cardColor = MaterialTheme.colorScheme.surface,
-                    primaryColor = primaryColor,
-                    textColor = textColor,
-                    onSubjectsClick = onSubjectsClick
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = Color.White,
+                drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
+            ) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "☰ MENU",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = primaryColor
                 )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                NavigationDrawerItem(
+                    label = { Text("Dashboard") },
+                    selected = true,
+                    onClick = { scope.launch { drawerState.close() } },
+                    icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                DrawerMenuItem("My Profile", Icons.Rounded.Person, onProfileClick)
+                DrawerMenuItem("Subjects", Icons.Rounded.Book, onSubjectsClick)
+                DrawerMenuItem("Attendance", Icons.Rounded.CalendarToday, onAttendanceClick)
+                DrawerMenuItem("Marks & Results", Icons.Rounded.Star, onResultsClick)
+                DrawerMenuItem("Assignments", Icons.AutoMirrored.Rounded.Assignment, onAssignmentsClick)
+                DrawerMenuItem("Timetable", Icons.Rounded.Schedule, onTimetableClick)
+                DrawerMenuItem("Notices", Icons.Rounded.Notifications, onNoticesClick)
+                DrawerMenuItem("Notifications", Icons.Rounded.NotificationsActive, onNotificationsClick)
+                DrawerMenuItem("Settings", Icons.Rounded.Settings, onSettingsClick)
+                Spacer(Modifier.weight(1f))
+                DrawerMenuItem("Logout", Icons.Rounded.Logout, onLogoutClick)
+                Spacer(Modifier.height(16.dp))
             }
         }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                modifier = Modifier.size(36.dp),
+                                shape = CircleShape,
+                                color = Color.White,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.mmplogo),
+                                    contentDescription = "College Logo",
+                                    modifier = Modifier.padding(4.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "MMP College",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Rounded.Menu, contentDescription = "Menu", tint = primaryColor)
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { /* Toggle */ }) {
+                            Icon(Icons.Rounded.DarkMode, contentDescription = "Theme", tint = textColor.copy(alpha = 0.7f))
+                        }
+                        IconButton(onClick = onNotificationsClick) {
+                            Icon(Icons.Rounded.NotificationsNone, contentDescription = "Notifications", tint = textColor.copy(alpha = 0.7f))
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White,
+                        titleContentColor = textColor
+                    ),
+                    modifier = Modifier.shadow(2.dp)
+                )
+            },
+            bottomBar = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 24.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)
+                            .shadow(12.dp, RoundedCornerShape(36.dp)),
+                        shape = RoundedCornerShape(36.dp),
+                        color = Color.White
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CapsuleNavItem(Icons.Rounded.AssignmentInd, "ID Card", onIdCardClick)
+                            CapsuleNavItem(Icons.Rounded.Download, "Downloads", onDownloadsClick)
+                            
+                            Spacer(modifier = Modifier.width(72.dp)) // Center space
+                            
+                            CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick)
+                            CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick)
+                        }
+                    }
+                    
+                    // Floating Center Button
+                    Surface(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .offset(y = (-20).dp)
+                            .shadow(8.dp, CircleShape)
+                            .clickable(onClick = { /* Dashboard */ }),
+                        shape = CircleShape,
+                        color = Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Rounded.GridView, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
+                    }
+                }
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { /* Action */ },
+                    containerColor = Color.Transparent,
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .padding(bottom = 90.dp)
+                        .size(56.dp)
+                        .background(
+                            brush = Brush.verticalGradient(listOf(primaryColor, secondaryColor)),
+                            shape = CircleShape
+                        )
+                        .shadow(4.dp, CircleShape)
+                ) {
+                    Icon(Icons.Rounded.FlashOn, contentDescription = "Quick Actions")
+                }
+            },
+            containerColor = backgroundColor
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // 1. Premium Profile Card
+                item {
+                    ProfileGradientCard(data, subjects.size, primaryColor, textColor)
+                }
 
-        // 5. Today's Schedule
-        item {
-            TodayScheduleSection(
-                classes = todayClasses,
-                cardColor = MaterialTheme.colorScheme.surface,
-                primaryColor = primaryColor,
-                textColor = textColor
-            )
-        }
+                // Quick Action Cards
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        QuickActionCard("Attendance", Icons.Rounded.CalendarToday, primaryColor, Modifier.weight(1f), onAttendanceClick)
+                        QuickActionCard("Assignments", Icons.AutoMirrored.Rounded.Assignment, primaryColor, Modifier.weight(1f), onAssignmentsClick)
+                        QuickActionCard("Results", Icons.Rounded.Star, primaryColor, Modifier.weight(1f), onResultsClick)
+                        QuickActionCard("Subjects", Icons.Rounded.Book, primaryColor, Modifier.weight(1f), onSubjectsClick)
+                    }
+                }
 
-        // 6. Assignment Progress
-        item {
-            AssignmentProgressCard(
-                assignments = assignments,
-                cardColor = MaterialTheme.colorScheme.surface,
-                successColor = Color(0xFF10B981),
-                warningColor = Color(0xFFF59E0B),
-                errorColor = MaterialTheme.colorScheme.error,
-                textColor = textColor
-            )
-        }
+                // 2. Academic Overview (Redesigned)
+                item {
+                    val summary = attendanceSummary ?: AttendanceSummaryDto(20, 16, 2, 0, 80f, "Good")
+                    AcademicOverviewCard(summary, primaryColor, secondaryColor, textColor, accentColor)
+                }
+                
+                // 3. Stats Summary Cards
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        StatsSummaryCard("Subjects", subjects.size.toString(), Icons.Rounded.Book, primaryColor, Modifier.weight(1f))
+                        StatsSummaryCard("Assignments", assignments.count { it.status.lowercase() == "pending" }.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), Modifier.weight(1f))
+                    }
+                }
 
-        // 7. Recent Activity (Notices)
-        item {
-            ActivityFeedSection(
-                notices = recentNotices,
-                primaryColor = primaryColor,
-                textColor = textColor
-            )
-        }
+                // 4. Today's Schedule
+                if (todayClasses.isNotEmpty()) {
+                    item {
+                        Column {
+                            Text(
+                                text = "Today's Schedule",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            todayClasses.forEach { cls ->
+                                ModernScheduleCard(cls, primaryColor, textColor)
+                            }
+                        }
+                    }
+                }
 
-        item {
-            Spacer(modifier = Modifier.height(100.dp))
+                // 5. Recent Activity (Notices)
+                item {
+                    ActivityFeedSection(recentNotices, primaryColor, textColor)
+                }
+
+                item { Spacer(modifier = Modifier.height(110.dp)) }
+            }
         }
     }
 }
 
 @Composable
-fun WelcomeCard(data: StudentDashboardDto, subjectCount: Int, primaryColor: Color, textColor: Color) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+fun DrawerMenuItem(label: String, icon: ImageVector, onClick: () -> Unit) {
+    NavigationDrawerItem(
+        label = { Text(label) },
+        selected = false,
+        onClick = onClick,
+        icon = { Icon(icon, contentDescription = null) },
+        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+    )
+}
+
+@Composable
+fun ProfileGradientCard(data: StudentDashboardDto, subjectCount: Int, primaryColor: Color, textColor: Color) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .shadow(12.dp, RoundedCornerShape(24.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFF1F5F9), Color(0xFFDBEAFE), Color(0xFFEFF6FF))
+                ),
+                shape = RoundedCornerShape(24.dp)
+            )
+            .clip(RoundedCornerShape(24.dp))
     ) {
-        Box(
-            modifier = Modifier
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(WelcomeGradientStart, WelcomeGradientEnd)
-                    )
-                )
-                .padding(24.dp)
-        ) {
+        // Decorative Shapes
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                color = Color(0xFF2563EB).copy(alpha = 0.05f),
+                radius = 350f,
+                center = androidx.compose.ui.geometry.Offset(size.width * 1.1f, -size.height * 0.2f)
+            )
+            drawCircle(
+                color = Color(0xFF60A5FA).copy(alpha = 0.05f),
+                radius = 250f,
+                center = androidx.compose.ui.geometry.Offset(-size.width * 0.1f, size.height * 1.1f)
+            )
+        }
+
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -191,56 +350,50 @@ fun WelcomeCard(data: StudentDashboardDto, subjectCount: Int, primaryColor: Colo
                     Text(
                         text = data.studentName,
                         style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = textColor
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        maxLines = 1
                     )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "${data.program} • Semester ${data.semester}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = textColor.copy(alpha = 0.7f)
+                        color = textColor.copy(alpha = 0.8f)
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Surface(
-                        color = primaryColor.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Rounded.AutoStories, 
-                                null, 
-                                modifier = Modifier.size(14.dp), 
-                                tint = primaryColor
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "$subjectCount Subjects",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = primaryColor,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
-                
                 Surface(
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(60.dp),
                     shape = CircleShape,
-                    color = primaryColor.copy(alpha = 0.1f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.2f))
+                    color = Color.White,
+                    shadowElevation = 4.dp
                 ) {
                     Icon(
                         Icons.Rounded.Person,
                         contentDescription = null,
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(14.dp),
                         tint = primaryColor
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            Surface(
+                color = Color.White.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.1f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Rounded.AutoStories, contentDescription = null, modifier = Modifier.size(16.dp), tint = primaryColor)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "$subjectCount Subjects",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = primaryColor,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
@@ -249,70 +402,52 @@ fun WelcomeCard(data: StudentDashboardDto, subjectCount: Int, primaryColor: Colo
 }
 
 @Composable
-fun QuickActionsRow(
-    onAttendanceClick: () -> Unit,
-    onAssignmentsClick: () -> Unit,
-    onResultsClick: () -> Unit,
-    onSubjectsClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+fun QuickActionCard(label: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier
+            .height(110.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        QuickActionItem("Attendance", Icons.Rounded.CalendarToday, Color(0xFF5C6BC0), onAttendanceClick)
-        QuickActionItem("Assignments", Icons.Rounded.Assignment, Color(0xFFFF7043), onAssignmentsClick)
-        QuickActionItem("Results", Icons.Rounded.Star, Color(0xFF66BB6A), onResultsClick)
-        QuickActionItem("Subjects", Icons.Rounded.Book, Color(0xFF7E57C2), onSubjectsClick)
-    }
-}
-
-@Composable
-fun QuickActionItem(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .width(80.dp)
-    ) {
-        Surface(
-            modifier = Modifier.size(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp,
-            tonalElevation = 2.dp
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = color
-                )
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFDBEAFE).copy(alpha = 0.7f)
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.padding(10.dp), tint = color)
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = label, 
+                style = MaterialTheme.typography.labelSmall, 
+                color = Color(0xFF1E293B),
+                fontWeight = FontWeight.Bold,
+                maxLines = 1
+            )
         }
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            fontWeight = FontWeight.Medium
-        )
     }
 }
 
 @Composable
-fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, textColor: Color) {
+fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, secondaryColor: Color, textColor: Color, accentColor: Color) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
                 text = "Academic Overview",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 color = textColor
             )
             
@@ -321,19 +456,19 @@ fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, tex
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(140.dp)) {
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         drawArc(
-                            color = textColor.copy(alpha = 0.05f),
+                            color = accentColor.copy(alpha = 0.4f),
                             startAngle = 0f,
                             sweepAngle = 360f,
                             useCenter = false,
                             style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
                         )
                         drawArc(
-                            color = primaryColor,
+                            brush = Brush.sweepGradient(listOf(primaryColor, secondaryColor)),
                             startAngle = -90f,
                             sweepAngle = (summary.attendancePercentage / 100f) * 360f,
                             useCenter = false,
@@ -344,7 +479,7 @@ fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, tex
                         Text(
                             text = "${summary.attendancePercentage.toInt()}%",
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Black,
+                            fontWeight = FontWeight.Bold,
                             color = textColor
                         )
                         Text(
@@ -356,9 +491,9 @@ fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, tex
                 }
                 
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    AttendanceStatRow("Present", summary.present.toString(), Color(0xFF4CAF50), textColor)
-                    AttendanceStatRow("Absent", summary.absent.toString(), Color(0xFFF44336), textColor)
-                    AttendanceStatRow("Total", summary.totalClasses.toString(), textColor, textColor)
+                    OverviewStatRow("Present", summary.present.toString(), Color(0xFF10B981))
+                    OverviewStatRow("Absent", summary.absent.toString(), Color(0xFFEF4444))
+                    OverviewStatRow("Total", summary.totalClasses.toString(), primaryColor)
                 }
             }
         }
@@ -366,322 +501,68 @@ fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, tex
 }
 
 @Composable
-fun AttendanceStatRow(label: String, value: String, color: Color, textColor: Color) {
+fun OverviewStatRow(label: String, value: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier
-            .size(8.dp)
-            .clip(CircleShape)
-            .background(color))
+        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(color))
         Spacer(modifier = Modifier.width(12.dp))
-        Text(text = label, style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.6f), modifier = Modifier.width(50.dp))
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = textColor)
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF64748B), modifier = Modifier.width(70.dp))
+        Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
     }
 }
 
 @Composable
-fun AcademicSnapshotGrid(
-    data: StudentDashboardDto,
-    subjectCount: Int,
-    assignmentCount: Int,
-    materialCount: Int,
-    onDownloadsClick: () -> Unit
-) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        SnapshotCard("Subjects", subjectCount.toString(), Icons.Rounded.Book, Color(0xFF5C6BC0), Modifier.weight(1f))
-        SnapshotCard("Assignments", assignmentCount.toString(), Icons.Rounded.Assignment, Color(0xFFFFA726), Modifier.weight(1f))
-    }
-}
-
-@Composable
-fun SnapshotCard(label: String, value: String, icon: ImageVector, color: Color, modifier: Modifier) {
+fun StatsSummaryCard(label: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = color.copy(alpha = 0.1f)
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.padding(8.dp))
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-        }
-    }
-}
-
-@Composable
-fun EnrolledSubjectsSection(
-    subjects: List<SubjectDto>,
-    cardColor: Color,
-    primaryColor: Color,
-    textColor: Color,
-    onSubjectsClick: () -> Unit
-) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "My Subjects",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-            TextButton(onClick = onSubjectsClick) {
-                Text(
-                    text = "See All",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = primaryColor,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(horizontal = 0.dp)
-        ) {
-            items(subjects) { subject ->
-                SubjectMiniCard(subject, cardColor, primaryColor, textColor)
-            }
-        }
-    }
-}
-
-@Composable
-fun SubjectMiniCard(subject: SubjectDto, cardColor: Color, primaryColor: Color, textColor: Color) {
-    Card(
-        modifier = Modifier.width(140.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(primaryColor.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = (subject.code ?: subject.name).take(2).uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = primaryColor,
-                    fontWeight = FontWeight.Bold
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    modifier = Modifier.size(36.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = color.copy(alpha = 0.1f)
+                ) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.padding(8.dp), tint = color)
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(text = label, style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = subject.name,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = textColor,
-                maxLines = 2,
-                minLines = 2
-            )
-            Text(
-                text = subject.code ?: "",
-                style = MaterialTheme.typography.labelSmall,
-                color = textColor.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
-
-@Composable
-fun TodayScheduleSection(classes: List<ClassDto>, cardColor: Color, primaryColor: Color, textColor: Color) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Today's Schedule",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-            Text(
-                text = "View All",
-                style = MaterialTheme.typography.labelLarge,
-                color = primaryColor,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        if (classes.isEmpty()) {
-            Text(
-                text = "No classes scheduled for today",
-                style = MaterialTheme.typography.bodyMedium,
-                color = textColor.copy(alpha = 0.5f),
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                classes.forEach { cls ->
-                    ScheduleItem(cls, cardColor, primaryColor, textColor)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ScheduleItem(cls: ClassDto, cardColor: Color, primaryColor: Color, textColor: Color) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.width(80.dp)) {
-                Text(
-                    text = cls.time.split(" ").firstOrNull() ?: "",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor
-                )
-                Text(
-                    text = cls.time.split(" ").lastOrNull() ?: "",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = textColor.copy(alpha = 0.6f)
-                )
-            }
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
             
             Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .height(40.dp)
-                    .background(primaryColor.copy(alpha = 0.3f))
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column {
-                Text(
-                    text = cls.subject,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Rounded.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = textColor.copy(alpha = 0.5f)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Room ${cls.room}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = textColor.copy(alpha = 0.5f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AssignmentProgressCard(assignments: List<AssignmentDto>, cardColor: Color, successColor: Color, warningColor: Color, errorColor: Color, textColor: Color) {
-    val pending = assignments.count { it.status.lowercase() == "pending" }
-    val submitted = assignments.count { it.status.lowercase() == "submitted" }
-    val graded = assignments.count { it.status.lowercase() == "graded" }
-    val total = assignments.size.coerceAtLeast(1)
-    val progress = (submitted + graded).toFloat() / total
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
-    ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Assignments",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-
-            MeasurableProgressBar(
-                progress = progress,
-                color = successColor
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth().height(40.dp).padding(top = 8.dp),
+                contentAlignment = Alignment.BottomEnd
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(100.dp)) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        drawArc(
-                            color = textColor.copy(alpha = 0.1f),
-                            startAngle = 0f,
-                            sweepAngle = 360f,
-                            useCenter = false,
-                            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                        drawArc(
-                            color = warningColor,
-                            startAngle = -90f,
-                            sweepAngle = (submitted.toFloat() / total) * 360f,
-                            useCenter = false,
-                            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                    }
-                    Text(
-                        text = "$total",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor
-                    )
-                }
-                
-                Spacer(modifier = Modifier.width(32.dp))
-                
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1f)) {
-                    ProgressStatRow("Pending", pending.toString(), errorColor, textColor)
-                    ProgressStatRow("Submitted", submitted.toString(), warningColor, textColor)
-                    ProgressStatRow("Graded", graded.toString(), successColor, textColor)
-                }
+                Icon(icon, contentDescription = null, modifier = Modifier.size(64.dp).offset(x = 12.dp, y = 12.dp), tint = color.copy(alpha = 0.05f))
             }
         }
     }
 }
 
 @Composable
-fun ProgressStatRow(label: String, value: String, color: Color, textColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun ModernScheduleCard(cls: ClassDto, primaryColor: Color, textColor: Color) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text = label, style = MaterialTheme.typography.bodyMedium, color = textColor.copy(alpha = 0.7f))
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.width(80.dp)) {
+                Text(text = cls.time.split(" ").firstOrNull() ?: "", fontWeight = FontWeight.Bold, color = textColor)
+                Text(text = cls.time.split(" ").lastOrNull() ?: "", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
+            }
+            Box(modifier = Modifier.width(3.dp).height(32.dp).background(primaryColor, CircleShape))
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(text = cls.subject, fontWeight = FontWeight.Bold, color = textColor)
+                Text(text = "Room ${cls.room}", style = MaterialTheme.typography.labelMedium, color = textColor.copy(alpha = 0.5f))
+            }
         }
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = textColor)
     }
 }
 
@@ -695,7 +576,7 @@ fun ActivityFeedSection(notices: List<NoticeDto>, primaryColor: Color, textColor
             color = textColor
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         
         if (notices.isEmpty()) {
             Text(
@@ -727,7 +608,7 @@ fun ActivityItem(notice: NoticeDto, primaryColor: Color, textColor: Color, isLas
                     modifier = Modifier
                         .width(2.dp)
                         .weight(1f)
-                        .background(primaryColor.copy(alpha = 0.2f))
+                        .background(primaryColor.copy(alpha = 0.1f))
                 )
             }
         }
@@ -750,41 +631,16 @@ fun ActivityItem(notice: NoticeDto, primaryColor: Color, textColor: Color, isLas
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun StudentDashboardPreview() {
-    MMPAppTheme {
-        StudentDashboard(
-            data = StudentDashboardDto(
-                studentName = "Sital Kumar Mahato",
-                studentId = 1,
-                avatarUrl = null,
-                email = "sital.m@mmp.edu.np",
-                phone = "+977 9801234567",
-                rollNumber = "23BCA0415",
-                program = "BCA 2A",
-                semester = 2,
-                kpiCards = StudentKpiDto(
-                    attendancePercentage = 92f,
-                    averageMarks = 84.5f,
-                    pendingAssignments = 3,
-                    unreadNotices = 2
-                )
-            ),
-            attendanceSummary = AttendanceSummaryDto(
-                totalClasses = 119,
-                present = 110,
-                absent = 9,
-                late = 0,
-                attendancePercentage = 92f,
-                status = "Good"
-            ),
-            subjects = List(6) { SubjectDto(it, "Subject $it", "SUB$it") },
-            todayClasses = listOf(
-                ClassDto(1, "Data Structures", "09:00 AM", "CS-201"),
-                ClassDto(2, "Web Technology", "10:00 AM", "CS-204"),
-                ClassDto(3, "Database", "11:00 AM", "CS-205")
-            )
-        )
+fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(4.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = Color(0xFF64748B), modifier = Modifier.size(24.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B), fontSize = 10.sp)
     }
 }
