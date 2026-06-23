@@ -100,17 +100,17 @@ fun StudentDashboard(
                     icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
-                DrawerMenuItem("My Profile", Icons.Rounded.Person, onProfileClick)
-                DrawerMenuItem("Subjects", Icons.Rounded.Book, onSubjectsClick)
-                DrawerMenuItem("Attendance", Icons.Rounded.CalendarToday, onAttendanceClick)
-                DrawerMenuItem("Marks & Results", Icons.Rounded.Star, onResultsClick)
-                DrawerMenuItem("Assignments", Icons.AutoMirrored.Rounded.Assignment, onAssignmentsClick)
-                DrawerMenuItem("Timetable", Icons.Rounded.Schedule, onTimetableClick)
-                DrawerMenuItem("Notices", Icons.Rounded.Notifications, onNoticesClick)
-                DrawerMenuItem("Notifications", Icons.Rounded.NotificationsActive, onNotificationsClick)
-                DrawerMenuItem("Settings", Icons.Rounded.Settings, onSettingsClick)
+                DrawerMenuItem("My Profile", Icons.Rounded.Person) { scope.launch { drawerState.close() }; onProfileClick() }
+                DrawerMenuItem("Subjects", Icons.Rounded.Book) { scope.launch { drawerState.close() }; onSubjectsClick() }
+                DrawerMenuItem("Attendance", Icons.Rounded.CalendarToday) { scope.launch { drawerState.close() }; onAttendanceClick() }
+                DrawerMenuItem("Marks & Results", Icons.Rounded.Star) { scope.launch { drawerState.close() }; onResultsClick() }
+                DrawerMenuItem("Assignments", Icons.AutoMirrored.Rounded.Assignment) { scope.launch { drawerState.close() }; onAssignmentsClick() }
+                DrawerMenuItem("Timetable", Icons.Rounded.Schedule) { scope.launch { drawerState.close() }; onTimetableClick() }
+                DrawerMenuItem("Notices", Icons.Rounded.Notifications) { scope.launch { drawerState.close() }; onNoticesClick() }
+                DrawerMenuItem("Notifications", Icons.Rounded.NotificationsActive) { scope.launch { drawerState.close() }; onNotificationsClick() }
+                DrawerMenuItem("Settings", Icons.Rounded.Settings) { scope.launch { drawerState.close() }; onSettingsClick() }
                 Spacer(Modifier.weight(1f))
-                DrawerMenuItem("Logout", Icons.Rounded.Logout, onLogoutClick)
+                DrawerMenuItem("Logout", Icons.Rounded.Logout) { scope.launch { drawerState.close() }; onLogoutClick() }
                 Spacer(Modifier.height(16.dp))
             }
         }
