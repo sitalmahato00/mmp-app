@@ -16,16 +16,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mmp_app.domain.model.FeeDto
 import androidx.compose.ui.unit.sp
 import com.example.mmp_app.core.ui.SkeletonBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeesScreen(
-    isLoading: Boolean = false,
     onBack: () -> Unit
 ) {
+    val viewModel: StudentViewModel = hiltViewModel()
+    val feesResponse by viewModel.fees.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadStudentFees()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -47,7 +57,7 @@ fun FeesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                if (isLoading) {
+                if (isLoading && feesResponse == null) {
                     SkeletonBox(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -55,20 +65,23 @@ fun FeesScreen(
                         shape = RoundedCornerShape(16.dp)
                     )
                 } else {
-                    FeeSummaryCard()
+                    FeeSummaryCard(
+                        totalDue = feesResponse?.totalDue ?: "₹ 0",
+                        lastDate = feesResponse?.lastDate ?: "N/A"
+                    )
                 }
             }
 
             item {
                 Text(
-                    text = "Fee Summary",
+                    text = "Fee Breakdown",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
 
-            if (isLoading) {
+            if (isLoading && (feesResponse?.data?.isEmpty() ?: true)) {
                 items(5) {
                     SkeletonBox(
                         modifier = Modifier
@@ -78,20 +91,11 @@ fun FeesScreen(
                     )
                 }
             } else {
-                item {
-                    FeeBreakdownItem("Tuition Fee", "₹ 45,000", true)
-                }
-                item {
-                    FeeBreakdownItem("Library Fee", "₹ 2,000", true)
-                }
-                item {
-                    FeeBreakdownItem("Exam Fee", "₹ 1,500", true)
-                }
-                item {
-                    FeeBreakdownItem("Development Fee", "₹ 3,000", false)
-                }
-                item {
-                    FeeBreakdownItem("Miscellaneous Fee", "₹ 1,000", false)
+                feesResponse?.data?.let { items ->
+                    items(items.size) { index ->
+                        val item = items[index]
+                        FeeBreakdownItem(item.title, item.amount, item.isPaid)
+                    }
                 }
             }
 
@@ -101,6 +105,7 @@ fun FeesScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
+                    enabled = (feesResponse?.data?.any { !it.isPaid } ?: false),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Pay Now", modifier = Modifier.padding(8.dp))
@@ -111,7 +116,7 @@ fun FeesScreen(
 }
 
 @Composable
-fun FeeSummaryCard() {
+fun FeeSummaryCard(totalDue: String, lastDate: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -127,9 +132,9 @@ fun FeeSummaryCard() {
         ) {
             Column {
                 Text(text = "Total Due", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
-                Text(text = "₹ 12,500", color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(text = totalDue, color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Last Date to Pay: Jun 15, 2025", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall)
+                Text(text = "Last Date to Pay: $lastDate", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall)
             }
             Icon(
                 imageVector = Icons.Rounded.AccountBalanceWallet,

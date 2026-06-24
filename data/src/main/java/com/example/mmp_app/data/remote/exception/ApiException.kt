@@ -64,3 +64,19 @@ suspend inline fun <reified T> handleApiResponse(
         else -> response.body()!!.data ?: throw ApiException.ServerException(500, "No data in response")
     }
 }
+
+suspend inline fun <reified T> handleRawResponse(
+    response: Response<T>
+): T {
+    if (!response.isSuccessful) {
+        when (response.code()) {
+            401 -> throw ApiException.UnauthorizedException
+            403 -> throw ApiException.ForbiddenException
+            404 -> throw ApiException.NotFoundException
+            409 -> throw ApiException.ConflictException
+            429 -> throw ApiException.RateLimitException
+            else -> throw ApiException.ServerException(response.code(), response.message())
+        }
+    }
+    return response.body() ?: throw ApiException.ServerException(500, "Empty response body")
+}

@@ -5,6 +5,7 @@ import com.example.mmp_app.data.local.entity.AssignmentEntity
 import com.example.mmp_app.data.local.entity.NoticeEntity
 import com.example.mmp_app.data.remote.MmpApiService
 import com.example.mmp_app.data.remote.exception.handleApiResponse
+import com.example.mmp_app.data.remote.exception.handleRawResponse
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.domain.repository.DashboardRepository
 import kotlinx.coroutines.flow.*
@@ -136,11 +137,12 @@ class DashboardRepositoryImpl @Inject constructor(
     override fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>> = flow {
         try {
             val response = apiService.getStudentAssignments()
-            val assignments = handleApiResponse(response, json)
+            val result = handleRawResponse(response)
+            val assignments = result.data
             
             // Cache assignments
             dashboardDao.insertAssignments(assignments.map { 
-                AssignmentEntity(it.id, it.title, it.subject, it.dueDate, it.status)
+                AssignmentEntity(it.id, it.title, it.subject ?: "N/A", it.dueDate, it.status)
             })
             
             emit(Result.success(assignments))
@@ -149,7 +151,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val cached = dashboardDao.getAssignments().firstOrNull()
             if (!cached.isNullOrEmpty()) {
                 emit(Result.success(cached.map { 
-                    AssignmentDto(it.id, it.title, it.subject, null, it.dueDate, 100, it.status)
+                    AssignmentDto(it.id, it.title, it.subject, null, it.dueDate, null, null, it.status)
                 }))
             } else {
                 emit(Result.failure(e))
@@ -157,30 +159,45 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDto>> = flow {
+    override fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDetailDto>> = flow {
         try {
             val response = apiService.getAssignmentDetail(id)
-            emit(Result.success(handleApiResponse(response, json)))
+            val result = handleRawResponse(response)
+            emit(Result.success(result.data))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }
 
-    override suspend fun submitAssignment(id: Int, content: String?, filePart: Any?): Result<SubmissionDto> {
+    override suspend fun submitAssignment(id: Int, content: String?): Result<SubmissionDto> {
         return try {
-            val contentBody = content?.toRequestBody("text/plain".toMediaTypeOrNull())
-            val multipartFile = filePart as? MultipartBody.Part
-            val response = apiService.submitAssignment(id, contentBody, multipartFile)
-            Result.success(handleApiResponse(response, json))
+            val request = mutableMapOf<String, String>()
+            content?.let { request["content"] = it }
+            val response = apiService.submitAssignment(id, request)
+            val result = handleRawResponse(response)
+            Result.success(result.data ?: throw Exception("Submission failed"))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override fun getSubmissionStatus(id: Int): Flow<Result<SubmissionDto>> = flow {
+    override suspend fun submitAssignmentWithFile(id: Int, content: String?, filePart: Any?): Result<SubmissionDto> {
+        return try {
+            val contentBody = content?.toRequestBody("text/plain".toMediaTypeOrNull())
+            val multipartFile = filePart as? MultipartBody.Part
+            val response = apiService.submitAssignmentWithFile(id, contentBody, multipartFile)
+            val result = handleRawResponse(response)
+            Result.success(result.data ?: throw Exception("Submission failed"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getSubmissionStatus(submissionId: Int): Flow<Result<SubmissionStatusDto>> = flow {
         try {
-            val response = apiService.getSubmissionStatus(id)
-            emit(Result.success(handleApiResponse(response, json)))
+            val response = apiService.getSubmissionStatus(submissionId)
+            val result = handleRawResponse(response)
+            emit(Result.success(result.data))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
@@ -300,6 +317,15 @@ class DashboardRepositoryImpl @Inject constructor(
         try {
             val response = apiService.getChildDashboard(childId)
             emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getStudentFees(): Flow<Result<FeesResponse>> = flow {
+        try {
+            val response = apiService.getStudentFees()
+            emit(Result.success(handleRawResponse(response)))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }

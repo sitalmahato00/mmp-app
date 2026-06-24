@@ -13,10 +13,10 @@ interface DashboardRepository {
     fun getMarksBySubject(subjectId: Int): Flow<Result<SubjectMarkDto>>
     fun getMarksheet(): Flow<Result<MarksheetDto>>
     fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>>
-    fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDto>>
-    suspend fun submitAssignment(id: Int, content: String?, filePart: Any?): Result<SubmissionDto>
-
-    fun getSubmissionStatus(id: Int): Flow<Result<SubmissionDto>>
+    fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDetailDto>>
+    suspend fun submitAssignment(id: Int, content: String?): Result<SubmissionDto>
+    suspend fun submitAssignmentWithFile(id: Int, content: String?, filePart: Any?): Result<SubmissionDto>
+    fun getSubmissionStatus(submissionId: Int): Flow<Result<SubmissionStatusDto>>
     fun getStudentAttendance(): Flow<Result<List<AttendanceDto>>>
     fun getStudentAttendanceSummary(): Flow<Result<AttendanceSummaryDto>>
     fun getStudentAttendanceBySubject(subjectId: Int): Flow<Result<AttendanceBySubjectDto>>
@@ -28,4 +28,5 @@ interface DashboardRepository {
     suspend fun recordMarks(request: MarkRecordRequest): Result<Unit>
     suspend fun getClassStudents(classId: Int): Result<List<UserDto>>
     fun getChildDashboard(childId: Int): Flow<Result<StudentDashboardDto>>
+    fun getStudentFees(): Flow<Result<FeesResponse>>
 }

@@ -55,21 +55,27 @@ interface MmpApiService {
     suspend fun getMarksheet(): Response<BaseResponse<MarksheetDto>>
 
     @GET("v1/student/assignments")
-    suspend fun getStudentAssignments(@Query("page") page: Int = 1): Response<BaseResponse<List<AssignmentDto>>>
+    suspend fun getStudentAssignments(@Query("page") page: Int = 1): Response<AssignmentsResponse>
 
     @GET("v1/student/assignments/{id}")
-    suspend fun getAssignmentDetail(@Path("id") id: Int): Response<BaseResponse<AssignmentDto>>
+    suspend fun getAssignmentDetail(@Path("id") id: Int): Response<AssignmentDetailResponse>
 
-    @Multipart
     @POST("v1/student/assignments/{id}/submit")
     suspend fun submitAssignment(
         @Path("id") id: Int,
+        @Body request: Map<String, String>
+    ): Response<SubmitResponse>
+
+    @Multipart
+    @POST("v1/student/assignments/{id}/submit")
+    suspend fun submitAssignmentWithFile(
+        @Path("id") id: Int,
         @Part("content") content: RequestBody?,
         @Part file: MultipartBody.Part?
-    ): Response<BaseResponse<SubmissionDto>>
+    ): Response<SubmitResponse>
 
-    @GET("v1/student/assignments/{id}/submission")
-    suspend fun getSubmissionStatus(@Path("id") id: Int): Response<BaseResponse<SubmissionDto>>
+    @GET("v1/student/assignments/{submissionId}/submission-status")
+    suspend fun getSubmissionStatus(@Path("submissionId") submissionId: Int): Response<SubmissionStatusResponse>
 
     @GET("v1/student/timetable")
     suspend fun getStudentTimetable(): Response<BaseResponse<List<ClassDto>>>
@@ -99,4 +105,7 @@ interface MmpApiService {
 
     @GET("v1/parent/child/{childId}/dashboard")
     suspend fun getChildDashboard(@Path("childId") childId: Int): Response<BaseResponse<StudentDashboardDto>>
+
+    @GET("v1/student/fees")
+    suspend fun getStudentFees(): Response<FeesResponse>
 }

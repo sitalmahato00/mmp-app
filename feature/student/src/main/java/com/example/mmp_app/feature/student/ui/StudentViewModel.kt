@@ -48,6 +48,12 @@ class StudentViewModel @Inject constructor(
     private val _assignments = MutableStateFlow<List<AssignmentDto>>(emptyList())
     val assignments = _assignments.asStateFlow()
 
+    private val _assignmentDetail = MutableStateFlow<AssignmentDetailDto?>(null)
+    val assignmentDetail = _assignmentDetail.asStateFlow()
+
+    private val _submissionStatus = MutableStateFlow<SubmissionStatusDto?>(null)
+    val submissionStatus = _submissionStatus.asStateFlow()
+
     private val _attendance = MutableStateFlow<List<AttendanceDto>>(emptyList())
     val attendance = _attendance.asStateFlow()
 
@@ -59,6 +65,9 @@ class StudentViewModel @Inject constructor(
 
     private val _subjects = MutableStateFlow<List<SubjectDto>>(emptyList())
     val subjects = _subjects.asStateFlow()
+
+    private val _fees = MutableStateFlow<FeesResponse?>(null)
+    val fees = _fees.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -157,6 +166,55 @@ class StudentViewModel @Inject constructor(
         }
     }
 
+    fun loadAssignmentDetail(id: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _assignmentDetail.value = null
+            repository.getAssignmentDetail(id).collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _assignmentDetail.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun loadSubmissionStatus(submissionId: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _submissionStatus.value = null
+            repository.getSubmissionStatus(submissionId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _submissionStatus.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun submitAssignment(id: Int, content: String?, filePart: Any? = null) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = if (filePart != null) {
+                repository.submitAssignmentWithFile(id, content, filePart)
+            } else {
+                repository.submitAssignment(id, content)
+            }
+            _isLoading.value = false
+            result.onSuccess {
+                loadStudentAssignments() // Refresh list
+                _error.value = "Assignment submitted successfully" // Using error flow for toast/message for now
+            }.onFailure { e ->
+                if (e.toString().contains("Conflict") || e.message?.contains("409") == true) {
+                    _error.value = "Already submitted"
+                } else {
+                    _error.value = e.message ?: "Submission failed"
+                }
+            }
+        }
+    }
+
+    fun clearAssignmentDetail() {
+        _assignmentDetail.value = null
+        _submissionStatus.value = null
+    }
+
     fun loadStudentSubjects() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -173,6 +231,16 @@ class StudentViewModel @Inject constructor(
             repository.getStudentAttendanceBySubject(subjectId).collect { result ->
                 _isLoading.value = false
                 result.onSuccess { _attendanceBySubject.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun loadStudentFees() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getStudentFees().collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _fees.value = it }.onFailure { _error.value = it.message }
             }
         }
     }
