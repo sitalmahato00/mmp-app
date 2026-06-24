@@ -35,12 +35,12 @@ class AuthRepositoryImpl @Inject constructor(
             val body = response.body()
             if (response.isSuccessful && body != null) {
                 if (body.success) {
+                    sessionManager.saveCredentials(email, password)
                     if (body.requires2fa == true) {
                         Result.success(LoginResult.OtpRequired(email))
                     } else {
                         val loginData = json.decodeFromJsonElement<LoginResponse>(body.data!!)
                         saveUserSession(loginData)
-                        sessionManager.saveCredentials(email, password)
                         Result.success(LoginResult.Success(loginData))
                     }
                 } else {

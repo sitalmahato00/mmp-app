@@ -7,11 +7,13 @@ import com.example.mmp_app.domain.repository.DashboardRepository
 import com.example.mmp_app.core.utils.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Cookie
+import okhttp3.CookieJar
 import okhttp3.FormBody
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.regex.Pattern
-
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -107,12 +109,22 @@ class StudentViewModel @Inject constructor(
         }
     }
 
-    fun downloadMarksheet() {
+    fun downloadMarksheet(examId: String? = null) {
+        if (!examId.isNullOrEmpty()) {
+            // Construct URL directly for specific exams to avoid API dependency
+            _marksheet.value = MarksheetDto(downloadUrl = "https://mmp.sital.info.np/student/marks/$examId")
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             repository.getMarksheet().collect { result ->
                 _isLoading.value = false
-                result.onSuccess { _marksheet.value = it }.onFailure { _error.value = it.message }
+                result.onSuccess { 
+                    _marksheet.value = it
+                }.onFailure { 
+                    _error.value = "Failed to get marksheet info: ${it.message ?: "Unknown error"}"
+                }
             }
         }
     }
@@ -184,33 +196,64 @@ class StudentViewModel @Inject constructor(
         val email = sessionManager.getUserEmail()
         val password = sessionManager.getUserPassword()
         
-        if (email == null || password == null) {
-            _error.value = "Credentials not found. Please re-login."
+        if (email.isNullOrBlank() || password.isNullOrBlank()) {
+            _error.value = "Credentials missing. Please log out and log in again."
             return
         }
 
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                val cookieJar = object : CookieJar {
+                    private val cookieStore = mutableMapOf<String, List<Cookie>>()
+                    override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
+                        cookieStore[url.host] = cookies
+                    }
+                    override fun loadForRequest(url: HttpUrl): List<Cookie> {
+                        return cookieStore[url.host] ?: emptyList()
+                    }
+                }
+
                 val client = OkHttpClient.Builder()
-                    .followRedirects(false)
+                    .cookieJar(cookieJar)
+                    .followRedirects(true)
+                    .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
                     .build()
 
                 // 1. GET login page to get CSRF token
                 val getRequest = Request.Builder()
                     .url("https://mmp.sital.info.np/login")
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36")
                     .build()
                 
                 val getResponse = withContext(Dispatchers.IO) { client.newCall(getRequest).execute() }
+                if (!getResponse.isSuccessful) {
+                    _error.value = "Portal unreachable (${getResponse.code})"
+                    return@launch
+                }
+                
                 val getHtml = getResponse.body?.string() ?: ""
                 
-                val pattern = Pattern.compile("name=\"_token\" value=\"([^\"]+)\"")
-                val matcher = pattern.matcher(getHtml)
-                val csrfToken = if (matcher.find()) matcher.group(1) else ""
+                // Extremely flexible CSRF regex
+                val tokenPattern = Pattern.compile("name=\"_token\" value=\"([^\"]+)\"")
+                val tokenPatternAlt = Pattern.compile("value=\"([^\"]+)\" name=\"_token\"")
                 
-                // Get cookies from the first request
-                val initialCookies = getResponse.headers("Set-Cookie")
-                val cookieHeader = initialCookies.joinToString("; ") { it.split(";")[0] }
+                var csrfToken = ""
+                val matcher = tokenPattern.matcher(getHtml)
+                if (matcher.find()) {
+                    csrfToken = matcher.group(1) ?: ""
+                } else {
+                    val matcherAlt = tokenPatternAlt.matcher(getHtml)
+                    if (matcherAlt.find()) {
+                        csrfToken = matcherAlt.group(1) ?: ""
+                    }
+                }
+                
+                if (csrfToken.isEmpty()) {
+                    _error.value = "Security check failed. Try again later."
+                    return@launch
+                }
 
                 // 2. POST login
                 val formBody = FormBody.Builder()
@@ -221,23 +264,33 @@ class StudentViewModel @Inject constructor(
 
                 val postRequest = Request.Builder()
                     .url("https://mmp.sital.info.np/login")
-                    .header("Cookie", cookieHeader)
+                    .header("Referer", "https://mmp.sital.info.np/login")
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36")
                     .post(formBody)
                     .build()
 
                 val postResponse = withContext(Dispatchers.IO) { client.newCall(postRequest).execute() }
+                val finalUrl = postResponse.request.url.toString()
                 
-                // On success, Laravel should redirect (302) and set new session cookies
-                val postCookies = postResponse.headers("Set-Cookie")
-                if (postCookies.isNotEmpty()) {
-                    // Capture all cookies (laravel_session, XSRF-TOKEN, etc.)
-                    val sessionCookie = postCookies.joinToString("; ") { it.split(";")[0] }
+                if (!finalUrl.contains("/login")) {
+                    val host = "mmp.sital.info.np"
+                    val httpUrl = HttpUrl.Builder().scheme("https").host(host).build()
+                    val cookies = cookieJar.loadForRequest(httpUrl)
+                    
+                    if (cookies.isEmpty()) {
+                        _error.value = "Login successful but session cookie missing."
+                        return@launch
+                    }
+
+                    val sessionCookie = cookies.joinToString("||") { cookie ->
+                        "${cookie.name}=${cookie.value}; domain=${cookie.domain}; path=${cookie.path}" + (if (cookie.secure) "; secure" else "")
+                    }
                     _webSessionCookie.value = sessionCookie
                 } else {
-                    _error.value = "Failed to obtain web session."
+                    _error.value = "Web login failed. Please verify credentials."
                 }
             } catch (e: Exception) {
-                _error.value = "Web login error: ${e.message}"
+                _error.value = "Portal login error: ${e.message}"
             } finally {
                 _isLoading.value = false
             }

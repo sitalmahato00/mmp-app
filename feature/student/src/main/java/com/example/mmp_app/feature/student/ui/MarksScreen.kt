@@ -7,7 +7,7 @@ import android.print.PrintManager
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.animation.AnimatedVisibility
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,36 +48,39 @@ fun MarksScreen(
     val subjectMarks by viewModel.subjectMarks.collectAsState()
     val marksheet by viewModel.marksheet.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     val sessionCookie by viewModel.webSessionCookie.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
     var currentView by remember { mutableStateOf<MarksView>(MarksView.Summary) }
     var selectedId by remember { mutableStateOf("") }
     
-    var isPrinting by remember { mutableStateOf(false) }
+    var isPreviewing by remember { mutableStateOf(false) }
     var printUrl by remember { mutableStateOf<String?>(null) }
+    var loadingMarksheetId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+            isPreviewing = false
+            loadingMarksheetId = null
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadStudentMarks()
     }
     
     val context = LocalContext.current
-    LaunchedEffect(marksheet) {
-        marksheet?.let {
-            if (it.downloadUrl.endsWith(".pdf", ignoreCase = true)) {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(it.downloadUrl))
-                context.startActivity(intent)
-            } else {
-                printUrl = it.downloadUrl
-                isPrinting = true
-            }
-            viewModel.clearMarksheetState()
-        }
-    }
-
-    LaunchedEffect(isPrinting, printUrl) {
-        if (isPrinting && printUrl != null && sessionCookie == null) {
-            viewModel.performWebLogin()
-        }
+    
+    if (isPreviewing && sessionCookie != null && printUrl != null) {
+        MarksheetPreviewPage(
+            url = printUrl!!,
+            cookie = sessionCookie!!,
+            onBack = { isPreviewing = false }
+        )
+        return
     }
 
     Scaffold(
@@ -107,7 +110,8 @@ fun MarksScreen(
                     titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Box(modifier = Modifier
             .padding(padding)
@@ -126,21 +130,34 @@ fun MarksScreen(
                         MarksView.Summary -> MarksSummaryView(
                             summary ?: MarksSummaryDto(), 
                             onDownloadMarksheet = {
+                                loadingMarksheetId = "summary"
                                 viewModel.downloadMarksheet()
                             },
                             onExamClick = { examId ->
                                 selectedId = examId
                                 viewModel.loadMarksByExam(examId)
                                 currentView = MarksView.ExamDetail
-                            }
+                            },
+                            onDownloadExamMarksheet = { examId ->
+                                loadingMarksheetId = examId
+                                viewModel.downloadMarksheet(examId)
+                            },
+                            loadingId = loadingMarksheetId
                         )
-                        MarksView.ExamDetail -> ExamDetailView(examDetail, onDownloadMarksheet = { viewModel.downloadMarksheet() })
+                        MarksView.ExamDetail -> ExamDetailView(
+                            examDetail, 
+                            onDownloadMarksheet = { 
+                                loadingMarksheetId = examDetail?.examId
+                                viewModel.downloadMarksheet(examDetail?.examId) 
+                            },
+                            loadingId = loadingMarksheetId
+                        )
                         MarksView.SubjectMarks -> SubjectMarksView(subjectMarks)
                     }
                 }
             }
 
-            if (isPrinting) {
+            if (isPreviewing && sessionCookie == null) {
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)),
                     contentAlignment = Alignment.Center
@@ -161,15 +178,28 @@ fun MarksScreen(
                         }
                     }
                 }
-                
-                if (sessionCookie != null && printUrl != null) {
-                    MarksheetBackgroundPrinter(
-                        url = printUrl!!,
-                        cookie = sessionCookie!!,
-                        onFinished = { isPrinting = false }
-                    )
-                }
             }
+        }
+    }
+    
+    // Logic moved out of Scaffold to be top-level conditional
+    LaunchedEffect(marksheet) {
+        marksheet?.let {
+            loadingMarksheetId = null
+            if (it.downloadUrl.endsWith(".pdf", ignoreCase = true)) {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(it.downloadUrl))
+                context.startActivity(intent)
+            } else {
+                printUrl = it.downloadUrl
+                isPreviewing = true
+            }
+            viewModel.clearMarksheetState()
+        }
+    }
+
+    LaunchedEffect(isPreviewing, printUrl) {
+        if (isPreviewing && printUrl != null && sessionCookie == null) {
+            viewModel.performWebLogin()
         }
     }
 }
@@ -184,7 +214,9 @@ sealed class MarksView {
 fun MarksSummaryView(
     summary: MarksSummaryDto,
     onDownloadMarksheet: () -> Unit,
-    onExamClick: (String) -> Unit
+    onExamClick: (String) -> Unit,
+    onDownloadExamMarksheet: (String) -> Unit,
+    loadingId: String? = null
 ) {
     // Calculate Overall Average if not provided accurately by API
     // Formula: sum(obtained) / sum(full) * 100
@@ -209,8 +241,12 @@ fun MarksSummaryView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Exam Results", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
-                TextButton(onClick = onDownloadMarksheet) {
-                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                TextButton(onClick = onDownloadMarksheet, enabled = loadingId == null) {
+                    if (loadingId == "summary") {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
                     Spacer(Modifier.width(4.dp))
                     Text("Marksheet")
                 }
@@ -218,7 +254,12 @@ fun MarksSummaryView(
         }
         
         items(summary.exams) { exam ->
-            EnhancedExamCard(exam, onDownloadClick = onDownloadMarksheet)
+            EnhancedExamCard(
+                exam = exam,
+                onCardClick = { onExamClick(exam.examId) },
+                onDownloadClick = { onDownloadExamMarksheet(exam.examId) },
+                isLoading = loadingId == exam.examId
+            )
         }
     }
 }
@@ -306,14 +347,21 @@ fun ResultOverviewCard(average: Float, totalExams: Int, allPassed: Boolean) {
 }
 
 @Composable
-fun EnhancedExamCard(exam: ExamSummaryDto, onDownloadClick: () -> Unit) {
+fun EnhancedExamCard(
+    exam: ExamSummaryDto,
+    onCardClick: () -> Unit = {},
+    onDownloadClick: () -> Unit,
+    isLoading: Boolean = false
+) {
     val totalObtained = exam.subjects.sumOf { it.score.toDouble() }
     val totalFull = exam.subjects.sumOf { it.total.toDouble() }.let { if (it == 0.0) exam.subjects.size * 25.0 else it }
     val percentage = if (totalFull > 0) (totalObtained / totalFull * 100) else 0.0
     val allPassed = exam.subjects.all { it.isPassed }
     
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -324,7 +372,7 @@ fun EnhancedExamCard(exam: ExamSummaryDto, onDownloadClick: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Rounded.Assignment, contentDescription = null, tint = Color(0xFF4F46E5), modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Rounded.Assignment, contentDescription = null, tint = Color(0xFF4F46E5), modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = exam.examName,
@@ -422,14 +470,19 @@ fun EnhancedExamCard(exam: ExamSummaryDto, onDownloadClick: () -> Unit) {
             
             Button(
                 onClick = onDownloadClick,
+                enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
                 contentPadding = PaddingValues(12.dp)
             ) {
-                Text("View Official Marksheet", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("View Official Marksheet", fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(Icons.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
             }
         }
     }
@@ -480,7 +533,7 @@ fun SubjectBreakdownRow(mark: MarkDto) {
 }
 
 @Composable
-fun ExamDetailView(detail: ExamDetailDto?, onDownloadMarksheet: () -> Unit) {
+fun ExamDetailView(detail: ExamDetailDto?, onDownloadMarksheet: () -> Unit, loadingId: String? = null) {
     if (detail == null) return
     EnhancedExamCard(
         ExamSummaryDto(
@@ -490,13 +543,9 @@ fun ExamDetailView(detail: ExamDetailDto?, onDownloadMarksheet: () -> Unit) {
             startDate = detail.startDate,
             subjects = detail.marks
         ),
-        onDownloadClick = onDownloadMarksheet
+        onDownloadClick = onDownloadMarksheet,
+        isLoading = loadingId != null && loadingId == detail.examId
     )
-}
-
-@Composable
-fun SubjectMarkTableRow(mark: MarkDto) {
-    SubjectBreakdownRow(mark)
 }
 
 @Composable
@@ -534,97 +583,146 @@ fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarksheetBackgroundPrinter(
+fun MarksheetPreviewPage(
     url: String,
     cookie: String,
-    onFinished: () -> Unit
+    onBack: () -> Unit
 ) {
-    val context = LocalContext.current
-    AndroidView(
-        factory = { ctx ->
-            WebView(ctx).apply {
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    databaseEnabled = true
-                    loadWithOverviewMode = true
-                    useWideViewPort = true
-                    builtInZoomControls = true
-                    displayZoomControls = false
-                    setSupportZoom(true)
-                    userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36"
-                }
-                
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        if (url?.contains("/login") == true) {
-                            onFinished()
-                            return
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+    var isWebViewLoading by remember { mutableStateOf(true) }
+
+    BackHandler(onBack = onBack)
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Marksheet Preview", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            webViewRef?.let { webView ->
+                                val context = webView.context
+                                val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+                                val jobName = "Marksheet_${System.currentTimeMillis()}"
+                                val printAdapter = webView.createPrintDocumentAdapter(jobName)
+                                val printAttributes = PrintAttributes.Builder()
+                                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+                                    .build()
+                                printManager.print(jobName, printAdapter, printAttributes)
+                            }
+                        },
+                        enabled = !isWebViewLoading
+                    ) {
+                        Icon(Icons.Rounded.Print, contentDescription = "Print")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding).fillMaxSize().background(Color.White)) {
+            AndroidView(
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            loadWithOverviewMode = true
+                            useWideViewPort = true
+                            builtInZoomControls = true
+                            displayZoomControls = false
+                            setSupportZoom(true)
+                            defaultTextEncodingName = "utf-8"
                         }
-
-                        // Apply cleanup script to isolate the marksheet
-                        val script = """
-                            (function() {
-                                const selectors = ['.card', '.bg-white', 'main', '.main-content', '#app > div:nth-child(2)', '.marksheet'];
-                                let marksheet = null;
-                                for (const selector of selectors) {
-                                    marksheet = document.querySelector(selector);
-                                    if (marksheet) break;
-                                }
-
-                                if (marksheet) {
-                                    const content = marksheet.cloneNode(true);
-                                    document.body.innerHTML = '';
-                                    document.body.appendChild(content);
-                                    document.body.style.setProperty('margin', '0', 'important');
-                                    document.body.style.setProperty('padding', '20px', 'important');
-                                    document.body.style.setProperty('background', 'white', 'important');
-                                    content.style.setProperty('width', '100%', 'important');
-                                    content.style.setProperty('box-shadow', 'none', 'important');
-                                    content.style.setProperty('border', 'none', 'important');
-                                }
-                                const style = document.createElement('style');
-                                style.innerHTML = 'table { width: 100% !important; border-collapse: collapse !important; font-size: 10pt !important; } th, td { border: 1px solid #ddd !important; padding: 8px !important; } img { max-width: 100% !important; } .no-print, .btn, nav, header, footer { display: none !important; }';
-                                document.head.appendChild(style);
-                            })();
-                        """.trimIndent()
-                        view?.evaluateJavascript(script, null)
                         
-                        postDelayed({
-                            val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
-                            val jobName = "Marksheet_${System.currentTimeMillis()}"
-                            val printAdapter = createPrintDocumentAdapter(jobName)
-                            val printAttributes = PrintAttributes.Builder()
-                                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                                .setResolution(PrintAttributes.Resolution("pdf", "pdf", 600, 600))
-                                .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-                                .build()
-                            printManager.print(jobName, printAdapter, printAttributes)
-                            onFinished()
-                        }, 1000)
-                    }
-                }
-                
-                val cookieManager = CookieManager.getInstance()
-                cookieManager.setAcceptCookie(true)
-                cookieManager.setAcceptThirdPartyCookies(this, true)
-                
-                val domain = try { Uri.parse(url).host } catch(e: Exception) { null }
-                cookie.split("; ").forEach {
-                    val singleCookie = it.trim()
-                    if (singleCookie.isNotEmpty()) {
-                        if (domain != null) cookieManager.setCookie(domain, singleCookie)
-                        cookieManager.setCookie(url, singleCookie)
-                    }
-                }
-                cookieManager.flush()
+                        setInitialScale(1)
+                        
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                isWebViewLoading = false
+                                val script = """
+                                    (function() {
+                                        const noise = 'nav, .navbar, .sidebar, .btn, button, .no-print, header, footer, aside, [role="navigation"]';
+                                        document.querySelectorAll(noise).forEach(el => el.remove());
+                                        
+                                        const containerSelectors = ['.card', '.marksheet', '.print-content', 'main', '#app > div:nth-child(2)'];
+                                        let mainContent = null;
+                                        for (const selector of containerSelectors) {
+                                            const found = document.querySelector(selector);
+                                            if (found && found.innerText.length > 100) {
+                                                mainContent = found;
+                                                break;
+                                            }
+                                        }
 
-                loadUrl(url)
+                                        if (mainContent) {
+                                            const clone = mainContent.cloneNode(true);
+                                            document.body.innerHTML = '';
+                                            document.body.appendChild(clone);
+                                            clone.style.width = '100%';
+                                            clone.style.margin = '0';
+                                            clone.style.padding = '0';
+                                            clone.style.boxShadow = 'none';
+                                            clone.style.border = 'none';
+                                        }
+
+                                        const style = document.createElement('style');
+                                        style.innerHTML = `
+                                            body { background: white !important; margin: 0 !important; padding: 10px !important; width: 100% !important; overflow-x: hidden !important; }
+                                            * { max-width: 100% !important; box-sizing: border-box !important; }
+                                            table { width: 100% !important; border-collapse: collapse !important; font-size: 10px !important; }
+                                            th, td { padding: 4px !important; border: 1px solid #ddd !important; }
+                                            .container, .row, .col-md-12 { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+                                            img { height: auto !important; max-width: 150px !important; }
+                                            a[href*="back"], .breadcrumb { display: none !important; }
+                                        `;
+                                        document.head.appendChild(style);
+                                        
+                                        if (!document.querySelector('meta[name="viewport"]')) {
+                                            const meta = document.createElement('meta');
+                                            meta.name = "viewport";
+                                            meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+                                            document.head.appendChild(meta);
+                                        }
+                                    })();
+                                """.trimIndent()
+                                view?.evaluateJavascript(script, null)
+                            }
+                        }
+                        
+                        val cookieManager = CookieManager.getInstance()
+                        cookieManager.setAcceptCookie(true)
+                        cookie.split("||").forEach {
+                            val singleCookie = it.trim()
+                            if (singleCookie.isNotEmpty()) {
+                                cookieManager.setCookie(url, singleCookie)
+                            }
+                        }
+                        cookieManager.flush()
+                        loadUrl(url)
+                        webViewRef = this
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            if (isWebViewLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-        },
-        modifier = Modifier.size(1.dp).background(Color.Transparent)
-    )
+        }
+    }
 }
 
 @Composable
