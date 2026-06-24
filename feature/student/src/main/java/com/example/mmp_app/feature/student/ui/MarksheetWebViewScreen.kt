@@ -23,7 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MarksheetWebViewScreen(
-    examId: String,
+    url: String,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -34,8 +34,6 @@ fun MarksheetWebViewScreen(
     val error by viewModel.error.collectAsState()
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
-
-    val marksheetUrl = "https://mmp.sital.info.np/student/marks/$examId"
 
     LaunchedEffect(Unit) {
         viewModel.performWebLogin()
@@ -54,7 +52,7 @@ fun MarksheetWebViewScreen(
                     IconButton(onClick = {
                         webViewInstance?.let { webView ->
                             val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
-                            val printAdapter = webView.createPrintDocumentAdapter("marksheet_exam_$examId")
+                            val printAdapter = webView.createPrintDocumentAdapter("marksheet_${System.currentTimeMillis()}")
                             printManager.print("Marksheet", printAdapter, PrintAttributes.Builder().build())
                         }
                     }) {
@@ -76,19 +74,68 @@ fun MarksheetWebViewScreen(
                                 useWideViewPort = true
                                 builtInZoomControls = true
                                 displayZoomControls = false
+                                setSupportZoom(true)
                             }
                             webViewClient = object : WebViewClient() {
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
+                                    // Aggressive script to hide all web application layout and show only the marksheet content
+                                    val script = """
+                                        (function() {
+                                            function hide(selector) {
+                                                document.querySelectorAll(selector).forEach(function(el) {
+                                                    el.style.setProperty('display', 'none', 'important');
+                                                });
+                                            }
+                                            
+                                            // Hide common UI elements
+                                            ['nav', 'footer', 'header', 'aside', '.navbar', '.main-header', 
+                                             '.main-footer', '.sidebar', '.bottom-nav', '.mobile-bottom-nav',
+                                             '.fixed-bottom', '.no-print', '.breadcrumb', '.content-header',
+                                             '#sidebar', '.sidebar-wrapper'
+                                            ].forEach(hide);
+
+                                            // Force body reset
+                                            document.body.style.setProperty('margin', '0', 'important');
+                                            document.body.style.setProperty('padding', '0', 'important');
+                                            document.body.style.setProperty('background-color', 'white', 'important');
+                                            
+                                            // Fix Laravel/Tailwind/Bootstrap specific wrappers
+                                            var app = document.getElementById('app');
+                                            if (app) {
+                                                app.style.setProperty('background-color', 'white', 'important');
+                                                app.style.setProperty('padding', '0', 'important');
+                                            }
+                                            
+                                            var main = document.querySelector('main');
+                                            if (main) {
+                                                main.style.setProperty('margin', '0', 'important');
+                                                main.style.setProperty('padding', '0', 'important');
+                                                main.style.setProperty('margin-top', '0', 'important');
+                                            }
+
+                                            // Make the marksheet container take full width and hide shadows
+                                            var card = document.querySelector('.card, .bg-white, .p-6, .max-w-4xl');
+                                            if (card) {
+                                                card.style.setProperty('box-shadow', 'none', 'important');
+                                                card.style.setProperty('margin', '0', 'important');
+                                                card.style.setProperty('width', '100%', 'important');
+                                                card.style.setProperty('max-width', '100%', 'important');
+                                                card.style.setProperty('padding', '10px', 'important');
+                                            }
+                                        })();
+                                    """.trimIndent()
+                                    view?.evaluateJavascript(script, null)
                                 }
                             }
                             
                             val cookieManager = CookieManager.getInstance()
                             cookieManager.setAcceptCookie(true)
-                            cookieManager.setCookie("mmp.sital.info.np", sessionCookie)
+                            cookieManager.setCookie(url, sessionCookie)
+                            cookieManager.flush()
                             
                             webViewInstance = this
-                            loadUrl(marksheetUrl)
+                            loadUrl(url)
                         }
                     },
                     modifier = Modifier.fillMaxSize()

@@ -43,6 +43,7 @@ fun MarksScreen(
 
     var currentView by remember { mutableStateOf<MarksView>(MarksView.Summary) }
     var selectedId by remember { mutableStateOf("") }
+    var selectedUrl by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -51,8 +52,9 @@ fun MarksScreen(
     
     LaunchedEffect(marksheet) {
         marksheet?.let {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.downloadUrl))
-            context.startActivity(intent)
+            selectedUrl = it.downloadUrl
+            currentView = MarksView.Marksheet
+            viewModel.clearMarksheetState()
         }
     }
 
@@ -83,7 +85,10 @@ fun MarksScreen(
                             Icon(Icons.Rounded.Download, contentDescription = "Download Marksheet")
                         }
                     } else if (currentView == MarksView.ExamDetail) {
-                        IconButton(onClick = { currentView = MarksView.Marksheet }) {
+                        IconButton(onClick = { 
+                            selectedUrl = "https://mmp.sital.info.np/student/marks/$selectedId"
+                            currentView = MarksView.Marksheet 
+                        }) {
                             Icon(Icons.Rounded.Description, contentDescription = "View Official Marksheet")
                         }
                     }
@@ -115,8 +120,8 @@ fun MarksScreen(
                             // currentView = MarksView.SubjectMarks
                         }
                         MarksView.SubjectMarks -> SubjectMarksView(subjectMarks)
-                        MarksView.Marksheet -> MarksheetWebViewScreen(selectedId) {
-                            currentView = MarksView.ExamDetail
+                        MarksView.Marksheet -> MarksheetWebViewScreen(selectedUrl ?: "") {
+                            currentView = if (selectedId.isNotEmpty()) MarksView.ExamDetail else MarksView.Summary
                         }
                     }
                 }

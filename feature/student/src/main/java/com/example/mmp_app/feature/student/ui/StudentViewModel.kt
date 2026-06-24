@@ -117,6 +117,10 @@ class StudentViewModel @Inject constructor(
         }
     }
 
+    fun clearMarksheetState() {
+        _marksheet.value = null
+    }
+
 
     fun loadStudentAttendance() {
         viewModelScope.launch {
