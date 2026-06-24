@@ -69,11 +69,17 @@ class DashboardRepositoryImpl @Inject constructor(
             val fullMarksPerSubject = 25f
             
             val processedExams = examList.map { exam ->
-                val obtained = exam.subjects.sumOf { it.score.toDouble() }.toFloat()
-                val total = (exam.subjects.size * fullMarksPerSubject)
+                val updatedSubjects = exam.subjects.map { subject ->
+                    val percentage = if (subject.total > 0) (subject.score / subject.total * 100) else 0f
+                    subject.copy(percentage = percentage)
+                }
+                
+                val obtained = updatedSubjects.sumOf { it.score.toDouble() }.toFloat()
+                val total = (updatedSubjects.size * fullMarksPerSubject)
                 val percentage = if (total > 0) (obtained / total * 100) else 0f
                 
                 exam.copy(
+                    subjects = updatedSubjects,
                     obtainedMarks = obtained,
                     totalMarks = total.toInt(),
                     percentage = percentage
@@ -98,7 +104,12 @@ class DashboardRepositoryImpl @Inject constructor(
     override fun getMarksByExam(examId: String): Flow<Result<ExamDetailDto>> = flow {
         try {
             val response = apiService.getMarksByExam(examId)
-            emit(Result.success(handleApiResponse(response, json)))
+            val detail = handleApiResponse(response, json)
+            val updatedMarks = detail.marks.map { mark ->
+                val percentage = if (mark.total > 0) (mark.score / mark.total * 100) else 0f
+                mark.copy(percentage = percentage)
+            }
+            emit(Result.success(detail.copy(marks = updatedMarks)))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }

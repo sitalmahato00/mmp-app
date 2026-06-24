@@ -60,44 +60,46 @@ fun MarksScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (currentView) {
-                            MarksView.Summary -> "Marks & Results"
-                            MarksView.ExamDetail -> examDetail?.examName ?: "Exam Results"
-                            MarksView.SubjectMarks -> subjectMarks?.subjectName ?: "Subject History"
-                            MarksView.Marksheet -> "Official Marksheet"
-                        }
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (currentView == MarksView.Summary) onBack()
-                        else currentView = MarksView.Summary
-                    }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    if (currentView == MarksView.Summary) {
-                        IconButton(onClick = { viewModel.downloadMarksheet() }) {
-                            Icon(Icons.Rounded.Download, contentDescription = "Download Marksheet")
-                        }
-                    } else if (currentView == MarksView.ExamDetail) {
-                        IconButton(onClick = { 
-                            selectedUrl = "https://mmp.sital.info.np/student/marks/$selectedId"
-                            currentView = MarksView.Marksheet 
+            if (currentView != MarksView.Marksheet) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            when (currentView) {
+                                MarksView.Summary -> "Marks & Results"
+                                MarksView.ExamDetail -> examDetail?.examName ?: "Exam Results"
+                                MarksView.SubjectMarks -> subjectMarks?.subjectName ?: "Subject History"
+                                MarksView.Marksheet -> "" // Handled by its own Scaffold
+                            }
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (currentView == MarksView.Summary) onBack()
+                            else currentView = MarksView.Summary
                         }) {
-                            Icon(Icons.Rounded.Description, contentDescription = "View Official Marksheet")
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        if (currentView == MarksView.Summary) {
+                            IconButton(onClick = { viewModel.downloadMarksheet() }) {
+                                Icon(Icons.Rounded.Download, contentDescription = "Download Marksheet")
+                            }
+                        } else if (currentView == MarksView.ExamDetail) {
+                            IconButton(onClick = {
+                                selectedUrl = "https://mmp.sital.info.np/student/marks/$selectedId"
+                                currentView = MarksView.Marksheet
+                            }) {
+                                Icon(Icons.Rounded.Description, contentDescription = "View Official Marksheet")
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     ) { padding ->
         Box(modifier = Modifier
-            .padding(padding)
+            .then(if (currentView != MarksView.Marksheet) Modifier.padding(padding) else Modifier)
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)) {
             

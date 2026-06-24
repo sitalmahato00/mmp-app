@@ -92,7 +92,7 @@ fun MarksheetWebViewScreen(
                                             ['nav', 'footer', 'header', 'aside', '.navbar', '.main-header', 
                                              '.main-footer', '.sidebar', '.bottom-nav', '.mobile-bottom-nav',
                                              '.fixed-bottom', '.no-print', '.breadcrumb', '.content-header',
-                                             '#sidebar', '.sidebar-wrapper'
+                                             '#sidebar', '.sidebar-wrapper', '.btn', 'button'
                                             ].forEach(hide);
 
                                             // Force body reset
