@@ -40,6 +40,7 @@ class AuthRepositoryImpl @Inject constructor(
                     } else {
                         val loginData = json.decodeFromJsonElement<LoginResponse>(body.data!!)
                         saveUserSession(loginData)
+                        sessionManager.saveCredentials(email, password)
                         Result.success(LoginResult.Success(loginData))
                     }
                 } else {

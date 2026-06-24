@@ -213,10 +213,25 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun loadMarksByExam(examId: Int) {
+    fun loadMarksByExam(examId: String) {
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
+            
+            // Try to use cached data from summary first
+            val cachedExam = _marksSummary.value?.exams?.find { it.examId == examId }
+            if (cachedExam != null) {
+                _examDetail.value = ExamDetailDto(
+                    examId = cachedExam.examId,
+                    examName = cachedExam.examName,
+                    category = cachedExam.category,
+                    startDate = cachedExam.startDate,
+                    marks = cachedExam.subjects
+                )
+                _isLoading.value = false
+                return@launch
+            }
+
             repository.getMarksByExam(examId).collect { result ->
                 _isLoading.value = false
                 result.onSuccess {

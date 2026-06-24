@@ -53,10 +53,8 @@ class DashboardRepositoryImpl @Inject constructor(
 
     override fun getStudentMarks(): Flow<Result<List<MarkDto>>> = flow {
         try {
-            val summary = handleApiResponse<MarksSummaryDto>(apiService.getStudentMarksSummary(), json)
-            val marks = summary.exams.map { 
-                MarkDto(subject = it.examName, score = it.obtainedMarks, total = it.totalMarks.toFloat(), percentage = it.percentage)
-            }
+            val examList = handleApiResponse(apiService.getStudentMarksSummary(), json)
+            val marks = examList.flatMap { it.subjects }
             emit(Result.success(marks))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -66,13 +64,38 @@ class DashboardRepositoryImpl @Inject constructor(
     override fun getStudentMarksSummary(): Flow<Result<MarksSummaryDto>> = flow {
         try {
             val response = apiService.getStudentMarksSummary()
-            emit(Result.success(handleApiResponse(response, json)))
+            val examList = handleApiResponse(response, json)
+            
+            val fullMarksPerSubject = 25f
+            
+            val processedExams = examList.map { exam ->
+                val obtained = exam.subjects.sumOf { it.score.toDouble() }.toFloat()
+                val total = (exam.subjects.size * fullMarksPerSubject)
+                val percentage = if (total > 0) (obtained / total * 100) else 0f
+                
+                exam.copy(
+                    obtainedMarks = obtained,
+                    totalMarks = total.toInt(),
+                    percentage = percentage
+                )
+            }
+            
+            val allSubjects = processedExams.flatMap { it.subjects }
+            val totalObtained = allSubjects.sumOf { it.score.toDouble() }.toFloat()
+            val totalFull = (allSubjects.size * fullMarksPerSubject)
+            val overallAverage = if (totalFull > 0) (totalObtained / totalFull * 100) else 0f
+            
+            emit(Result.success(MarksSummaryDto(
+                averageMarks = overallAverage,
+                totalExams = processedExams.size,
+                exams = processedExams
+            )))
         } catch (e: Exception) {
             emit(Result.failure(e))
         }
     }
 
-    override fun getMarksByExam(examId: Int): Flow<Result<ExamDetailDto>> = flow {
+    override fun getMarksByExam(examId: String): Flow<Result<ExamDetailDto>> = flow {
         try {
             val response = apiService.getMarksByExam(examId)
             emit(Result.success(handleApiResponse(response, json)))

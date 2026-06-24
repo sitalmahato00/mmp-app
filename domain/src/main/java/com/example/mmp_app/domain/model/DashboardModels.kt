@@ -53,8 +53,11 @@ data class MarksSummaryDto(
 
 @Serializable
 data class ExamSummaryDto(
-    @SerialName("exam_id") val examId: Int,
+    @SerialName("exam_id") val examId: String,
     @SerialName("exam_name") val examName: String,
+    @SerialName("category") val category: String? = null,
+    @SerialName("start_date") val startDate: String? = null,
+    @SerialName("subjects") val subjects: List<MarkDto> = emptyList(),
     @SerialName("total_marks") val totalMarks: Int = 0,
     @SerialName("obtained_marks") val obtainedMarks: Float = 0f,
     @SerialName("percentage") val percentage: Float = 0f
@@ -63,9 +66,13 @@ data class ExamSummaryDto(
 @Serializable
 data class MarkDto(
     @SerialName("subject") val subject: String,
-    @SerialName("obtained_marks") val score: Float,
-    @SerialName("total_marks") val total: Float,
-    @SerialName("percentage") val percentage: Float,
+    @SerialName("code") val code: String? = null,
+    @SerialName("total") val score: Float,
+    @SerialName("full_marks") val total: Float = 25f,
+    @SerialName("percentage") val percentage: Float = 0f,
+    @SerialName("result") val result: String? = null,
+    @SerialName("is_passed") val isPassed: Boolean = true,
+    @SerialName("is_absent") val isAbsent: Boolean = false,
     @SerialName("date") val date: String? = null
 )
 
@@ -169,8 +176,11 @@ data class StudentAttendanceItem(
 
 @Serializable
 data class ExamDetailDto(
+    @SerialName("exam_id") val examId: String? = null,
     @SerialName("exam_name") val examName: String,
-    @SerialName("marks") val marks: List<MarkDto>
+    @SerialName("category") val category: String? = null,
+    @SerialName("start_date") val startDate: String? = null,
+    @SerialName("subjects") val marks: List<MarkDto>
 )
 
 @Serializable

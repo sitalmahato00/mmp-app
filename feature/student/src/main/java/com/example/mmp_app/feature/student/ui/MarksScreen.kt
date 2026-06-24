@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -41,7 +42,7 @@ fun MarksScreen(
     val error by viewModel.error.collectAsState()
 
     var currentView by remember { mutableStateOf<MarksView>(MarksView.Summary) }
-    var selectedId by remember { mutableIntStateOf(-1) }
+    var selectedId by remember { mutableStateOf("") }
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -64,6 +65,7 @@ fun MarksScreen(
                             MarksView.Summary -> "Marks & Results"
                             MarksView.ExamDetail -> examDetail?.examName ?: "Exam Results"
                             MarksView.SubjectMarks -> subjectMarks?.subjectName ?: "Subject History"
+                            MarksView.Marksheet -> "Official Marksheet"
                         }
                     )
                 },
@@ -80,6 +82,10 @@ fun MarksScreen(
                         IconButton(onClick = { viewModel.downloadMarksheet() }) {
                             Icon(Icons.Rounded.Download, contentDescription = "Download Marksheet")
                         }
+                    } else if (currentView == MarksView.ExamDetail) {
+                        IconButton(onClick = { currentView = MarksView.Marksheet }) {
+                            Icon(Icons.Rounded.Description, contentDescription = "View Official Marksheet")
+                        }
                     }
                 }
             )
@@ -88,7 +94,7 @@ fun MarksScreen(
         Box(modifier = Modifier
             .padding(padding)
             .fillMaxSize()
-            .background(Color(0xFFF5F7FA))) {
+            .background(MaterialTheme.colorScheme.background)) {
             
             when {
                 isLoading && (summary == null && examDetail == null && subjectMarks == null) -> {
@@ -109,6 +115,9 @@ fun MarksScreen(
                             // currentView = MarksView.SubjectMarks
                         }
                         MarksView.SubjectMarks -> SubjectMarksView(subjectMarks)
+                        MarksView.Marksheet -> MarksheetWebViewScreen(selectedId) {
+                            currentView = MarksView.ExamDetail
+                        }
                     }
                 }
             }
@@ -120,13 +129,14 @@ sealed class MarksView {
     object Summary : MarksView()
     object ExamDetail : MarksView()
     object SubjectMarks : MarksView()
+    object Marksheet : MarksView()
 }
 
 @Composable
 fun MarksSummaryView(
     summary: MarksSummaryDto,
     onRetry: () -> Unit = {},
-    onExamClick: (Int) -> Unit
+    onExamClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -137,7 +147,7 @@ fun MarksSummaryView(
             ResultOverviewCard(summary.averageMarks, summary.totalExams)
         }
         item {
-            Text("Recent Exams", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Recent Exams", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
         
         if (summary.exams.isEmpty()) {
@@ -146,7 +156,7 @@ fun MarksSummaryView(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No exam records found.", color = Color.Gray)
+                    Text("No exam records found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -188,7 +198,7 @@ fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Row(
@@ -196,8 +206,8 @@ fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = mark.examName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                        mark.date?.let { Text(text = it, style = MaterialTheme.typography.labelSmall, color = Color.Gray) }
+                        Text(text = mark.examName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        mark.date?.let { Text(text = it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                     GradeBadge(mark.percentage)
                 }
@@ -211,30 +221,41 @@ fun ResultOverviewCard(average: Float, totalExams: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Row(
-            modifier = Modifier.padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Overall Average", style = MaterialTheme.typography.labelMedium)
-                Text(
-                    text = "${average.toInt()}%",
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(Color(0xFF1A56BE), Color(0xFF3F78E0))
+                    )
                 )
-            }
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
+                .padding(24.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = totalExams.toString(), fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text(text = "Exams", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Overall Average", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.8f))
+                    Text(
+                        text = "${average.toInt()}%",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = totalExams.toString(), fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color.White)
+                        Text(text = "Exams", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = Color.White)
+                    }
                 }
             }
         }
@@ -246,7 +267,7 @@ fun ExamResultCard(exam: ExamSummaryDto, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -263,11 +284,11 @@ fun ExamResultCard(exam: ExamSummaryDto, onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = exam.examName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                Text(text = exam.examName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(
                     text = "${exam.obtainedMarks.toInt()}/${exam.totalMarks}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             GradeBadge(exam.percentage)
@@ -280,7 +301,7 @@ fun SubjectMarkRow(mark: MarkDto, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -288,11 +309,16 @@ fun SubjectMarkRow(mark: MarkDto, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = mark.subject, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (mark.code != null) "${mark.subject} (${mark.code})" else mark.subject, 
+                    style = MaterialTheme.typography.bodyMedium, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 Text(
                     text = "Score: ${mark.score.toInt()}/${mark.total.toInt()}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             GradeBadge(mark.percentage)
@@ -338,10 +364,10 @@ fun MarksEmptyState(message: String, onRetry: () -> Unit = {}) {
                 Icons.Rounded.Inbox,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
-                tint = Color.LightGray
+                tint = MaterialTheme.colorScheme.outline
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = message, color = Color.Gray, style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text(text = message, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Spacer(modifier = Modifier.height(24.dp))
             OutlinedButton(onClick = onRetry) {
                 Text("Refresh")

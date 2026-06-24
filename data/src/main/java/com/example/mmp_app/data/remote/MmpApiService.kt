@@ -43,10 +43,10 @@ interface MmpApiService {
     ): Response<DownloadsResponse>
 
     @GET("v1/student/marks/summary")
-    suspend fun getStudentMarksSummary(): Response<BaseResponse<MarksSummaryDto>>
+    suspend fun getStudentMarksSummary(): Response<BaseResponse<List<ExamSummaryDto>>>
 
     @GET("v1/student/marks/exam/{examId}")
-    suspend fun getMarksByExam(@Path("examId") examId: Int): Response<BaseResponse<ExamDetailDto>>
+    suspend fun getMarksByExam(@Path("examId") examId: String): Response<BaseResponse<ExamDetailDto>>
 
     @GET("v1/student/marks/subject/{subjectId}")
     suspend fun getMarksBySubject(@Path("subjectId") subjectId: Int): Response<BaseResponse<SubjectMarkDto>>

@@ -100,6 +100,16 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
         return sharedPreferences.getString("auth_token", null)
     }
 
+    fun saveCredentials(email: String, password: String) {
+        sharedPreferences.edit()
+            .putString("user_email", email)
+            .putString("user_password", password)
+            .apply()
+    }
+
+    fun getUserEmail(): String? = sharedPreferences.getString("user_email", null)
+    fun getUserPassword(): String? = sharedPreferences.getString("user_password", null)
+
     fun clearSession() {
         sharedPreferences.edit().clear().apply()
     }
