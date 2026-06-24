@@ -62,6 +62,9 @@ class DashboardViewModel @Inject constructor(
     private val _notices = MutableStateFlow<List<NoticeDto>>(emptyList())
     val notices = _notices.asStateFlow()
 
+    private val _downloads = MutableStateFlow<List<SubjectDocument>>(emptyList())
+    val downloads = _downloads.asStateFlow()
+
     private val _classStudents = MutableStateFlow<List<UserDto>>(emptyList())
     val classStudents = _classStudents.asStateFlow()
 
@@ -90,7 +93,8 @@ class DashboardViewModel @Inject constructor(
                 launch { fetchStudentAttendance() },
                 launch { fetchStudentSubjects() },
                 launch { fetchStudentAssignments() },
-                launch { fetchStudentTimetable() }
+                launch { fetchStudentTimetable() },
+                launch { fetchStudentDownloads() }
             )
             
             jobs.joinAll()
@@ -140,6 +144,12 @@ class DashboardViewModel @Inject constructor(
         repository.getStudentTimetable().collect { result ->
             result.onSuccess { _timetable.value = it }
                 .onFailure { _error.value = it.message }
+        }
+    }
+
+    private suspend fun fetchStudentDownloads() {
+        repository.getStudentDownloads().collect { result ->
+            result.onSuccess { _downloads.value = it }
         }
     }
 

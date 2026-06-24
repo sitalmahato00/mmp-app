@@ -65,9 +65,10 @@ fun DashboardScreen(
     val studentData by viewModel.studentDashboard.collectAsState()
     val notices by viewModel.notices.collectAsState()
     val attendanceSummary by viewModel.attendanceSummary.collectAsState()
-    val subjects by viewModel.subjects.collectAsState()
-    val assignments by viewModel.assignments.collectAsState()
-    val timetable by viewModel.timetable.collectAsState()
+    val subjects = viewModel.subjects.collectAsState().value
+    val assignments = viewModel.assignments.collectAsState().value
+    val timetable = viewModel.timetable.collectAsState().value
+    val downloads = viewModel.downloads.collectAsState().value
     val teacherData by viewModel.teacherDashboard.collectAsState()
     val parentData by viewModel.parentDashboard.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -91,6 +92,7 @@ fun DashboardScreen(
         subjects = subjects,
         assignments = assignments,
         timetable = timetable,
+        downloads = downloads,
         teacherData = teacherData,
         parentData = parentData,
         isLoading = isLoading,
@@ -136,6 +138,7 @@ fun DashboardAdaptiveContent(
     subjects: List<SubjectDto> = emptyList(),
     assignments: List<AssignmentDto> = emptyList(),
     timetable: List<ClassDto> = emptyList(),
+    downloads: List<SubjectDocument> = emptyList(),
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
     isLoading: Boolean,
@@ -168,7 +171,7 @@ fun DashboardAdaptiveContent(
         if (isStudent && selectedItem == 0) {
             MainDashboardContent(
                 userProfile, studentData, recentNotices, attendanceSummary, 
-                subjects, assignments, timetable, teacherData, parentData,
+                subjects, assignments, timetable, downloads, teacherData, parentData,
                 onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
                 onNavigateToFees, onNavigateToNotices, onRecordAttendance,
                 onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
@@ -361,7 +364,7 @@ fun DashboardAdaptiveContent(
                                 when (selectedItem) {
                                     0 -> MainDashboardContent(
                                         userProfile, studentData, recentNotices, attendanceSummary, 
-                                        subjects, assignments, timetable, teacherData, parentData,
+                                        subjects, assignments, timetable, downloads, teacherData, parentData,
                                         onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
                                         onNavigateToFees, onNavigateToNotices, onRecordAttendance,
                                         onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
@@ -410,6 +413,7 @@ fun MainDashboardContent(
     subjects: List<SubjectDto>,
     assignments: List<AssignmentDto>,
     timetable: List<ClassDto>,
+    downloads: List<SubjectDocument>,
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
     onNavigateToAttendance: () -> Unit,
@@ -441,6 +445,7 @@ fun MainDashboardContent(
                     subjects = subjects,
                     assignments = assignments,
                     todayClasses = timetable,
+                    materialCount = downloads.size,
                     onAttendanceClick = onNavigateToAttendance,
                     onMarksClick = onNavigateToMarks,
                     onAssignmentsClick = onNavigateToAssignments,

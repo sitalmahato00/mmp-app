@@ -23,6 +23,7 @@ interface DashboardRepository {
     fun getStudentSubjects(): Flow<Result<List<SubjectDto>>>
     fun getStudentTimetable(): Flow<Result<List<ClassDto>>>
     fun getStudentNotices(): Flow<Result<List<NoticeDto>>>
+    fun getStudentDownloads(subjectId: Int? = null): Flow<Result<List<SubjectDocument>>>
     suspend fun recordAttendance(request: AttendanceRecordRequest): Result<Unit>
     suspend fun recordMarks(request: MarkRecordRequest): Result<Unit>
     suspend fun getClassStudents(classId: Int): Result<List<UserDto>>

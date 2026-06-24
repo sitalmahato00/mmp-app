@@ -254,12 +254,12 @@ fun StudentDashboard(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            StatsSummaryCard("Unread Notices", data.kpiCards.unreadNotices.toString(), Icons.Rounded.NotificationsActive, primaryColor, cardBgColor, Modifier.weight(1f), onNoticesClick)
+                            StatsSummaryCard("Unread Notices", recentNotices.size.toString(), Icons.Rounded.NotificationsActive, primaryColor, cardBgColor, Modifier.weight(1f), onNoticesClick)
                             StatsSummaryCard("Downloads", materialCount.toString(), Icons.Rounded.CloudDownload, Color(0xFF0EA5E9), cardBgColor, Modifier.weight(1f), onDownloadsClick)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             StatsSummaryCard("Subjects", subjects.size.toString(), Icons.Rounded.Book, primaryColor, cardBgColor, Modifier.weight(1f), onSubjectsClick)
-                            StatsSummaryCard("Pending Tasks", data.kpiCards.pendingAssignments.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), cardBgColor, Modifier.weight(1f), onAssignmentsClick)
+                            StatsSummaryCard("Pending Tasks", assignments.count { it.status.lowercase() == "pending" }.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), cardBgColor, Modifier.weight(1f), onAssignmentsClick)
                         }
                     }
                 }
@@ -437,6 +437,7 @@ fun AcademicOverviewCard(summary: AttendanceSummaryDto, primaryColor: Color, sec
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     OverviewStatRow("Present", summary.present.toString(), Color(0xFF10B981), textColor)
                     OverviewStatRow("Absent", summary.absent.toString(), Color(0xFFEF4444), textColor)
+                    OverviewStatRow("Late", summary.late.toString(), Color(0xFFF59E0B), textColor)
                     OverviewStatRow("Total", summary.totalClasses.toString(), primaryColor, textColor)
                 }
             }

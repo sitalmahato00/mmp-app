@@ -221,6 +221,19 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getStudentDownloads(subjectId: Int?): Flow<Result<List<SubjectDocument>>> = flow {
+        try {
+            val response = apiService.getDownloads(subjectId)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!.data))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch downloads")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
     override suspend fun recordAttendance(request: AttendanceRecordRequest): Result<Unit> {
         return try {
             handleApiResponse<Unit>(apiService.recordAttendance(request), json)
