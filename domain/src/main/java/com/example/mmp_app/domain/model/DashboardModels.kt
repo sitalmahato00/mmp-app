@@ -69,6 +69,8 @@ data class MarkDto(
     @SerialName("code") val code: String? = null,
     @SerialName("total") val score: Float,
     @SerialName("full_marks") val total: Float = 25f,
+    @SerialName("pass_marks") val passMarks: Float = 10f,
+    @SerialName("attendance") val attendance: String = "100%",
     @SerialName("percentage") val percentage: Float = 0f,
     @SerialName("result") val result: String? = null,
     @SerialName("is_passed") val isPassed: Boolean = true,

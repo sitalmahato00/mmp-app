@@ -227,11 +227,11 @@ class StudentViewModel @Inject constructor(
 
                 val postResponse = withContext(Dispatchers.IO) { client.newCall(postRequest).execute() }
                 
-                // On success, Laravel should redirect (302) and set a new session cookie
+                // On success, Laravel should redirect (302) and set new session cookies
                 val postCookies = postResponse.headers("Set-Cookie")
                 if (postCookies.isNotEmpty()) {
+                    // Capture all cookies (laravel_session, XSRF-TOKEN, etc.)
                     val sessionCookie = postCookies.joinToString("; ") { it.split(";")[0] }
-                    // Combine with initial cookies if needed, but usually the last one is the session
                     _webSessionCookie.value = sessionCookie
                 } else {
                     _error.value = "Failed to obtain web session."
