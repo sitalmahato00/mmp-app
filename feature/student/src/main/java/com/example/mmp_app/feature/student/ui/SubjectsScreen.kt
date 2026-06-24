@@ -1,5 +1,7 @@
 package com.example.mmp_app.feature.student.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,14 +21,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.mmp_app.domain.model.*
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,14 +38,14 @@ fun SubjectsScreen(
     onBack: () -> Unit,
     onSubjectClick: (Int, String, String?) -> Unit
 ) {
-    val viewModel: StudentViewModel = hiltViewModel()
+    val viewModel: SubjectViewModel = hiltViewModel()
 
     val subjects by viewModel.subjects.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val isLoading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadStudentSubjects()
+        viewModel.loadSubjects()
     }
 
     Scaffold(
@@ -67,7 +71,7 @@ fun SubjectsScreen(
                     SubjectsSkeleton()
                 }
                 subjects.isEmpty() && !isLoading -> {
-                    MarksEmptyState(message = "No subjects enrolled yet.")
+                    SubjectEmptyState(message = "No subjects enrolled yet.")
                 }
                 else -> {
                     LazyVerticalGrid(
@@ -77,7 +81,7 @@ fun SubjectsScreen(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(subjects) { subject ->
-                            SubjectCard(subject) {
+                            SubjectListItem(subject) {
                                 onSubjectClick(subject.id, subject.name, subject.code)
                             }
                         }
@@ -86,7 +90,7 @@ fun SubjectsScreen(
             }
             
             if (error != null && subjects.isEmpty()) {
-                ErrorView(error!!) { viewModel.loadStudentSubjects() }
+                ErrorView(error!!) { viewModel.loadSubjects() }
             }
         }
     }
@@ -100,19 +104,19 @@ fun SubjectDetailScreen(
     subjectCode: String?,
     onBack: () -> Unit
 ) {
-    val viewModel: StudentViewModel = hiltViewModel()
+    val viewModel: SubjectViewModel = hiltViewModel()
 
-    val marks by viewModel.subjectMarks.collectAsState()
-    val attendance by viewModel.attendanceBySubject.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val subjectDetail by viewModel.subjectDetail.collectAsState()
+    val documents by viewModel.documents.collectAsState()
+    val isLoading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Marks", "Attendance")
+    val tabs = listOf("Overview", "Syllabus", "Documents")
 
     LaunchedEffect(subjectId) {
-        viewModel.loadMarksBySubject(subjectId)
-        viewModel.loadAttendanceBySubject(subjectId)
+        viewModel.loadSubjectDetail(subjectId)
+        viewModel.loadDocuments(subjectId)
     }
 
     Scaffold(
@@ -159,12 +163,17 @@ fun SubjectDetailScreen(
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
-                if (isLoading && marks == null && attendance == null) {
+                if (isLoading && subjectDetail == null) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (error != null && subjectDetail == null) {
+                    ErrorView(error!!) { viewModel.loadSubjectDetail(subjectId) }
                 } else {
-                    when (selectedTabIndex) {
-                        0 -> SubjectMarksTab(marks)
-                        1 -> SubjectAttendanceTab(attendance)
+                    subjectDetail?.let { detail ->
+                        when (selectedTabIndex) {
+                            0 -> OverviewTab(detail)
+                            1 -> SyllabusTab(detail.syllabus_url)
+                            2 -> DocumentsTab(documents, isLoading)
+                        }
                     }
                 }
             }
@@ -173,7 +182,273 @@ fun SubjectDetailScreen(
 }
 
 @Composable
-fun SubjectCard(subject: SubjectDto, onClick: () -> Unit) {
+fun OverviewTab(detail: SubjectDetail) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    InfoRow(label = "Type", value = when(detail.type) {
+                        "theory" -> "Theory Only"
+                        "practical" -> "Practical Only"
+                        "both" -> "Theory + Practical"
+                        else -> detail.type.capitalize()
+                    })
+                    Spacer(modifier = Modifier.height(8.dp))
+                    InfoRow(label = "Credit Hours", value = "${detail.credit_hours} Credits")
+                    
+                    detail.details?.let {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Marks Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    MarksTableHeader()
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                    
+                    MarksTableRow(
+                        label = "Theory",
+                        internal = detail.marks.internal_theory,
+                        external = detail.marks.external_theory,
+                        total = detail.marks.full_marks_theory.toString()
+                    )
+                    
+                    if (detail.marks.full_marks_practical > 0) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                        MarksTableRow(
+                            label = "Practical",
+                            internal = detail.marks.internal_practical,
+                            external = detail.marks.external_practical,
+                            total = detail.marks.full_marks_practical.toString()
+                        )
+                    }
+                    
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text("Pass Marks", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        Text("—", modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                        Text("—", modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+                        Text(
+                            text = if (detail.marks.full_marks_practical > 0) 
+                                "${detail.marks.pass_marks_theory} / ${detail.marks.pass_marks_practical}"
+                            else 
+                                "${detail.marks.pass_marks_theory}",
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Text("Teachers", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+
+        val teachers = detail.teachers
+        if (teachers.isNullOrEmpty()) {
+            item {
+                Text("No teachers assigned", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+            }
+        } else {
+            items(teachers) { teacher ->
+                TeacherCard(teacher)
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun MarksTableHeader() {
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Spacer(modifier = Modifier.weight(1f))
+        Text("Internal", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text("External", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text("Total", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+    }
+}
+
+@Composable
+fun MarksTableRow(label: String, internal: String, external: String, total: String) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(internal, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
+        Text(external, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
+        Text(total, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun TeacherCard(teacher: TeacherBrief) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = teacher.avatar_url,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
+                placeholder = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(teacher.name ?: "Unknown Teacher", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                teacher.designation?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SyllabusTab(syllabusUrl: String?) {
+    val context = LocalContext.current
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        if (syllabusUrl != null) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Rounded.Description,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(syllabusUrl))
+                    context.startActivity(intent)
+                }) {
+                    Text("View Syllabus")
+                }
+            }
+        } else {
+            Text("Syllabus not uploaded yet", color = Color.Gray)
+        }
+    }
+}
+
+@Composable
+fun DocumentsTab(documents: List<SubjectDocument>, isLoading: Boolean) {
+    val context = LocalContext.current
+    if (isLoading && documents.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (documents.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No documents available for this subject", color = Color.Gray)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(documents) { doc ->
+                DocumentItem(doc) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(doc.file_url))
+                    context.startActivity(intent)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DocumentItem(doc: SubjectDocument, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val icon = if (doc.file_type?.contains("pdf", ignoreCase = true) == true) 
+                Icons.Rounded.PictureAsPdf else Icons.Rounded.Description
+            
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(doc.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                doc.description?.let {
+                    Text(
+                        it, 
+                        style = MaterialTheme.typography.bodySmall, 
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                val category = doc.category
+                if (category != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            category.replace("_", " ").capitalize(),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+            Icon(Icons.Rounded.Download, contentDescription = null, tint = Color.LightGray)
+        }
+    }
+}
+
+@Composable
+fun SubjectListItem(subject: Subject, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -205,15 +480,11 @@ fun SubjectCard(subject: SubjectDto, onClick: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                val subjectCode = subject.code
-                if (subjectCode != null) {
-                    Text(
-                        text = subjectCode,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-
+                Text(
+                    text = subject.code,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
             }
             Icon(
                 Icons.Rounded.ChevronRight,
@@ -225,160 +496,9 @@ fun SubjectCard(subject: SubjectDto, onClick: () -> Unit) {
 }
 
 @Composable
-fun SubjectMarksTab(subjectMark: SubjectMarkDto?) {
-    if (subjectMark == null || subjectMark.marks.isEmpty()) {
-        MarksEmptyState(message = "No marks recorded for this subject.")
-        return
-    }
-
-    val examMarks = subjectMark.marks
-    val avg = examMarks.map { it.percentage }.average().toFloat()
-    val highest = examMarks.maxOf { it.obtainedMarks }
-    val lowest = examMarks.minOf { it.obtainedMarks }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            SubjectStatsCard(avg, highest, lowest)
-        }
-        item {
-            Text("Exam Performance", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        }
-        items(examMarks) { mark ->
-            ExamMarkRow(mark)
-        }
-    }
-}
-
-@Composable
-fun SubjectAttendanceTab(attendance: AttendanceBySubjectDto?) {
-    if (attendance == null) {
-        MarksEmptyState(message = "No attendance records found.")
-        return
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            val statusColor = when {
-                attendance.attendancePercentage >= 75f -> Color(0xFF4CAF50)
-                attendance.attendancePercentage >= 60f -> Color(0xFFFF9800)
-                else -> Color(0xFFF44336)
-            }
-            val statusLabel = when {
-                attendance.attendancePercentage >= 75f -> "Good"
-                attendance.attendancePercentage >= 60f -> "Medium"
-                else -> "Low"
-            }
-            
-            AttendancePercentageCard(attendance.attendancePercentage, statusLabel)
-        }
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard("Total", attendance.totalClasses.toString(), Icons.Rounded.Functions, Color(0xFF2196F3), Modifier.weight(1f))
-                StatCard("Present", attendance.present.toString(), Icons.Rounded.CheckCircle, Color(0xFF4CAF50), Modifier.weight(1f))
-            }
-        }
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard("Absent", attendance.absent.toString(), Icons.Rounded.Cancel, Color(0xFFF44336), Modifier.weight(1f))
-                StatCard("Late", attendance.late.toString(), Icons.Rounded.Schedule, Color(0xFFFF9800), Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-fun SubjectStatsCard(avg: Float, highest: Float, lowest: Float) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Average Marks", style = MaterialTheme.typography.labelMedium)
-                Text(
-                    text = "${avg.toInt()}%",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            VerticalDivider(modifier = Modifier.height(60.dp).padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-            Column {
-                StatLabelValue("Highest", highest.toInt().toString())
-                Spacer(modifier = Modifier.height(8.dp))
-                StatLabelValue("Lowest", lowest.toInt().toString())
-            }
-        }
-    }
-}
-
-@Composable
-fun StatLabelValue(label: String, value: String) {
-    Column {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun ExamMarkRow(mark: ExamMarkDto) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = mark.examName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "Score: ${mark.obtainedMarks.toInt()}/${mark.totalMarks.toInt()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
-                )
-            }
-            SubjectGradeBadge(mark.percentage)
-        }
-    }
-}
-
-@Composable
-fun SubjectGradeBadge(percentage: Float) {
-    val (color, grade) = when {
-        percentage >= 90 -> Color(0xFF4CAF50) to "A"
-        percentage >= 80 -> Color(0xFF2196F3) to "B"
-        percentage >= 70 -> Color(0xFFFFC107) to "C"
-        percentage >= 60 -> Color(0xFFFF9800) to "D"
-        else -> Color(0xFFF44336) to "F"
-    }
-
-    Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color)
-    ) {
-        Text(
-            text = grade,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            color = color,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold
-        )
+fun SubjectEmptyState(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(text = message, color = Color.Gray, textAlign = TextAlign.Center)
     }
 }
 
@@ -400,7 +520,7 @@ fun SubjectsSkeleton() {
 @Composable
 fun ErrorView(message: String, onRetry: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
             Text(text = message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onRetry) {
@@ -409,3 +529,5 @@ fun ErrorView(message: String, onRetry: () -> Unit) {
         }
     }
 }
+
+fun String.capitalize() = replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }

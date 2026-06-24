@@ -32,6 +32,7 @@ kotlin {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":core"))
+    implementation(project(":data"))
     
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -45,4 +46,11 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+
+    // Coil
+    implementation(libs.coil.compose)
 }

@@ -31,6 +31,8 @@ import com.example.mmp_app.feature.parent.ui.ChildDetailsScreen
 import com.example.mmp_app.feature.student.ui.AssignmentsScreen
 import com.example.mmp_app.feature.student.ui.AttendanceScreen
 import com.example.mmp_app.feature.student.ui.MarksScreen
+import com.example.mmp_app.feature.student.ui.StudentProfileScreen
+import com.example.mmp_app.feature.student.ui.SubjectDetailScreen
 import com.example.mmp_app.feature.student.ui.SubjectsScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherAttendanceScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherMarksScreen
@@ -52,14 +54,14 @@ class MainActivity : ComponentActivity() {
             val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
             
             MMPAppTheme(darkTheme = isDarkTheme) {
-                MainContent(authRepository)
+                MainContent(authRepository, isDarkTheme)
             }
         }
     }
 }
 
 @Composable
-fun MainContent(authRepository: AuthRepository) {
+fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
     var splashFinished by remember { mutableStateOf(false) }
     val navigationState = rememberNavigationState(
         startRoute = Routes.Splash,
@@ -179,14 +181,23 @@ fun MainContent(authRepository: AuthRepository) {
             )
         }
         entry<Routes.SubjectDetail> { route ->
-            // SubjectDetailScreen is missing, use placeholder for now or find it
-            PlaceholderScreen("Subject Detail ${route.subjectName}", onBack = { navigator.goBack() })
+            SubjectDetailScreen(
+                subjectId = route.subjectId,
+                subjectName = route.subjectName,
+                subjectCode = route.subjectCode,
+                onBack = { navigator.goBack() }
+            )
         }
         entry<Routes.Routines> { PlaceholderScreen("Routines", onBack = { navigator.goBack() }) }
         entry<Routes.Exams> { PlaceholderScreen("Exams", onBack = { navigator.goBack() }) }
         entry<Routes.Timetable> { PlaceholderScreen("Timetable", onBack = { navigator.goBack() }) }
         entry<Routes.Downloads> { PlaceholderScreen("Study Materials", onBack = { navigator.goBack() }) }
-        entry<Routes.Profile> { PlaceholderScreen("Profile", onBack = { navigator.goBack() }) }
+        entry<Routes.Profile> {
+            StudentProfileScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme
+            )
+        }
         entry<Routes.Settings> { PlaceholderScreen("Settings", onBack = { navigator.goBack() }) }
         entry<Routes.Fees> { PlaceholderScreen("Fees", onBack = { navigator.goBack() }) }
         entry<Routes.Notices> { PlaceholderScreen("Notices", onBack = { navigator.goBack() }) }
