@@ -64,7 +64,7 @@ fun SubjectsScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FA))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             when {
                 isLoading && subjects.isEmpty() -> {
@@ -146,11 +146,11 @@ fun SubjectDetailScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FA))
+                .background(MaterialTheme.colorScheme.background)
         ) {
             TabRow(
                 selectedTabIndex = selectedTabIndex,
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary
             ) {
                 tabs.forEachIndexed { index, title ->
@@ -192,7 +192,7 @@ fun OverviewTab(detail: SubjectDetail) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow(label = "Type", value = when(detail.type) {
@@ -207,7 +207,7 @@ fun OverviewTab(detail: SubjectDetail) {
                     detail.details?.let {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Details", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -217,14 +217,14 @@ fun OverviewTab(detail: SubjectDetail) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Marks Breakdown", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     MarksTableHeader()
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     
                     MarksTableRow(
                         label = "Theory",
@@ -234,7 +234,7 @@ fun OverviewTab(detail: SubjectDetail) {
                     )
                     
                     if (detail.marks.full_marks_practical > 0) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         MarksTableRow(
                             label = "Practical",
                             internal = detail.marks.internal_practical,
@@ -243,7 +243,7 @@ fun OverviewTab(detail: SubjectDetail) {
                         )
                     }
                     
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text("Pass Marks", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         Text("—", modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
@@ -283,8 +283,8 @@ fun OverviewTab(detail: SubjectDetail) {
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -292,9 +292,9 @@ fun InfoRow(label: String, value: String) {
 fun MarksTableHeader() {
     Row(modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.weight(1f))
-        Text("Internal", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text("External", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-        Text("Total", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+        Text("Internal", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("External", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Total", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -313,7 +313,7 @@ fun TeacherCard(teacher: TeacherBrief) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -330,9 +330,9 @@ fun TeacherCard(teacher: TeacherBrief) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(teacher.name ?: "Unknown Teacher", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                Text(teacher.name ?: "Unknown Teacher", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 teacher.designation?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -399,7 +399,7 @@ fun DocumentItem(doc: SubjectDocument, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -416,12 +416,12 @@ fun DocumentItem(doc: SubjectDocument, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(doc.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                Text(doc.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 doc.description?.let {
                     Text(
                         it, 
                         style = MaterialTheme.typography.bodySmall, 
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -442,7 +442,7 @@ fun DocumentItem(doc: SubjectDocument, onClick: () -> Unit) {
                     }
                 }
             }
-            Icon(Icons.Rounded.Download, contentDescription = null, tint = Color.LightGray)
+            Icon(Icons.Rounded.Download, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
         }
     }
 }
@@ -454,7 +454,7 @@ fun SubjectListItem(subject: Subject, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -478,18 +478,19 @@ fun SubjectListItem(subject: Subject, onClick: () -> Unit) {
                 Text(
                     text = subject.name,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = subject.code,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 Icons.Rounded.ChevronRight,
                 contentDescription = null,
-                tint = Color.LightGray
+                tint = MaterialTheme.colorScheme.outline
             )
         }
     }
