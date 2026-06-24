@@ -42,6 +42,9 @@ interface MmpApiService {
         @Query("subject_id") subjectId: Int? = null
     ): Response<DownloadsResponse>
 
+    @GET("v1/student/downloads/{id}/file")
+    suspend fun getDownloadFile(@Path("id") id: Int): Response<DownloadFileResponse>
+
     @GET("v1/student/marks/summary")
     suspend fun getStudentMarksSummary(): Response<BaseResponse<List<ExamSummaryDto>>>
 
@@ -81,7 +84,13 @@ interface MmpApiService {
     suspend fun getStudentTimetable(): Response<BaseResponse<List<ClassDto>>>
 
     @GET("v1/student/notices")
-    suspend fun getStudentNotices(@Query("page") page: Int = 1): Response<BaseResponse<List<NoticeDto>>>
+    suspend fun getStudentNotices(@Query("page") page: Int = 1): Response<NoticesResponse>
+
+    @GET("v1/student/notices/{id}")
+    suspend fun getNoticeDetail(@Path("id") id: Int): Response<NoticeDetailResponse>
+
+    @GET("v1/student/notices/filter/{type}")
+    suspend fun getNoticesByType(@Path("type") type: String, @Query("page") page: Int = 1): Response<NoticesResponse>
 
     // Teacher Endpoints
     @GET("v1/teacher/dashboard")

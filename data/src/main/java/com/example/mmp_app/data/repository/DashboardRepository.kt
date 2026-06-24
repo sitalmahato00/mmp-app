@@ -248,14 +248,15 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getStudentNotices(): Flow<Result<List<NoticeDto>>> = flow {
+    override fun getStudentNotices(page: Int): Flow<Result<List<NoticeDto>>> = flow {
         try {
-            val response = apiService.getStudentNotices()
-            val notices = handleApiResponse(response, json)
+            val response = apiService.getStudentNotices(page)
+            val result = handleRawResponse(response)
+            val notices = result.data
             
             // Cache notices
             dashboardDao.insertNotices(notices.map { 
-                NoticeEntity(it.id, it.title, it.content, it.date, it.type)
+                NoticeEntity(it.id, it.title, it.content, it.publishedAt, it.type, it.attachmentCount)
             })
             
             emit(Result.success(notices))
@@ -264,11 +265,31 @@ class DashboardRepositoryImpl @Inject constructor(
             val cached = dashboardDao.getNotices().firstOrNull()
             if (!cached.isNullOrEmpty()) {
                 emit(Result.success(cached.map { 
-                    NoticeDto(it.id, it.title, it.content, it.type, it.date)
+                    NoticeDto(it.id, it.title, it.content, it.type, it.attachmentCount, it.publishedAt)
                 }))
             } else {
                 emit(Result.failure(e))
             }
+        }
+    }
+
+    override fun getNoticeDetail(id: Int): Flow<Result<NoticeDetailDto>> = flow {
+        try {
+            val response = apiService.getNoticeDetail(id)
+            val result = handleRawResponse(response)
+            emit(Result.success(result.data))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getNoticesByType(type: String, page: Int): Flow<Result<List<NoticeDto>>> = flow {
+        try {
+            val response = apiService.getNoticesByType(type, page)
+            val result = handleRawResponse(response)
+            emit(Result.success(result.data))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
         }
     }
 
@@ -279,6 +300,19 @@ class DashboardRepositoryImpl @Inject constructor(
                 emit(Result.success(response.body()!!.data))
             } else {
                 emit(Result.failure(Exception("Failed to fetch downloads")))
+            }
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getDownloadFile(id: Int): Flow<Result<DownloadFile>> = flow {
+        try {
+            val response = apiService.getDownloadFile(id)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!.data))
+            } else {
+                emit(Result.failure(Exception("Failed to fetch download file URL")))
             }
         } catch (e: Exception) {
             emit(Result.failure(e))

@@ -9,9 +9,10 @@ import kotlinx.serialization.Serializable
 data class NoticeEntity(
     @PrimaryKey val id: Int,
     val title: String,
-    val content: String,
-    val date: String,
-    val type: String // Internal, Public, etc.
+    val content: String?,
+    val publishedAt: String,
+    val type: String?,
+    val attachmentCount: Int = 0
 )
 
 @Entity(tableName = "attendance_summary")

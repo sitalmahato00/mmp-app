@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DashboardDao {
-    @Query("SELECT * FROM notices ORDER BY date DESC")
+    @Query("SELECT * FROM notices ORDER BY publishedAt DESC")
     fun getNotices(): Flow<List<NoticeEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

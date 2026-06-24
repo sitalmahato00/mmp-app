@@ -30,7 +30,10 @@ import com.example.mmp_app.feature.auth.ui.SplashScreen
 import com.example.mmp_app.feature.parent.ui.ChildDetailsScreen
 import com.example.mmp_app.feature.student.ui.AssignmentsScreen
 import com.example.mmp_app.feature.student.ui.AttendanceScreen
+import com.example.mmp_app.feature.student.ui.DownloadsScreen
+import com.example.mmp_app.feature.student.ui.FeesScreen
 import com.example.mmp_app.feature.student.ui.MarksScreen
+import com.example.mmp_app.feature.student.ui.NoticesScreen
 import com.example.mmp_app.feature.student.ui.StudentProfileScreen
 import com.example.mmp_app.feature.student.ui.SubjectDetailScreen
 import com.example.mmp_app.feature.student.ui.SubjectsScreen
@@ -191,16 +194,22 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
         entry<Routes.Routines> { PlaceholderScreen("Routines", onBack = { navigator.goBack() }) }
         entry<Routes.Exams> { PlaceholderScreen("Exams", onBack = { navigator.goBack() }) }
         entry<Routes.Timetable> { PlaceholderScreen("Timetable", onBack = { navigator.goBack() }) }
-        entry<Routes.Downloads> { PlaceholderScreen("Study Materials", onBack = { navigator.goBack() }) }
+        entry<Routes.Downloads> { DownloadsScreen(onBack = { navigator.goBack() }) }
         entry<Routes.Profile> {
             StudentProfileScreen(
                 onBack = { navigator.goBack() },
+                onLogout = {
+                    scope.launch {
+                        authRepository.logout()
+                        authViewModel.resetAuthState()
+                    }
+                },
                 isDarkTheme = isDarkTheme
             )
         }
         entry<Routes.Settings> { PlaceholderScreen("Settings", onBack = { navigator.goBack() }) }
-        entry<Routes.Fees> { PlaceholderScreen("Fees", onBack = { navigator.goBack() }) }
-        entry<Routes.Notices> { PlaceholderScreen("Notices", onBack = { navigator.goBack() }) }
+        entry<Routes.Fees> { FeesScreen(onBack = { navigator.goBack() }) }
+        entry<Routes.Notices> { NoticesScreen(onBack = { navigator.goBack() }) }
         entry<Routes.RecordAttendance> { route ->
             TeacherAttendanceScreen(
                 classId = route.classId,

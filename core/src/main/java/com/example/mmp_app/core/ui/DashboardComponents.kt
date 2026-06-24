@@ -72,8 +72,8 @@ fun NoticeItem(notice: NoticeDto) {
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(text = notice.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text(text = notice.date, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                Text(text = notice.content, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                Text(text = notice.publishedAt, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                Text(text = notice.content ?: "", style = MaterialTheme.typography.bodyMedium, maxLines = 2)
             }
         }
     }
@@ -101,8 +101,9 @@ fun NoticeItemPreview() {
                 id = 1,
                 title = "Holiday Notice",
                 content = "College will remain closed on Friday for the festival celebration.",
-                date = "2024-05-10",
-                type = "General"
+                publishedAt = "2024-05-10",
+                type = "General",
+                attachmentCount = 0
             )
         )
     }

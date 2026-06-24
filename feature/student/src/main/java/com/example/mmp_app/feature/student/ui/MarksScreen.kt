@@ -654,14 +654,14 @@ fun MarksheetPreviewPage(
                                 isWebViewLoading = false
                                 val script = """
                                     (function() {
-                                        const noise = 'nav, .navbar, .sidebar, .btn, button, .no-print, header, footer, aside, [role="navigation"]';
+                                        const noise = 'nav, .navbar, .sidebar, .btn, button, .no-print, header, footer, aside, [role="navigation"], .breadcrumb';
                                         document.querySelectorAll(noise).forEach(el => el.remove());
                                         
-                                        const containerSelectors = ['.card', '.marksheet', '.print-content', 'main', '#app > div:nth-child(2)'];
+                                        const containerSelectors = ['.marksheet', '.card-body', '.print-content', 'main .card', 'main'];
                                         let mainContent = null;
                                         for (const selector of containerSelectors) {
                                             const found = document.querySelector(selector);
-                                            if (found && found.innerText.length > 100) {
+                                            if (found && found.innerText.length > 50) {
                                                 mainContent = found;
                                                 break;
                                             }
@@ -676,17 +676,25 @@ fun MarksheetPreviewPage(
                                             clone.style.padding = '0';
                                             clone.style.boxShadow = 'none';
                                             clone.style.border = 'none';
+                                        } else {
+                                            // Fallback: hide sidebar and nav if we couldn't isolate content
+                                            document.body.style.paddingTop = '0';
+                                            const bodyNoise = '.sidebar, .navbar, header, footer';
+                                            document.querySelectorAll(bodyNoise).forEach(el => el.style.display = 'none');
                                         }
 
                                         const style = document.createElement('style');
                                         style.innerHTML = `
-                                            body { background: white !important; margin: 0 !important; padding: 10px !important; width: 100% !important; overflow-x: hidden !important; }
+                                            body { background: white !important; margin: 0 !important; padding: 15px !important; width: 100% !important; overflow-x: hidden !important; }
                                             * { max-width: 100% !important; box-sizing: border-box !important; }
-                                            table { width: 100% !important; border-collapse: collapse !important; font-size: 10px !important; }
-                                            th, td { padding: 4px !important; border: 1px solid #ddd !important; }
+                                            table { width: 100% !important; border-collapse: collapse !important; font-size: 11px !important; margin-bottom: 20px !important; }
+                                            th, td { padding: 6px !important; border: 1px solid #eee !important; text-align: left !important; }
+                                            th { background-color: #f9fafb !important; font-weight: bold !important; }
                                             .container, .row, .col-md-12 { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-                                            img { height: auto !important; max-width: 150px !important; }
-                                            a[href*="back"], .breadcrumb { display: none !important; }
+                                            h1, h2, h3, h4 { margin-top: 0 !important; color: #111827 !important; }
+                                            img { height: auto !important; max-width: 180px !important; display: block !important; margin: 0 auto 10px !important; }
+                                            .text-center { text-align: center !important; }
+                                            .no-print, .btn, .navbar, .sidebar { display: none !important; }
                                         `;
                                         document.head.appendChild(style);
                                         

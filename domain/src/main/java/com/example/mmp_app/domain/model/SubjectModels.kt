@@ -89,6 +89,18 @@ data class SubjectDetailResponse(
 )
 
 @Serializable
+data class DownloadFile(
+    @SerialName("file_url") val file_url: String,
+    @SerialName("file_name") val file_name: String
+)
+
+@Serializable
+data class DownloadFileResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: DownloadFile
+)
+
+@Serializable
 data class DownloadsPagination(
     @SerialName("current_page") val current_page: Int, 
     @SerialName("last_page") val last_page: Int, 

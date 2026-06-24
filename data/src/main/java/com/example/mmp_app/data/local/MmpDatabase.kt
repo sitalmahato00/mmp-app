@@ -16,7 +16,7 @@ import com.example.mmp_app.data.local.entity.*
         AssignmentEntity::class,
         AttendanceRecordEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class MmpDatabase : RoomDatabase() {

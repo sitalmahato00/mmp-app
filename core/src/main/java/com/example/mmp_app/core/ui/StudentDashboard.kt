@@ -106,6 +106,7 @@ fun StudentDashboard(
                 DrawerMenuItem("Marks & Results", Icons.Rounded.Star) { scope.launch { drawerState.close() }; onResultsClick() }
                 DrawerMenuItem("Assignments", Icons.AutoMirrored.Rounded.Assignment) { scope.launch { drawerState.close() }; onAssignmentsClick() }
                 DrawerMenuItem("Timetable", Icons.Rounded.Schedule) { scope.launch { drawerState.close() }; onTimetableClick() }
+                DrawerMenuItem("Downloads", Icons.Rounded.CloudDownload) { scope.launch { drawerState.close() }; onDownloadsClick() }
                 DrawerMenuItem("Notices", Icons.Rounded.Notifications) { scope.launch { drawerState.close() }; onNoticesClick() }
                 DrawerMenuItem("Notifications", Icons.Rounded.NotificationsActive) { scope.launch { drawerState.close() }; onNotificationsClick() }
                 DrawerMenuItem("Settings", Icons.Rounded.Settings) { scope.launch { drawerState.close() }; onSettingsClick() }
@@ -572,7 +573,7 @@ fun ActivityItem(notice: NoticeDto, primaryColor: Color, textColor: Color, isLas
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.padding(bottom = 24.dp)) {
             Text(text = notice.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = textColor)
-            Text(text = notice.date, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
+            Text(text = notice.publishedAt, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
         }
     }
 }

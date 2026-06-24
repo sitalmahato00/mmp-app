@@ -31,6 +31,7 @@ import com.example.mmp_app.domain.model.StudentDashboardDto
 @Composable
 fun StudentProfileScreen(
     onBack: () -> Unit,
+    onLogout: () -> Unit = {},
     onEditProfile: () -> Unit = {},
     isDarkTheme: Boolean = false
 ) {
@@ -135,7 +136,7 @@ fun StudentProfileScreen(
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
-                        onClick = { /* Handle Logout or other action */ },
+                        onClick = onLogout,
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
                         shape = RoundedCornerShape(16.dp)

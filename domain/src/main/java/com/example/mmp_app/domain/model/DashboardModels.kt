@@ -173,12 +173,47 @@ data class FeesResponse(
 )
 
 @Serializable
+data class NoticeAttachment(
+    @SerialName("id") val id: Int,
+    @SerialName("file_name") val fileName: String,
+    @SerialName("file_type") val fileType: String? = null,
+    @SerialName("file_size") val fileSize: Long? = null,
+    @SerialName("url") val url: String? = null,
+    @SerialName("is_image") val isImage: Boolean = false,
+    @SerialName("is_pdf") val isPdf: Boolean = false
+)
+
+@Serializable
+data class NoticeDetailDto(
+    @SerialName("id") val id: Int,
+    @SerialName("title") val title: String,
+    @SerialName("content") val content: String? = null,
+    @SerialName("type") val type: String? = null,
+    @SerialName("attachments") val attachments: List<NoticeAttachment> = emptyList(),
+    @SerialName("published_at") val publishedAt: String
+)
+
+@Serializable
+data class NoticeDetailResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: NoticeDetailDto
+)
+
+@Serializable
 data class NoticeDto(
     @SerialName("id") val id: Int,
     @SerialName("title") val title: String,
-    @SerialName("description") val content: String,
-    @SerialName("category") val type: String,
-    @SerialName("published_at") val date: String
+    @SerialName("content") val content: String? = null,
+    @SerialName("type") val type: String? = null,
+    @SerialName("attachment_count") val attachmentCount: Int = 0,
+    @SerialName("published_at") val publishedAt: String
+)
+
+@Serializable
+data class NoticesResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: List<NoticeDto>,
+    @SerialName("pagination") val pagination: PaginationDto
 )
 
 @Serializable

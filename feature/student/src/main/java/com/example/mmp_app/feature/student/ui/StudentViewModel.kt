@@ -69,6 +69,15 @@ class StudentViewModel @Inject constructor(
     private val _fees = MutableStateFlow<FeesResponse?>(null)
     val fees = _fees.asStateFlow()
 
+    private val _notices = MutableStateFlow<List<NoticeDto>>(emptyList())
+    val notices = _notices.asStateFlow()
+
+    private val _noticeDetail = MutableStateFlow<NoticeDetailDto?>(null)
+    val noticeDetail = _noticeDetail.asStateFlow()
+
+    private val _downloads = MutableStateFlow<List<SubjectDocument>>(emptyList())
+    val downloads = _downloads.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -241,6 +250,50 @@ class StudentViewModel @Inject constructor(
             repository.getStudentFees().collect { result ->
                 _isLoading.value = false
                 result.onSuccess { _fees.value = it }.onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun loadStudentNotices(type: String = "all", page: Int = 1) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val flow = if (type == "all") {
+                repository.getStudentNotices(page)
+            } else {
+                repository.getNoticesByType(type, page)
+            }
+            
+            flow.collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _notices.value = it }
+                    .onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun loadNoticeDetail(id: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _noticeDetail.value = null
+            repository.getNoticeDetail(id).collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _noticeDetail.value = it }
+                    .onFailure { _error.value = it.message }
+            }
+        }
+    }
+
+    fun clearNoticeDetail() {
+        _noticeDetail.value = null
+    }
+
+    fun loadStudentDownloads(subjectId: Int? = null) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getStudentDownloads(subjectId).collect { result ->
+                _isLoading.value = false
+                result.onSuccess { _downloads.value = it }
+                    .onFailure { _error.value = it.message }
             }
         }
     }
