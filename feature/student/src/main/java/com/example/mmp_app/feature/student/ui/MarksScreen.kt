@@ -642,13 +642,13 @@ fun OfficialMarksheetView(student: StudentDashboardDto?, exam: ExamSummaryDto) {
                 textAlign = TextAlign.Center
             )
             Text(
-                student?.program ?: "Computer Engineering",
+                student?.program?.replace("Diploma in ", "") ?: "Computer Engineering",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF4B5563),
                 textAlign = TextAlign.Center
             )
             Text(
-                "Diploma in ${student?.program ?: "Computer Engineering"}",
+                if (student?.program?.contains("Diploma") == true) student.program else "Diploma in ${student?.program ?: "Computer Engineering"}",
                 style = MaterialTheme.typography.labelMedium,
                 color = Color(0xFF6B7280),
                 textAlign = TextAlign.Center
@@ -822,7 +822,7 @@ fun OfficialMarksheetView(student: StudentDashboardDto?, exam: ExamSummaryDto) {
                 Text("Head of Department", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(modifier = Modifier.width(140.dp), color = Color(0xFF111827), thickness = 1.dp)
-                Text(student?.program ?: "Computer Engineering", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF111827))
+                Text(student?.program?.replace("Diploma in ", "") ?: "Computer Engineering", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF111827))
             }
         }
         
