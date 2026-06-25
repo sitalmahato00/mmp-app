@@ -26,12 +26,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.core.R
+import com.example.mmp_app.core.presentation.ThemeViewModel
 import com.example.mmp_app.core.ui.theme.MMPAppTheme
 import com.example.mmp_app.core.ui.StudentDashboard
 
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.feature.teacher.ui.TeacherDashboard
 import com.example.mmp_app.feature.parent.ui.ParentDashboard
+import com.example.mmp_app.feature.student.ui.NotificationViewModel
 import kotlinx.coroutines.launch
 
 
@@ -56,10 +58,14 @@ fun DashboardScreen(
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
 ) {
     val viewModel: DashboardViewModel = hiltViewModel()
     val themeViewModel: ThemeViewModel = hiltViewModel()
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
+    val notificationState by notificationViewModel.uiState.collectAsState()
+    
     val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
     
     val studentData by viewModel.studentDashboard.collectAsState()
@@ -123,6 +129,8 @@ fun DashboardScreen(
         onNavigateToDownloads = onNavigateToDownloads,
         onNavigateToProfile = onNavigateToProfile,
         onNavigateToSettings = onNavigateToSettings,
+        onNavigateToNotifications = onNavigateToNotifications,
+        unreadCount = notificationState.unreadCount,
         isDarkTheme = isDarkTheme,
         onToggleTheme = { themeViewModel.toggleTheme() }
     )
@@ -137,7 +145,7 @@ fun DashboardAdaptiveContent(
     attendanceSummary: AttendanceSummaryDto? = null,
     subjects: List<SubjectDto> = emptyList(),
     assignments: List<AssignmentDto> = emptyList(),
-    timetable: List<ClassDto> = emptyList(),
+    timetable: List<TimetableClass> = emptyList(),
     downloads: List<SubjectDocument> = emptyList(),
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
@@ -161,6 +169,8 @@ fun DashboardAdaptiveContent(
     onNavigateToDownloads: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
 ) {
@@ -177,7 +187,8 @@ fun DashboardAdaptiveContent(
                 onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
                 onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
                 onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
-                onLogout, isDarkTheme, onToggleTheme
+                onNavigateToSettings, onNavigateToNotifications, onLogout, 
+                unreadCount, isDarkTheme, onToggleTheme
             )
         } else {
             // Otherwise, use the standard adaptive layout
@@ -281,8 +292,14 @@ fun DashboardAdaptiveContent(
                                 IconButton(onClick = onToggleTheme) {
                                     Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
                                 }
-                                IconButton(onClick = onNavigateToNotices) {
-                                    Icon(Icons.Rounded.NotificationsNone, null)
+                                IconButton(onClick = onNavigateToNotifications) {
+                                    BadgedBox(badge = {
+                                        if (unreadCount > 0) {
+                                            Badge { Text(unreadCount.toString()) }
+                                        }
+                                    }) {
+                                        Icon(Icons.Rounded.NotificationsNone, null)
+                                    }
                                 }
                             }
                         )
@@ -370,7 +387,8 @@ fun DashboardAdaptiveContent(
                                         onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
                                         onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
                                         onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
-                                        onLogout, isDarkTheme, onToggleTheme
+                                        onNavigateToSettings, onNavigateToNotifications, onLogout, 
+                                        unreadCount, isDarkTheme, onToggleTheme
                                     )
                                     1 -> if (userProfile?.role?.lowercase() == "student") {
                                         SubjectsScreenContent(onNavigateToSubjects)
@@ -412,7 +430,7 @@ fun MainDashboardContent(
     attendanceSummary: AttendanceSummaryDto?,
     subjects: List<SubjectDto>,
     assignments: List<AssignmentDto>,
-    timetable: List<ClassDto>,
+    timetable: List<TimetableClass>,
     downloads: List<SubjectDocument>,
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
@@ -431,7 +449,10 @@ fun MainDashboardContent(
     onNavigateToTimetable: () -> Unit,
     onNavigateToDownloads: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit,
+    unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {}
 ) {
@@ -458,7 +479,10 @@ fun MainDashboardContent(
                     onTimetableClick = onNavigateToTimetable,
                     onDownloadsClick = onNavigateToDownloads,
                     onProfileClick = onNavigateToProfile,
+                    onSettingsClick = onNavigateToSettings,
+                    onNotificationsClick = onNavigateToNotifications,
                     onLogoutClick = onLogout,
+                    unreadCount = unreadCount,
                     isDarkTheme = isDarkTheme,
                     onToggleTheme = onToggleTheme
                 )

@@ -83,7 +83,10 @@ interface MmpApiService {
     suspend fun getSubmissionStatus(@Path("submissionId") submissionId: Int): Response<SubmissionStatusResponse>
 
     @GET("v1/student/timetable")
-    suspend fun getStudentTimetable(): Response<BaseResponse<List<ClassDto>>>
+    suspend fun getTimetable(): Response<BaseResponse<TimetableData>>
+
+    @GET("v1/student/timetable/{day}")
+    suspend fun getTimetableByDay(@Path("day") day: String): Response<BaseResponse<DaySchedule>>
 
     @GET("v1/student/notices")
     suspend fun getStudentNotices(@Query("page") page: Int = 1): Response<NoticesResponse>
@@ -117,6 +120,57 @@ interface MmpApiService {
     @GET("v1/parent/child/{childId}/dashboard")
     suspend fun getChildDashboard(@Path("childId") childId: Int): Response<BaseResponse<StudentDashboardDto>>
 
+    // Notification Endpoints
+    @GET("v1/notifications")
+    suspend fun getNotifications(
+        @Query("filter") filter: String = "all",
+        @Query("per_page") perPage: Int = 15,
+        @Query("page") page: Int = 1
+    ): Response<BaseResponse<NotificationListData>>
+
+    @GET("v1/notifications/unread-count")
+    suspend fun getUnreadCount(): Response<BaseResponse<UnreadCountData>>
+
+    @POST("v1/notifications/mark-all-read")
+    suspend fun markAllRead(): Response<BaseResponse<UnreadCountData>>
+
+    @POST("v1/notifications/{id}/mark-read")
+    suspend fun markRead(@Path("id") id: String): Response<BaseResponse<MarkReadData>>
+
+    @DELETE("v1/notifications/{id}")
+    suspend fun deleteNotification(@Path("id") id: String): Response<BaseResponse<Unit>>
+
     @GET("v1/student/fees")
     suspend fun getStudentFees(): Response<FeesResponse>
+
+    // User/Settings Endpoints
+    @GET("v1/user")
+    suspend fun getCurrentUser(): Response<BaseResponse<FullUserDataDto>>
+
+    @Multipart
+    @POST("v1/user/profile")
+    suspend fun updateProfile(
+        @Part("name") name: RequestBody,
+        @Part("phone") phone: RequestBody?,
+        @Part("gender") gender: RequestBody?,
+        @Part("dob") dob: RequestBody?,
+        @Part("address") address: RequestBody?,
+        @Part avatar: MultipartBody.Part?,
+        @Query("_method") method: String = "PUT"
+    ): Response<BaseResponse<UserDataDto>>
+
+    @PUT("v1/user/profile")
+    suspend fun updateProfileJson(@Body body: Map<String, String?>): Response<BaseResponse<UserDataDto>>
+
+    @POST("v1/user/change-password")
+    suspend fun changePassword(@Body body: ChangePasswordRequest): Response<BaseResponse<TokenDataDto>>
+
+    @PUT("v1/user/notification-preferences")
+    suspend fun updateNotificationPreferences(@Body body: NotificationPreferencesRequest): Response<BaseResponse<NotificationPreferencesDataDto>>
+
+    @PUT("v1/user/two-factor")
+    suspend fun updateTwoFactor(@Body body: TwoFactorRequest): Response<BaseResponse<TwoFactorDataDto>>
+
+    @POST("auth/refresh-token")
+    suspend fun refreshToken(): Response<BaseResponse<TokenDataDto>>
 }

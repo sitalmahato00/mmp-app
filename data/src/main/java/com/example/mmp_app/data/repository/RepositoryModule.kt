@@ -2,6 +2,8 @@ package com.example.mmp_app.data.repository
 
 import com.example.mmp_app.domain.repository.AuthRepository
 import com.example.mmp_app.domain.repository.DashboardRepository
+import com.example.mmp_app.domain.repository.NotificationRepository
+import com.example.mmp_app.domain.repository.SettingsRepository
 import dagger.Binds
 
 import dagger.Module
@@ -25,4 +27,16 @@ abstract class RepositoryModule {
     abstract fun bindDashboardRepository(
         dashboardRepositoryImpl: DashboardRepositoryImpl
     ): DashboardRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(
+        settingsRepositoryImpl: SettingsRepositoryImpl
+    ): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(
+        notificationRepositoryImpl: NotificationRepositoryImpl
+    ): NotificationRepository
 }

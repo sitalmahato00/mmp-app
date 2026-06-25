@@ -1,6 +1,7 @@
 package com.example.mmp_app.data.di
 
 import com.example.mmp_app.core.network.AuthInterceptor
+import com.example.mmp_app.core.network.TokenAuthenticator
 import com.example.mmp_app.data.remote.MmpApiService
 import dagger.Module
 import dagger.Provides
@@ -42,11 +43,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
+        tokenAuthenticator: TokenAuthenticator,
         loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

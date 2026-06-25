@@ -45,7 +45,7 @@ fun StudentDashboard(
     subjects: List<SubjectDto> = emptyList(),
     assignments: List<AssignmentDto> = emptyList(),
     recentNotices: List<NoticeDto> = emptyList(),
-    todayClasses: List<ClassDto> = emptyList(),
+    todayClasses: List<TimetableClass> = emptyList(),
     materialCount: Int = 12,
 
     onAttendanceClick: () -> Unit = {},
@@ -65,6 +65,7 @@ fun StudentDashboard(
     onNotificationsClick: () -> Unit = {},
     onIdCardClick: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
+    unreadCount: Int = 0,
     isDarkTheme: Boolean = false
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -157,7 +158,13 @@ fun StudentDashboard(
                             )
                         }
                         IconButton(onClick = onNotificationsClick) {
-                            Icon(Icons.Rounded.NotificationsNone, contentDescription = "Notifications", tint = textColor.copy(alpha = 0.7f))
+                            BadgedBox(badge = {
+                                if (unreadCount > 0) {
+                                    Badge { Text(unreadCount.toString()) }
+                                }
+                            }) {
+                                Icon(Icons.Rounded.NotificationsNone, contentDescription = "Notifications", tint = textColor.copy(alpha = 0.7f))
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -291,9 +298,16 @@ fun StudentDashboard(
                 if (todayClasses.isNotEmpty()) {
                     item {
                         Column {
-                            Text(text = "Today's Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "Today's Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
+                                Text(text = "View All", style = MaterialTheme.typography.labelLarge, color = primaryColor, modifier = Modifier.clickable { onTimetableClick() })
+                            }
                             Spacer(modifier = Modifier.height(16.dp))
-                            todayClasses.forEach { cls ->
+                            todayClasses.take(3).forEach { cls ->
                                 ModernScheduleCard(cls, primaryColor, textColor, cardBgColor)
                             }
                         }
@@ -493,18 +507,51 @@ fun SubjectMiniCard(subject: SubjectDto, primaryColor: Color, textColor: Color, 
 }
 
 @Composable
-fun ModernScheduleCard(cls: ClassDto, primaryColor: Color, textColor: Color, cardBgColor: Color) {
-    Card(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = cardBgColor), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+fun ModernScheduleCard(cls: TimetableClass, primaryColor: Color, textColor: Color, cardBgColor: Color) {
+    val displaySubject = if (cls.subject == null && cls.subjectCode == null) "Free Period" else cls.subject ?: "TBA"
+    val displayTeacher = cls.teacher ?: "TBA"
+    val displayRoom = cls.room ?: "TBA"
+    val typeColor = if (cls.type?.lowercase() == "lab") Color(0xFFF59E0B) else primaryColor
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.width(80.dp)) {
-                Text(text = cls.time.split(" ").firstOrNull() ?: "", fontWeight = FontWeight.Bold, color = textColor)
-                Text(text = cls.time.split(" ").lastOrNull() ?: "", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
+                Text(text = cls.startTime, fontWeight = FontWeight.Bold, color = textColor)
+                Text(text = cls.endTime, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
             }
-            Box(modifier = Modifier.width(3.dp).height(32.dp).background(primaryColor, CircleShape))
+            Box(modifier = Modifier.width(3.dp).height(40.dp).background(typeColor, CircleShape))
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(text = cls.subject, fontWeight = FontWeight.Bold, color = textColor)
-                Text(text = "Room ${cls.room}", style = MaterialTheme.typography.labelMedium, color = textColor.copy(alpha = 0.5f))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = displaySubject, fontWeight = FontWeight.Bold, color = textColor, maxLines = 1)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Room, contentDescription = null, modifier = Modifier.size(12.dp), tint = textColor.copy(alpha = 0.5f))
+                    Spacer(Modifier.width(4.dp))
+                    Text(text = displayRoom, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
+                    Spacer(Modifier.width(12.dp))
+                    Icon(Icons.Rounded.Person, contentDescription = null, modifier = Modifier.size(12.dp), tint = textColor.copy(alpha = 0.5f))
+                    Spacer(Modifier.width(4.dp))
+                    Text(text = displayTeacher, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f), maxLines = 1)
+                }
+            }
+            val clsType = cls.type
+            if (clsType != null) {
+                Surface(
+                    color = typeColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = clsType.lowercase().replaceFirstChar { it.uppercase() },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        color = typeColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

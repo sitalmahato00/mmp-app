@@ -56,7 +56,7 @@ class DashboardViewModel @Inject constructor(
     private val _subjects = MutableStateFlow<List<SubjectDto>>(emptyList())
     val subjects = _subjects.asStateFlow()
 
-    private val _timetable = MutableStateFlow<List<ClassDto>>(emptyList())
+    private val _timetable = MutableStateFlow<List<TimetableClass>>(emptyList())
     val timetable = _timetable.asStateFlow()
 
     private val _notices = MutableStateFlow<List<NoticeDto>>(emptyList())
@@ -141,8 +141,11 @@ class DashboardViewModel @Inject constructor(
     }
 
     private suspend fun fetchStudentTimetable() {
-        repository.getStudentTimetable().collect { result ->
-            result.onSuccess { _timetable.value = it }
+        val today = java.util.Calendar.getInstance()
+            .getDisplayName(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.LONG, java.util.Locale.ENGLISH) ?: "Monday"
+        
+        repository.getTimetableByDay(today).collect { result ->
+            result.onSuccess { _timetable.value = it.classes }
                 .onFailure { _error.value = it.message }
         }
     }
@@ -329,10 +332,13 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
-            repository.getStudentTimetable().collect { result ->
+            val today = java.util.Calendar.getInstance()
+                .getDisplayName(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.LONG, java.util.Locale.ENGLISH) ?: "Monday"
+
+            repository.getTimetableByDay(today).collect { result ->
                 _isLoading.value = false
                 result.onSuccess {
-                    _timetable.value = it
+                    _timetable.value = it.classes
                 }.onFailure {
                     _error.value = it.message
                 }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
@@ -34,12 +35,16 @@ import com.example.mmp_app.feature.student.ui.DownloadsScreen
 import com.example.mmp_app.feature.student.ui.FeesScreen
 import com.example.mmp_app.feature.student.ui.MarksScreen
 import com.example.mmp_app.feature.student.ui.NoticesScreen
+import com.example.mmp_app.feature.student.ui.NotificationScreen
+import com.example.mmp_app.feature.student.ui.SettingsScreen
 import com.example.mmp_app.feature.student.ui.StudentProfileScreen
 import com.example.mmp_app.feature.student.ui.SubjectDetailScreen
 import com.example.mmp_app.feature.student.ui.SubjectsScreen
+import com.example.mmp_app.feature.student.ui.TimetableScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherAttendanceScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherMarksScreen
 import com.example.mmp_app.presentation.*
+import com.example.mmp_app.core.presentation.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -65,6 +70,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
+    val context = LocalContext.current
     var splashFinished by remember { mutableStateOf(false) }
     val navigationState = rememberNavigationState(
         startRoute = Routes.Splash,
@@ -160,11 +166,12 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToTimetable = { navigator.navigate(Routes.Timetable) },
                 onNavigateToDownloads = { navigator.navigate(Routes.Downloads) },
                 onNavigateToProfile = { navigator.navigate(Routes.Profile) },
-                onNavigateToSettings = { navigator.navigate(Routes.Settings) }
+                onNavigateToSettings = { navigator.navigate(Routes.Settings) },
+                onNavigateToNotifications = { navigator.navigate(Routes.Notifications) }
             )
         }
         entry<Routes.Attendance> {
-            AttendanceScreen(onBack = { navigator.goBack() })
+            AttendanceScreen(onBack = { navigator.goBack() }, isDarkTheme = isDarkTheme)
         }
         entry<Routes.Marks> {
             MarksScreen(onBack = { navigator.goBack() })
@@ -193,7 +200,7 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
         }
         entry<Routes.Routines> { PlaceholderScreen("Routines", onBack = { navigator.goBack() }) }
         entry<Routes.Exams> { PlaceholderScreen("Exams", onBack = { navigator.goBack() }) }
-        entry<Routes.Timetable> { PlaceholderScreen("Timetable", onBack = { navigator.goBack() }) }
+        entry<Routes.Timetable> { TimetableScreen(onBack = { navigator.goBack() }) }
         entry<Routes.Downloads> { DownloadsScreen(onBack = { navigator.goBack() }) }
         entry<Routes.Profile> {
             StudentProfileScreen(
@@ -204,10 +211,28 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                         authViewModel.resetAuthState()
                     }
                 },
+                onEditProfile = { navigator.navigate(Routes.Settings) },
                 isDarkTheme = isDarkTheme
             )
         }
-        entry<Routes.Settings> { PlaceholderScreen("Settings", onBack = { navigator.goBack() }) }
+        entry<Routes.Settings> { SettingsScreen(onBack = { navigator.goBack() }) }
+        entry<Routes.Notifications> { 
+            NotificationScreen(
+                onBack = { navigator.goBack() },
+                onOpenUrl = { url ->
+                    try {
+                        val intent = androidx.browser.customtabs.CustomTabsIntent.Builder().build()
+                        intent.launchUrl(cont
+
+                                ext, android.net.Uri.parse(url))
+                    } catch (e: Exception) {
+                        // Fallback to basic browser intent if custom tabs fail
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        context.startActivity(intent)
+                    }
+                }
+            )
+        }
         entry<Routes.Fees> { FeesScreen(onBack = { navigator.goBack() }) }
         entry<Routes.Notices> { NoticesScreen(onBack = { navigator.goBack() }) }
         entry<Routes.RecordAttendance> { route ->

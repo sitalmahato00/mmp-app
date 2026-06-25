@@ -239,9 +239,18 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getStudentTimetable(): Flow<Result<List<ClassDto>>> = flow {
+    override fun getTimetable(): Flow<Result<TimetableData>> = flow {
         try {
-            val response = apiService.getStudentTimetable()
+            val response = apiService.getTimetable()
+            emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getTimetableByDay(day: String): Flow<Result<DaySchedule>> = flow {
+        try {
+            val response = apiService.getTimetableByDay(day)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
             emit(Result.failure(e))

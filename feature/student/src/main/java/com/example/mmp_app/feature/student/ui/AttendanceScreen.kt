@@ -32,7 +32,8 @@ import com.example.mmp_app.domain.model.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AttendanceScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isDarkTheme: Boolean = false
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
 
@@ -106,9 +107,9 @@ fun AttendanceScreen(
 
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selectedTabIndex) {
-                    0 -> AttendanceSummaryView(summary, attendanceDetails, isLoading, error)
+                    0 -> AttendanceSummaryView(summary, attendanceDetails, isLoading, error, isDarkTheme)
                     1 -> AttendanceDetailView(attendanceDetails, isLoading, error)
-                    2 -> AttendanceBySubjectView(summary, attendanceDetails, isLoading)
+                    2 -> AttendanceBySubjectView(summary, attendanceDetails, isLoading, isDarkTheme)
                 }
             }
         }
@@ -120,7 +121,8 @@ fun AttendanceSummaryView(
     summary: AttendanceSummaryDto?,
     details: List<AttendanceDto>,
     isLoading: Boolean,
-    error: String?
+    error: String?,
+    isDarkTheme: Boolean = false
 ) {
     if (isLoading && summary == null) {
         AttendanceSummarySkeleton()
@@ -594,7 +596,8 @@ fun FooterStat(label: String, count: String, percent: String, color: Color) {
 fun AttendanceBySubjectView(
     summary: AttendanceSummaryDto?,
     details: List<AttendanceDto>,
-    isLoading: Boolean
+    isLoading: Boolean,
+    isDarkTheme: Boolean = false
 ) {
     val subjectAttendance = remember(details) {
         details.filter { it.subject != null }
@@ -645,12 +648,12 @@ fun AttendanceBySubjectView(
             val lowAttendanceSubjects = subjectAttendance.filter { it.attendancePercentage < 75 }
             if (lowAttendanceSubjects.isNotEmpty()) {
                 item {
-                    AttendanceRiskSection(lowAttendanceSubjects)
+                    AttendanceRiskSection(lowAttendanceSubjects, isDarkTheme)
                 }
             }
             
             item {
-                SubjectAnalyticsChart(subjectAttendance)
+                SubjectAnalyticsChart(subjectAttendance, isDarkTheme)
             }
         }
     }
@@ -759,12 +762,17 @@ fun SubjectAttendanceCard(subject: AttendanceBySubjectDto) {
 }
 
 @Composable
-fun AttendanceRiskSection(lowAttendanceSubjects: List<AttendanceBySubjectDto>) {
+fun AttendanceRiskSection(lowAttendanceSubjects: List<AttendanceBySubjectDto>, isDarkTheme: Boolean = false) {
+    val containerColor = if (isDarkTheme) Color(0xFF451A03).copy(alpha = 0.5f) else Color(0xFFFFF3E0)
+    val borderColor = if (isDarkTheme) Color(0xFF78350F) else Color(0xFFFFCC80)
+    val titleColor = if (isDarkTheme) Color(0xFFFB923C) else Color(0xFFE65100)
+    val bodyColor = if (isDarkTheme) Color.White.copy(alpha = 0.8f) else Color.DarkGray
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFCC80))
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -775,10 +783,10 @@ fun AttendanceRiskSection(lowAttendanceSubjects: List<AttendanceBySubjectDto>) {
             Column {
                 Text("⚠ Low Attendance Warning", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
                 lowAttendanceSubjects.forEach { subject ->
-                    Text("${subject.subjectName} (${subject.attendancePercentage.toInt()}%)", style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
+                    Text("${subject.subjectName} (${subject.attendancePercentage.toInt()}%)", style = MaterialTheme.typography.bodySmall, color = bodyColor)
                     val needed = ((0.75f * subject.totalClasses) - subject.present).coerceAtLeast(0f).toInt()
                     if (needed > 0) {
-                        Text("Need $needed more classes to reach 75% threshold", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Text("Need $needed more classes to reach 75% threshold", style = MaterialTheme.typography.labelSmall, color = if (isDarkTheme) Color.LightGray.copy(alpha = 0.7f) else Color.Gray)
                     }
                 }
             }
@@ -787,7 +795,7 @@ fun AttendanceRiskSection(lowAttendanceSubjects: List<AttendanceBySubjectDto>) {
 }
 
 @Composable
-fun SubjectAnalyticsChart(subjectAttendance: List<AttendanceBySubjectDto>) {
+fun SubjectAnalyticsChart(subjectAttendance: List<AttendanceBySubjectDto>, isDarkTheme: Boolean = false) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Semester Analytics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
@@ -795,23 +803,23 @@ fun SubjectAnalyticsChart(subjectAttendance: List<AttendanceBySubjectDto>) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF0F2F5))
+            colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White),
+            border = androidx.compose.foundation.BorderStroke(1.dp, if (isDarkTheme) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF0F2F5))
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 subjectAttendance.forEach { subject ->
                     val percent = subject.attendancePercentage
                     Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(subject.subjectName, style = MaterialTheme.typography.labelMedium, color = Color.DarkGray, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                            Text("${percent.toInt()}%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1A56BE))
+                            Text(subject.subjectName, style = MaterialTheme.typography.labelMedium, color = if (isDarkTheme) Color.LightGray else Color.DarkGray, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            Text("${percent.toInt()}%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = if (isDarkTheme) MaterialTheme.colorScheme.primary else Color(0xFF1A56BE))
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         LinearProgressIndicator(
                             progress = { percent / 100f },
                             modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                            color = if (percent < 75) Color(0xFFFF9800) else Color(0xFF1A56BE),
-                            trackColor = Color(0xFFF0F2F5),
+                            color = if (percent < 75) Color(0xFFFF9800) else if (isDarkTheme) MaterialTheme.colorScheme.primary else Color(0xFF1A56BE),
+                            trackColor = if (isDarkTheme) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFF0F2F5),
                             strokeCap = StrokeCap.Round
                         )
                     }

@@ -1,4 +1,4 @@
-package com.example.mmp_app.presentation
+package com.example.mmp_app.core.presentation
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel

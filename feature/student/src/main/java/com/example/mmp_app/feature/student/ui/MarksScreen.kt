@@ -44,7 +44,8 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MarksScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isDarkTheme: Boolean = false
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
 
@@ -119,7 +120,7 @@ fun MarksScreen(
         Box(modifier = Modifier
             .padding(padding)
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))) {
+            .background(MaterialTheme.colorScheme.background)) {
             
             when {
                 isLoading && (summary == null && examDetail == null && subjectMarks == null) -> {
@@ -139,16 +140,18 @@ fun MarksScreen(
                             onViewOfficialMarksheet = { exam ->
                                 selectedExamForMarksheet = exam
                                 showOfficialMarksheet = true
-                            }
+                            },
+                            isDarkTheme = isDarkTheme
                         )
                         MarksView.ExamDetail -> ExamDetailView(
                             examDetail,
                             onViewOfficialMarksheet = { exam ->
                                 selectedExamForMarksheet = exam
                                 showOfficialMarksheet = true
-                            }
+                            },
+                            isDarkTheme = isDarkTheme
                         )
-                        MarksView.SubjectMarks -> SubjectMarksView(subjectMarks)
+                        MarksView.SubjectMarks -> SubjectMarksView(subjectMarks, isDarkTheme)
                     }
                 }
             }
@@ -196,7 +199,8 @@ sealed class MarksView {
 fun MarksSummaryView(
     summary: MarksSummaryDto,
     onExamClick: (String) -> Unit,
-    onViewOfficialMarksheet: (ExamSummaryDto) -> Unit
+    onViewOfficialMarksheet: (ExamSummaryDto) -> Unit,
+    isDarkTheme: Boolean = false
 ) {
     // Calculate Overall Average if not provided accurately by API
     // Formula: sum(obtained) / sum(full) * 100
@@ -222,7 +226,8 @@ fun MarksSummaryView(
             EnhancedExamCard(
                 exam = exam,
                 onCardClick = { onExamClick(exam.examId) },
-                onViewOfficialMarksheet = { onViewOfficialMarksheet(exam) }
+                onViewOfficialMarksheet = { onViewOfficialMarksheet(exam) },
+                isDarkTheme = isDarkTheme
             )
         }
     }
@@ -314,21 +319,27 @@ fun ResultOverviewCard(average: Float, totalExams: Int, allPassed: Boolean) {
 fun EnhancedExamCard(
     exam: ExamSummaryDto,
     onCardClick: () -> Unit = {},
-    onViewOfficialMarksheet: () -> Unit
+    onViewOfficialMarksheet: () -> Unit,
+    isDarkTheme: Boolean = false
 ) {
     val totalObtained = exam.subjects.sumOf { it.score.toDouble() }
     val totalFull = exam.subjects.sumOf { it.total.toDouble() }.let { if (it == 0.0) exam.subjects.size * 25.0 else it }
     val percentage = if (totalFull > 0) (totalObtained / totalFull * 100) else 0.0
     val allPassed = exam.subjects.all { it.isPassed }
     
+    val cardBg = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+    val borderColor = if (isDarkTheme) MaterialTheme.colorScheme.outlineVariant else Color(0xFFF3F4F6)
+    val titleColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFF1F2937)
+    val subTitleColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCardClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = BorderStroke(1.dp, Color(0xFFF3F4F6))
+        border = BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -342,7 +353,7 @@ fun EnhancedExamCard(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = titleColor
                 )
                 
                 Surface(
@@ -373,7 +384,7 @@ fun EnhancedExamCard(
             Text(
                 text = "${exam.category ?: "Assessment"} • ${exam.startDate ?: "2026-05-23"}",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF6B7280)
+                color = subTitleColor
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -383,7 +394,7 @@ fun EnhancedExamCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Obtained", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text("Obtained", style = MaterialTheme.typography.labelSmall, color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF9CA3AF))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = totalObtained.format(2),
@@ -395,24 +406,24 @@ fun EnhancedExamCard(
                             text = " / ${totalFull.toInt()}",
                             modifier = Modifier.padding(start = 2.dp, bottom = 2.dp),
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF6B7280)
+                            color = subTitleColor
                         )
                     }
                 }
                 
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Percentage", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                    Text("Percentage", style = MaterialTheme.typography.labelSmall, color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF9CA3AF))
                     Text(
                         text = "${percentage.format(1)}%",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF1F2937)
+                        color = titleColor
                     )
                 }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Color(0xFFF3F4F6))
+            HorizontalDivider(color = borderColor)
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
@@ -420,13 +431,13 @@ fun EnhancedExamCard(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.labelSmall, 
-                color = Color(0xFF9CA3AF)
+                color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF9CA3AF)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             exam.subjects.forEach { subject ->
-                SubjectBreakdownRow(subject)
+                SubjectBreakdownRow(subject, isDarkTheme)
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -447,7 +458,7 @@ fun EnhancedExamCard(
 }
 
 @Composable
-fun SubjectBreakdownRow(mark: MarkDto) {
+fun SubjectBreakdownRow(mark: MarkDto, isDarkTheme: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -455,7 +466,7 @@ fun SubjectBreakdownRow(mark: MarkDto) {
         Text(
             text = mark.code ?: "---",
             style = MaterialTheme.typography.labelSmall,
-            color = Color(0xFF9CA3AF),
+            color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF9CA3AF),
             modifier = Modifier.width(50.dp)
         )
         Text(
@@ -463,7 +474,7 @@ fun SubjectBreakdownRow(mark: MarkDto) {
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF374151)
+            color = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFF374151)
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (mark.isAbsent) {
@@ -483,7 +494,7 @@ fun SubjectBreakdownRow(mark: MarkDto) {
                 Text(
                     text = "/${mark.total.toInt()}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF9CA3AF)
+                    color = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF9CA3AF)
                 )
             }
         }
@@ -491,7 +502,11 @@ fun SubjectBreakdownRow(mark: MarkDto) {
 }
 
 @Composable
-fun ExamDetailView(detail: ExamDetailDto?, onViewOfficialMarksheet: (ExamSummaryDto) -> Unit) {
+fun ExamDetailView(
+    detail: ExamDetailDto?,
+    onViewOfficialMarksheet: (ExamSummaryDto) -> Unit,
+    isDarkTheme: Boolean = false
+) {
     if (detail == null) return
     val examSummary = ExamSummaryDto(
         examId = detail.examId ?: "",
@@ -502,13 +517,18 @@ fun ExamDetailView(detail: ExamDetailDto?, onViewOfficialMarksheet: (ExamSummary
     )
     EnhancedExamCard(
         examSummary,
-        onViewOfficialMarksheet = { onViewOfficialMarksheet(examSummary) }
+        onViewOfficialMarksheet = { onViewOfficialMarksheet(examSummary) },
+        isDarkTheme = isDarkTheme
     )
 }
 
 @Composable
-fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
+fun SubjectMarksView(subjectMark: SubjectMarkDto?, isDarkTheme: Boolean = false) {
     if (subjectMark == null) return
+    
+    val cardBg = if (isDarkTheme) MaterialTheme.colorScheme.surface else Color.White
+    val titleColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurface else Color(0xFF1F2937)
+    val subTitleColor = if (isDarkTheme) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF6B7280)
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -519,7 +539,7 @@ fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Row(
@@ -527,8 +547,8 @@ fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = mark.examName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1F2937))
-                        mark.date?.let { Text(text = it, style = MaterialTheme.typography.labelSmall, color = Color(0xFF6B7280)) }
+                        Text(text = mark.examName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = titleColor)
+                        mark.date?.let { Text(text = it, style = MaterialTheme.typography.labelSmall, color = subTitleColor) }
                     }
                     Text(
                         "${mark.obtainedMarks.toInt()}/${mark.totalMarks.toInt()}",

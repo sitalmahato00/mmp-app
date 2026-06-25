@@ -94,6 +94,9 @@ dependencies {
     // Security
     implementation(libs.androidx.security.crypto)
     
+    // Browser
+    implementation(libs.androidx.browser)
+    
     // Navigation 3 & Adaptive
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
