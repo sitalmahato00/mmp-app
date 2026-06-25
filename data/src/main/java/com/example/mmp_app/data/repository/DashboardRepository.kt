@@ -125,9 +125,9 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getMarksheet(): Flow<Result<MarksheetDto>> = flow {
+    override fun getMarksheet(examId: String?): Flow<Result<MarksheetDto>> = flow {
         try {
-            val response = apiService.getMarksheet()
+            val response = apiService.getMarksheet(examId)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
             emit(Result.failure(e))

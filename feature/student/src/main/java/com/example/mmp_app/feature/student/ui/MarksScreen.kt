@@ -2,6 +2,8 @@ package com.example.mmp_app.feature.student.ui
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.print.PrintAttributes
 import android.print.PrintManager
 import android.webkit.CookieManager
@@ -14,12 +16,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -53,34 +58,32 @@ fun MarksScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var currentView by remember { mutableStateOf<MarksView>(MarksView.Summary) }
-    var selectedId by remember { mutableStateOf("") }
     
-    var isPreviewing by remember { mutableStateOf(false) }
-    var printUrl by remember { mutableStateOf<String?>(null) }
-    var loadingMarksheetId by remember { mutableStateOf<String?>(null) }
+    var showOfficialMarksheet by remember { mutableStateOf(false) }
+    var selectedExamForMarksheet by remember { mutableStateOf<ExamSummaryDto?>(null) }
 
     LaunchedEffect(error) {
-        error?.let {
-            snackbarHostState.showSnackbar(it)
+        if (error != null) {
+            snackbarHostState.showSnackbar(error!!)
             viewModel.clearError()
-            isPreviewing = false
-            loadingMarksheetId = null
         }
     }
 
     LaunchedEffect(Unit) {
         viewModel.loadStudentMarks()
+        if (viewModel.studentDashboard.value == null) {
+            viewModel.loadStudentDashboard()
+        }
     }
     
     val context = LocalContext.current
     
-    if (isPreviewing && sessionCookie != null && printUrl != null) {
-        MarksheetPreviewPage(
-            url = printUrl!!,
-            cookie = sessionCookie!!,
-            onBack = { isPreviewing = false }
+    if (showOfficialMarksheet && selectedExamForMarksheet != null) {
+        OfficialMarksheetDialog(
+            student = viewModel.studentDashboard.collectAsState().value,
+            exam = selectedExamForMarksheet!!,
+            onDismiss = { showOfficialMarksheet = false }
         )
-        return
     }
 
     Scaffold(
@@ -129,35 +132,28 @@ fun MarksScreen(
                     when (currentView) {
                         MarksView.Summary -> MarksSummaryView(
                             summary ?: MarksSummaryDto(), 
-                            onDownloadMarksheet = {
-                                loadingMarksheetId = "summary"
-                                viewModel.downloadMarksheet()
-                            },
                             onExamClick = { examId ->
-                                selectedId = examId
                                 viewModel.loadMarksByExam(examId)
                                 currentView = MarksView.ExamDetail
                             },
-                            onDownloadExamMarksheet = { examId ->
-                                loadingMarksheetId = examId
-                                viewModel.downloadMarksheet(examId)
-                            },
-                            loadingId = loadingMarksheetId
+                            onViewOfficialMarksheet = { exam ->
+                                selectedExamForMarksheet = exam
+                                showOfficialMarksheet = true
+                            }
                         )
                         MarksView.ExamDetail -> ExamDetailView(
-                            examDetail, 
-                            onDownloadMarksheet = { 
-                                loadingMarksheetId = examDetail?.examId
-                                viewModel.downloadMarksheet(examDetail?.examId) 
-                            },
-                            loadingId = loadingMarksheetId
+                            examDetail,
+                            onViewOfficialMarksheet = { exam ->
+                                selectedExamForMarksheet = exam
+                                showOfficialMarksheet = true
+                            }
                         )
                         MarksView.SubjectMarks -> SubjectMarksView(subjectMarks)
                     }
                 }
             }
 
-            if (isPreviewing && sessionCookie == null) {
+            if (showOfficialMarksheet) {
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)),
                     contentAlignment = Alignment.Center
@@ -182,24 +178,10 @@ fun MarksScreen(
         }
     }
     
-    // Logic moved out of Scaffold to be top-level conditional
     LaunchedEffect(marksheet) {
-        marksheet?.let {
-            loadingMarksheetId = null
-            if (it.downloadUrl.endsWith(".pdf", ignoreCase = true)) {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(it.downloadUrl))
-                context.startActivity(intent)
-            } else {
-                printUrl = it.downloadUrl
-                isPreviewing = true
-            }
+        if (marksheet != null) {
+            // No longer using marksheet object for preview
             viewModel.clearMarksheetState()
-        }
-    }
-
-    LaunchedEffect(isPreviewing, printUrl) {
-        if (isPreviewing && printUrl != null && sessionCookie == null) {
-            viewModel.performWebLogin()
         }
     }
 }
@@ -213,10 +195,8 @@ sealed class MarksView {
 @Composable
 fun MarksSummaryView(
     summary: MarksSummaryDto,
-    onDownloadMarksheet: () -> Unit,
     onExamClick: (String) -> Unit,
-    onDownloadExamMarksheet: (String) -> Unit,
-    loadingId: String? = null
+    onViewOfficialMarksheet: (ExamSummaryDto) -> Unit
 ) {
     // Calculate Overall Average if not provided accurately by API
     // Formula: sum(obtained) / sum(full) * 100
@@ -235,30 +215,14 @@ fun MarksSummaryView(
         }
         
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Exam Results", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
-                TextButton(onClick = onDownloadMarksheet, enabled = loadingId == null) {
-                    if (loadingId == "summary") {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(Modifier.width(4.dp))
-                    Text("Marksheet")
-                }
-            }
+            Text("Exam Results", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
         }
         
         items(summary.exams) { exam ->
             EnhancedExamCard(
                 exam = exam,
                 onCardClick = { onExamClick(exam.examId) },
-                onDownloadClick = { onDownloadExamMarksheet(exam.examId) },
-                isLoading = loadingId == exam.examId
+                onViewOfficialMarksheet = { onViewOfficialMarksheet(exam) }
             )
         }
     }
@@ -350,8 +314,7 @@ fun ResultOverviewCard(average: Float, totalExams: Int, allPassed: Boolean) {
 fun EnhancedExamCard(
     exam: ExamSummaryDto,
     onCardClick: () -> Unit = {},
-    onDownloadClick: () -> Unit,
-    isLoading: Boolean = false
+    onViewOfficialMarksheet: () -> Unit
 ) {
     val totalObtained = exam.subjects.sumOf { it.score.toDouble() }
     val totalFull = exam.subjects.sumOf { it.total.toDouble() }.let { if (it == 0.0) exam.subjects.size * 25.0 else it }
@@ -469,20 +432,15 @@ fun EnhancedExamCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             Button(
-                onClick = onDownloadClick,
-                enabled = !isLoading,
+                onClick = onViewOfficialMarksheet,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
                 contentPadding = PaddingValues(12.dp)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Text("View Official Marksheet", fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(Icons.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
-                }
+                Text("View Official Marksheet", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -533,18 +491,18 @@ fun SubjectBreakdownRow(mark: MarkDto) {
 }
 
 @Composable
-fun ExamDetailView(detail: ExamDetailDto?, onDownloadMarksheet: () -> Unit, loadingId: String? = null) {
+fun ExamDetailView(detail: ExamDetailDto?, onViewOfficialMarksheet: (ExamSummaryDto) -> Unit) {
     if (detail == null) return
+    val examSummary = ExamSummaryDto(
+        examId = detail.examId ?: "",
+        examName = detail.examName,
+        category = detail.category,
+        startDate = detail.startDate,
+        subjects = detail.marks
+    )
     EnhancedExamCard(
-        ExamSummaryDto(
-            examId = detail.examId ?: "",
-            examName = detail.examName,
-            category = detail.category,
-            startDate = detail.startDate,
-            subjects = detail.marks
-        ),
-        onDownloadClick = onDownloadMarksheet,
-        isLoading = loadingId != null && loadingId == detail.examId
+        examSummary,
+        onViewOfficialMarksheet = { onViewOfficialMarksheet(examSummary) }
     )
 }
 
@@ -583,154 +541,310 @@ fun SubjectMarksView(subjectMark: SubjectMarkDto?) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarksheetPreviewPage(
-    url: String,
-    cookie: String,
-    onBack: () -> Unit
+fun OfficialMarksheetDialog(
+    student: StudentDashboardDto?,
+    exam: ExamSummaryDto,
+    onDismiss: () -> Unit
 ) {
-    var webViewRef by remember { mutableStateOf<WebView?>(null) }
-    var isWebViewLoading by remember { mutableStateOf(true) }
-
-    BackHandler(onBack = onBack)
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("Marksheet Preview", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.White
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Toolbar
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Close")
                     }
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            webViewRef?.let { webView ->
-                                val context = webView.context
-                                val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
-                                val jobName = "Marksheet_${System.currentTimeMillis()}"
-                                val printAdapter = webView.createPrintDocumentAdapter(jobName)
-                                val printAttributes = PrintAttributes.Builder()
-                                    .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                                    .build()
-                                printManager.print(jobName, printAdapter, printAttributes)
-                            }
-                        },
-                        enabled = !isWebViewLoading
-                    ) {
+                    Text("Official Marksheet", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    
+                    val context = LocalContext.current
+                    IconButton(onClick = { 
+                        MarksheetPrinter(context).print(student, exam)
+                    }) {
                         Icon(Icons.Rounded.Print, contentDescription = "Print")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize().background(Color.White)) {
-            AndroidView(
-                factory = { ctx ->
-                    WebView(ctx).apply {
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            loadWithOverviewMode = true
-                            useWideViewPort = true
-                            builtInZoomControls = true
-                            displayZoomControls = false
-                            setSupportZoom(true)
-                            defaultTextEncodingName = "utf-8"
-                        }
-                        
-                        setInitialScale(1)
-                        
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                isWebViewLoading = false
-                                val script = """
-                                    (function() {
-                                        const noise = 'nav, .navbar, .sidebar, .btn, button, .no-print, header, footer, aside, [role="navigation"], .breadcrumb';
-                                        document.querySelectorAll(noise).forEach(el => el.remove());
-                                        
-                                        const containerSelectors = ['.marksheet', '.card-body', '.print-content', 'main .card', 'main'];
-                                        let mainContent = null;
-                                        for (const selector of containerSelectors) {
-                                            const found = document.querySelector(selector);
-                                            if (found && found.innerText.length > 50) {
-                                                mainContent = found;
-                                                break;
-                                            }
-                                        }
-
-                                        if (mainContent) {
-                                            const clone = mainContent.cloneNode(true);
-                                            document.body.innerHTML = '';
-                                            document.body.appendChild(clone);
-                                            clone.style.width = '100%';
-                                            clone.style.margin = '0';
-                                            clone.style.padding = '0';
-                                            clone.style.boxShadow = 'none';
-                                            clone.style.border = 'none';
-                                        } else {
-                                            // Fallback: hide sidebar and nav if we couldn't isolate content
-                                            document.body.style.paddingTop = '0';
-                                            const bodyNoise = '.sidebar, .navbar, header, footer';
-                                            document.querySelectorAll(bodyNoise).forEach(el => el.style.display = 'none');
-                                        }
-
-                                        const style = document.createElement('style');
-                                        style.innerHTML = `
-                                            body { background: white !important; margin: 0 !important; padding: 15px !important; width: 100% !important; overflow-x: hidden !important; }
-                                            * { max-width: 100% !important; box-sizing: border-box !important; }
-                                            table { width: 100% !important; border-collapse: collapse !important; font-size: 11px !important; margin-bottom: 20px !important; }
-                                            th, td { padding: 6px !important; border: 1px solid #eee !important; text-align: left !important; }
-                                            th { background-color: #f9fafb !important; font-weight: bold !important; }
-                                            .container, .row, .col-md-12 { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
-                                            h1, h2, h3, h4 { margin-top: 0 !important; color: #111827 !important; }
-                                            img { height: auto !important; max-width: 180px !important; display: block !important; margin: 0 auto 10px !important; }
-                                            .text-center { text-align: center !important; }
-                                            .no-print, .btn, .navbar, .sidebar { display: none !important; }
-                                        `;
-                                        document.head.appendChild(style);
-                                        
-                                        if (!document.querySelector('meta[name="viewport"]')) {
-                                            const meta = document.createElement('meta');
-                                            meta.name = "viewport";
-                                            meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
-                                            document.head.appendChild(meta);
-                                        }
-                                    })();
-                                """.trimIndent()
-                                view?.evaluateJavascript(script, null)
-                            }
-                        }
-                        
-                        val cookieManager = CookieManager.getInstance()
-                        cookieManager.setAcceptCookie(true)
-                        cookie.split("||").forEach {
-                            val singleCookie = it.trim()
-                            if (singleCookie.isNotEmpty()) {
-                                cookieManager.setCookie(url, singleCookie)
-                            }
-                        }
-                        cookieManager.flush()
-                        loadUrl(url)
-                        webViewRef = this
+                }
+                
+                // Content
+                Box(modifier = Modifier.weight(1f).padding(16.dp)) {
+                    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                        OfficialMarksheetView(student, exam)
                     }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            if (isWebViewLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
             }
         }
     }
+}
+
+@Composable
+fun OfficialMarksheetView(student: StudentDashboardDto?, exam: ExamSummaryDto) {
+    val allPassed = exam.subjects.all { it.isPassed }
+    val totalObtained = exam.subjects.sumOf { it.score.toDouble() }
+    val totalFull = exam.subjects.sumOf { it.total.toDouble() }.let { if (it == 0.0) exam.subjects.size * 25.0 else it }
+    val percentage = if (totalFull > 0) (totalObtained / totalFull * 100) else 0.0
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Top Status Badge
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
+            Surface(
+                color = if (allPassed) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    if (allPassed) "PASSED" else "FAILED",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (allPassed) Color(0xFF16A34A) else Color(0xFFDC2626)
+                )
+            }
+        }
+
+        // Logo
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .padding(4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Using the JPEG version found in drawables as ICO is not natively supported well in Android
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = com.example.mmp_app.core.R.drawable.mmplogo),
+                contentDescription = "MMP Logo",
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Institution Header
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "MANMOHAN MEMORIAL POLYTECHNIC",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF111827),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                student?.program ?: "Computer Engineering",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color(0xFF4B5563),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                "Diploma in ${student?.program ?: "Computer Engineering"}",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color(0xFF6B7280),
+                textAlign = TextAlign.Center
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 40.dp), color = Color(0xFFE5E7EB))
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Text(
+            exam.examName.uppercase(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF7C3AED)
+        )
+        Text(
+            "Monthly Assessment - ${exam.startDate ?: "N/A"}",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF6B7280)
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Student Info Grid
+        Row(modifier = Modifier.fillMaxWidth().background(Color(0xFFF9FAFB)).padding(12.dp)) {
+            Column(modifier = Modifier.weight(1.5f)) {
+                Text("STUDENT NAME", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Text(student?.studentName?.uppercase() ?: "N/A", fontWeight = FontWeight.Bold, color = Color(0xFF111827))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("ROLL NO.", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Text(student?.rollNumber ?: "N/A", fontWeight = FontWeight.Bold, color = Color(0xFF111827))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("SEMESTER", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Text(student?.semester?.toString() ?: "N/A", fontWeight = FontWeight.Bold, color = Color(0xFF111827))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("SECTION", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                // Try to extract section from roll number or default to A
+                val section = student?.rollNumber?.lastOrNull()?.toString()?.uppercase()?.takeIf { it in "A".."Z" } ?: "A"
+                Text(section, fontWeight = FontWeight.Bold, color = Color(0xFF111827))
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Table Header
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("SUBJECT", modifier = Modifier.weight(2f), style = MaterialTheme.typography.labelSmall, color = Color(0xFF4B5563), fontWeight = FontWeight.Bold)
+            Text("FULL", modifier = Modifier.weight(0.5f), style = MaterialTheme.typography.labelSmall, color = Color(0xFF4B5563), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text("PASS", modifier = Modifier.weight(0.5f), style = MaterialTheme.typography.labelSmall, color = Color(0xFF4B5563), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text("OBTAINED", modifier = Modifier.weight(0.8f), style = MaterialTheme.typography.labelSmall, color = Color(0xFF4B5563), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text("REMARKS", modifier = Modifier.weight(0.8f), style = MaterialTheme.typography.labelSmall, color = Color(0xFF4B5563), fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        }
+        HorizontalDivider(color = Color(0xFFE5E7EB))
+        
+        // Table Rows
+        exam.subjects.forEach { mark ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(2f)) {
+                    Text(mark.subject, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFF111827))
+                    Text(mark.code ?: "", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                }
+                Text(mark.total.toInt().toString(), modifier = Modifier.weight(0.5f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text(mark.passMarks.toInt().toString(), modifier = Modifier.weight(0.5f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    mark.score.format(2), 
+                    modifier = Modifier.weight(0.8f), 
+                    textAlign = TextAlign.Center, 
+                    style = MaterialTheme.typography.bodySmall, 
+                    fontWeight = FontWeight.Bold,
+                    color = if (mark.isPassed) Color(0xFF16A34A) else Color(0xFFDC2626)
+                )
+                Box(modifier = Modifier.weight(0.8f), contentAlignment = Alignment.Center) {
+                    Surface(
+                        color = if (mark.isPassed) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            if (mark.isPassed) "Pass" else "Fail",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (mark.isPassed) Color(0xFF16A34A) else Color(0xFFDC2626)
+                        )
+                    }
+                }
+            }
+            HorizontalDivider(color = Color(0xFFF3F4F6))
+        }
+        
+        // Total Row
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("TOTAL", modifier = Modifier.weight(2f), textAlign = TextAlign.End, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            Text(totalFull.toInt().toString(), modifier = Modifier.weight(0.5f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            Text("-", modifier = Modifier.weight(0.5f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+            Text(totalObtained.format(2), modifier = Modifier.weight(0.8f), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+            Box(modifier = Modifier.weight(0.8f), contentAlignment = Alignment.Center) {
+                Surface(
+                    color = if (allPassed) Color(0xFFDCFCE7) else Color(0xFFFEE2E2),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        if (allPassed) "PASS" else "FAIL",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (allPassed) Color(0xFF16A34A) else Color(0xFFDC2626)
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Summary Footer
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("TOTAL MARKS", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(totalObtained.format(2), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                    Text(" / ${totalFull.toInt()}", style = MaterialTheme.typography.bodySmall, color = Color(0xFF9CA3AF))
+                }
+            }
+            
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("PERCENTAGE", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Text("${percentage.format(1)}%", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = Color(0xFF7C3AED))
+            }
+            
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("RESULT", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Text(
+                    if (allPassed) "PASSED" else "FAILED", 
+                    style = MaterialTheme.typography.titleLarge, 
+                    fontWeight = FontWeight.ExtraBold, 
+                    color = if (allPassed) Color(0xFF16A34A) else Color(0xFFDC2626)
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        // Signatures
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Prepared By:", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.width(140.dp), color = Color(0xFF111827), thickness = 1.dp)
+                Text("Examination Department", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF111827))
+            }
+            
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Head of Department", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(modifier = Modifier.width(140.dp), color = Color(0xFF111827), thickness = 1.dp)
+                Text(student?.program ?: "Computer Engineering", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF111827))
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Text(
+            "Generated on ${java.text.SimpleDateFormat("yyyy-MM-dd 'at' hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())}",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color(0xFF9CA3AF)
+        )
+    }
+}
+
+fun triggerPrint(webView: WebView) {
+    val context = webView.context
+    val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
+    val jobName = "Marksheet_${System.currentTimeMillis()}"
+    val printAdapter = webView.createPrintDocumentAdapter(jobName)
+    val printAttributes = PrintAttributes.Builder()
+        .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+        .build()
+    printManager.print(jobName, printAdapter, printAttributes)
 }
 
 @Composable

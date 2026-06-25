@@ -19,10 +19,10 @@ sealed class ApiException : Exception() {
         is NetworkException -> "Network error. Please check your connection."
         is UnauthorizedException -> "Session expired. Please login again."
         is ForbiddenException -> "You don't have permission to access this resource."
-        is NotFoundException -> "Resource not found."
+        is NotFoundException -> "Resource not found (404)."
         is RateLimitException -> "Too many requests. Please try again later."
         is ValidationException -> "Invalid input. Please check your data."
-        is ServerException -> message
+        is ServerException -> if (message.isNotBlank()) "Server error ($code): $message" else "Server error ($code)"
         is ConflictException -> "Data conflict occurred."
     }
 }

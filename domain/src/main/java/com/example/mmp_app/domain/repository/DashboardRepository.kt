@@ -11,7 +11,7 @@ interface DashboardRepository {
     fun getStudentMarksSummary(): Flow<Result<MarksSummaryDto>>
     fun getMarksByExam(examId: String): Flow<Result<ExamDetailDto>>
     fun getMarksBySubject(subjectId: Int): Flow<Result<SubjectMarkDto>>
-    fun getMarksheet(): Flow<Result<MarksheetDto>>
+    fun getMarksheet(examId: String? = null): Flow<Result<MarksheetDto>>
     fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>>
     fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDetailDto>>
     suspend fun submitAssignment(id: Int, content: String?): Result<SubmissionDto>
