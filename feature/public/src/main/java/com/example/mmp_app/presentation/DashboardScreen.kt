@@ -189,51 +189,22 @@ fun DashboardAdaptiveContent(
             }
         } else if (error != null && studentData == null && teacherData == null && parentData == null) {
             ErrorState(error!!, onRetry)
-        } else if (isStudent && selectedItem == 0) {
+        } else if ((isStudent || isParent) && selectedItem == 0) {
             MainDashboardContent(
                 userProfile, studentData, recentNotices, attendanceSummary, 
                 subjects, assignments, timetable, downloads, teacherData, parentData,
                 onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                onNavigateToFees, onNavigateToNotices, onRecordAttendance,
+                onNavigateToFees, 
+                onNavigateToNotices = { if (isParent) selectedItem = 1 else onNavigateToNotices() },
+                onRecordAttendance,
                 onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
                 onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
+                onNavigateToTimetable = { if (isParent) selectedItem = 2 else onNavigateToTimetable() },
+                onNavigateToDownloads, 
+                onNavigateToProfile = { if (isParent) selectedItem = 3 else onNavigateToProfile() },
                 onNavigateToSettings, onNavigateToNotifications, onLogout, 
                 unreadCount, isDarkTheme, onToggleTheme
             )
-        } else if (isParent) {
-            when (selectedItem) {
-                0 -> MainDashboardContent(
-                    userProfile, studentData, recentNotices, attendanceSummary,
-                    subjects, assignments, timetable, downloads, teacherData, parentData,
-                    onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                    onNavigateToFees, { selectedItem = 1 }, onRecordAttendance,
-                    onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
-                    onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                    { selectedItem = 2 }, onNavigateToDownloads, { selectedItem = 3 },
-                    onNavigateToSettings, onNavigateToNotifications, onLogout,
-                    unreadCount, isDarkTheme, onToggleTheme
-                )
-                1 -> ParentNoticesScreen(
-                    onBack = { selectedItem = 0 },
-                    isDarkTheme = isDarkTheme
-                )
-                2 -> TimetableScreen(onBack = { selectedItem = 0 })
-                3 -> ParentProfileScreen(onLogout = onLogout)
-                else -> {
-                    MainDashboardContent(
-                        userProfile, studentData, recentNotices, attendanceSummary,
-                        subjects, assignments, timetable, downloads, teacherData, parentData,
-                        onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                        onNavigateToFees, { selectedItem = 1 }, onRecordAttendance,
-                        onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
-                        onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                        { selectedItem = 2 }, onNavigateToDownloads, { selectedItem = 3 },
-                        onNavigateToSettings, onNavigateToNotifications, onLogout,
-                        unreadCount, isDarkTheme, onToggleTheme
-                    )
-                }
-            }
         } else {
             // Otherwise, use the standard adaptive layout
             val adaptiveInfo = currentWindowAdaptiveInfo()

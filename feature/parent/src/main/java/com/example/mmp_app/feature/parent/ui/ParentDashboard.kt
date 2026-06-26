@@ -1,5 +1,6 @@
 package com.example.mmp_app.feature.parent.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,15 +19,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.mmp_app.core.R
 import com.example.mmp_app.domain.model.ChildSummaryDto
 import com.example.mmp_app.domain.model.ParentDashboardDto
 import com.example.mmp_app.domain.model.ParentNoticeDto
@@ -96,6 +101,12 @@ fun ParentDashboard(
     var showChildPicker by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(Int, String) -> Unit>({ _, _ -> }) }
     val sheetState = rememberModalBottomSheetState()
+    
+    val primaryColor = Color(0xFF6366F1)
+    val secondaryColor = Color(0xFFA855F7)
+    val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
+    val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
+    val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
     val handleAction = { action: (Int, String) -> Unit ->
         if (data.children.size == 1) {
@@ -107,77 +118,174 @@ fun ParentDashboard(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp)
-    ) {
-        // Section 1: Header
-        item {
-            ParentHeader(
-                name = data.parentName,
-                childrenCount = data.childrenCount
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            modifier = Modifier.size(36.dp),
+                            shape = CircleShape,
+                            color = Color.White,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.mmplogo),
+                                contentDescription = "College Logo",
+                                modifier = Modifier.padding(4.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "MMP College",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onToggleTheme) {
+                        Icon(
+                            if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                            contentDescription = "Theme Toggle",
+                            tint = textColor.copy(alpha = 0.7f)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = cardBgColor,
+                    titleContentColor = textColor
+                ),
+                modifier = Modifier.shadow(2.dp)
             )
-        }
-
-        // Section 2: My Children
-        item {
-            SectionHeader(
-                title = "My Children (${data.childrenCount})",
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        items(data.children) { child ->
-            ChildCard(
-                child = child,
-                onClick = { onChildClick(child.id, child.name) },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-        }
-
-        // Section 3: Quick Actions
-        item {
-            QuickActionsGrid(
-                onAttendanceClick = { handleAction(onAttendanceClick) },
-                onMarksClick = { handleAction(onMarksClick) },
-                onAssignmentsClick = { handleAction(onAssignmentsClick) },
-                onTimetableClick = { handleAction(onTimetableClick) },
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-
-        // Section 4: Recent Notices
-        item {
-            Row(
+        },
+        bottomBar = {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                contentAlignment = Alignment.BottomCenter
             ) {
-                Text(
-                    text = "Recent Notices",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(onClick = onNoticesClick) {
-                    Text("See All")
-                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .shadow(12.dp, RoundedCornerShape(36.dp)),
+                    shape = RoundedCornerShape(36.dp),
+                    color = cardBgColor
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CapsuleNavItem(Icons.Rounded.Home, "Home", { }, textColor, selected = true)
+                        CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick, textColor)
+                        
+                        Spacer(modifier = Modifier.width(48.dp)) // Center space
+                        
+                        CapsuleNavItem(Icons.Rounded.EventNote, "Schedule", { onTimetableClick(0, "") }, textColor)
+                        CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick, textColor)
+                    }
+                }
+                
+                // Floating Center Button
+                Surface(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .offset(y = (-20).dp)
+                        .shadow(8.dp, CircleShape)
+                        .clickable(onClick = { /* Home Action already handled */ }),
+                    shape = CircleShape,
+                    color = Color.Transparent
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Rounded.Dashboard, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
+                    }
                 }
             }
-        }
-
-        items(recentNotices) { notice ->
-            NoticeRow(
-                notice = notice,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
-        }
-        
-        if (recentNotices.isEmpty()) {
+        },
+        containerColor = backgroundColor
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(bottom = 110.dp)
+        ) {
+            // Section 1: Header
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("No notices available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ParentHeader(
+                    name = data.parentName,
+                    childrenCount = data.childrenCount
+                )
+            }
+
+            // Section 2: My Children
+            item {
+                SectionHeader(
+                    title = "My Children (${data.childrenCount})",
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            items(data.children) { child ->
+                ChildCard(
+                    child = child,
+                    onClick = { onChildClick(child.id, child.name) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            // Section 3: Quick Actions
+            item {
+                QuickActionsGrid(
+                    onAttendanceClick = { handleAction(onAttendanceClick) },
+                    onMarksClick = { handleAction(onMarksClick) },
+                    onAssignmentsClick = { handleAction(onAssignmentsClick) },
+                    onTimetableClick = { handleAction(onTimetableClick) },
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+
+            // Section 4: Recent Notices
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Recent Notices",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = onNoticesClick) {
+                        Text("See All")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+
+            items(recentNotices) { notice ->
+                NoticeRow(
+                    notice = notice,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+            
+            if (recentNotices.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("No notices available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
         }
@@ -599,6 +707,30 @@ fun DashboardShimmer() {
         Box(modifier = Modifier.width(150.dp).height(24.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)))
         Spacer(modifier = Modifier.height(16.dp))
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(20.dp)))
+    }
+}
+
+@Composable
+fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit, textColor: Color, selected: Boolean = false) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(4.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
+            fontSize = 10.sp
+        )
     }
 }
 
