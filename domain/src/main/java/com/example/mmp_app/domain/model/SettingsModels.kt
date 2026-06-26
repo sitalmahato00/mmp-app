@@ -7,7 +7,9 @@ data class UserResponse(
     val success: Boolean,
     val data: UserData
 )
+
 data class UserData(val user: UserProfile)
+
 data class UserProfile(
     val id: Int,
     val name: String,
@@ -16,13 +18,14 @@ data class UserProfile(
     val gender: String? = null,        // "male" | "female" | "other" | null
     val dob: String? = null,           // "YYYY-MM-DD" | null
     val address: String? = null,
-    @SerializedName("avatar_url") val avatarUrl: String = "",
-    val role: String = "",
-    @SerializedName("panel_type") val panelType: String = "",
+    @SerializedName("avatar_url") val avatarUrl: String? = null,
+    val role: String? = null,
+    @SerializedName("panel_type") val panelType: String? = null,
     @SerializedName("two_factor_enabled") val twoFactorEnabled: Boolean = false,
-    @SerializedName("two_factor_method") val twoFactorMethod: String = "email",   // "email" | "phone"
+    @SerializedName("two_factor_method") val twoFactorMethod: String? = "email",   // "email" | "phone"
     @SerializedName("notification_preferences") val notificationPreferences: NotificationPreferences? = null
 )
+
 data class NotificationPreferences(
     @SerializedName("email_notices") val emailNotices: Boolean = true,
     @SerializedName("email_marks") val emailMarks: Boolean = true,
@@ -41,6 +44,7 @@ data class UpdateProfileRequest(
     val dob: String? = null,    // format: "YYYY-MM-DD"
     val address: String? = null
 )
+
 data class ProfileUpdateResponse(
     val success: Boolean,
     val message: String,
@@ -53,11 +57,13 @@ data class ChangePasswordRequest(
     val password: String,
     @SerializedName("password_confirmation") val passwordConfirmation: String
 )
+
 data class ChangePasswordResponse(
     val success: Boolean,
     val message: String,
-    val data: TokenData?   // null if 422
+    val data: TokenData? = null   // null if 422
 )
+
 data class TokenData(
     val token: String,
     @SerializedName("token_type") val tokenType: String
@@ -69,11 +75,13 @@ data class NotificationPreferencesRequest(
     @SerializedName("notification_preferences")
     val notificationPreferences: NotificationPreferences
 )
+
 data class NotificationPreferencesResponse(
     val success: Boolean,
     val message: String,
     val data: NotificationPreferencesData
 )
+
 data class NotificationPreferencesData(
     @SerializedName("notification_preferences")
     val notificationPreferences: NotificationPreferences
@@ -84,11 +92,13 @@ data class TwoFactorRequest(
     @SerializedName("two_factor_enabled") val twoFactorEnabled: Boolean,
     @SerializedName("two_factor_method") val twoFactorMethod: String  // required even when disabling
 )
+
 data class TwoFactorResponse(
     val success: Boolean,
     val message: String,
     val data: TwoFactorData
 )
+
 data class TwoFactorData(
     @SerializedName("two_factor_enabled") val twoFactorEnabled: Boolean,
     @SerializedName("two_factor_method") val twoFactorMethod: String

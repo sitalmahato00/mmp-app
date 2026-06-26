@@ -16,6 +16,7 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -58,24 +59,35 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit {
+    @Named("KotlinxRetrofit")
+    fun provideKotlinxRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit {
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @Named("GsonRetrofit")
+    fun provideGsonRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
     @Provides
     @Singleton
-    fun provideMmpApiService(retrofit: Retrofit): MmpApiService {
+    fun provideMmpApiService(@Named("KotlinxRetrofit") retrofit: Retrofit): MmpApiService {
         return retrofit.create(MmpApiService::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideSettingsApiService(retrofit: Retrofit): SettingsApiService {
+    fun provideSettingsApiService(@Named("GsonRetrofit") retrofit: Retrofit): SettingsApiService {
         return retrofit.create(SettingsApiService::class.java)
     }
 }

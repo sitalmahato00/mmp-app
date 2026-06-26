@@ -2,9 +2,9 @@ package com.example.mmp_app.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.example.mmp_app.core.utils.TokenManager
 import com.example.mmp_app.data.local.dao.UserProfileDao
 import com.example.mmp_app.data.local.entity.UserProfileEntity
-import com.example.mmp_app.core.utils.TokenManager
 import com.example.mmp_app.data.remote.SettingsApiService
 import com.example.mmp_app.domain.model.*
 import com.google.gson.Gson
@@ -37,7 +37,7 @@ class SettingsRepository @Inject constructor(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                role = user.role,
+                role = user.role ?: "student", // Provide default role if null
                 avatarUrl = user.avatarUrl
             )
         )

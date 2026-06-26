@@ -235,23 +235,6 @@ data class ClassDto(
 )
 
 @Serializable
-data class ParentDashboardDto(
-    @SerialName("children_count") val childrenCount: Int,
-    @SerialName("children") val children: List<ChildDto>
-)
-
-@Serializable
-data class ChildDto(
-    @SerialName("id") val id: Int,
-    @SerialName("name") val name: String,
-    @SerialName("program") val program: String? = null,
-    @SerialName("attendance_percentage") val attendancePercentage: Float = 0f,
-    @SerialName("average_marks") val averageMarks: Float = 0f,
-    @SerialName("semester") val semester: Int? = null,
-    @SerialName("roll_number") val rollNumber: String? = null
-)
-
-@Serializable
 data class AttendanceBySubjectDto(
     @SerialName("subject_name") val subjectName: String,
     @SerialName("total_classes") val totalClasses: Int,

@@ -9,13 +9,12 @@ import retrofit2.http.*
 interface SettingsApiService {
 
     // Get full user profile including all settings fields
-    @GET("api/v1/user")
+    @GET("v1/user")
     suspend fun getUser(): Response<UserResponse>
 
-    // Update profile — use @Multipart when avatar file is included,
-    // use @Body with JSON when no file
+    // Update profile
     @Multipart
-    @PUT("api/v1/user/profile")
+    @PUT("v1/user/profile")
     suspend fun updateProfileWithAvatar(
         @Part("name") name: RequestBody?,
         @Part("phone") phone: RequestBody?,
@@ -25,30 +24,30 @@ interface SettingsApiService {
         @Part avatar: MultipartBody.Part?
     ): Response<ProfileUpdateResponse>
 
-    @PUT("api/v1/user/profile")
+    @PUT("v1/user/profile")
     suspend fun updateProfile(
         @Body request: UpdateProfileRequest
     ): Response<ProfileUpdateResponse>
 
-    // Change password — returns new token on success
-    @POST("api/v1/user/change-password")
+    // Change password
+    @POST("v1/user/change-password")
     suspend fun changePassword(
         @Body request: ChangePasswordRequest
     ): Response<ChangePasswordResponse>
 
-    // Notification preferences — always send nested object
-    @PUT("api/v1/user/notification-preferences")
+    // Notification preferences
+    @PUT("v1/user/notification-preferences")
     suspend fun updateNotificationPreferences(
         @Body request: NotificationPreferencesRequest
     ): Response<NotificationPreferencesResponse>
 
     // Two-factor authentication
-    @PUT("api/v1/user/two-factor")
+    @PUT("v1/user/two-factor")
     suspend fun updateTwoFactor(
         @Body request: TwoFactorRequest
     ): Response<TwoFactorResponse>
 
-    // Refresh token — call when 401 received
-    @POST("api/auth/refresh-token")
+    // Refresh token
+    @POST("auth/refresh-token")
     suspend fun refreshToken(): Response<RefreshTokenResponse>
 }

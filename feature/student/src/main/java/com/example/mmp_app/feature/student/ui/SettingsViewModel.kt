@@ -40,7 +40,7 @@ class SettingsViewModel @Inject constructor(
                         dob        = user.dob ?: "",
                         address    = user.address ?: "",
                         twoFactorEnabled = user.twoFactorEnabled,
-                        twoFactorMethod  = user.twoFactorMethod,
+                        twoFactorMethod  = user.twoFactorMethod ?: "email",
                         notifPrefs = user.notificationPreferences ?: NotificationPreferences()
                     ) }
                 },
