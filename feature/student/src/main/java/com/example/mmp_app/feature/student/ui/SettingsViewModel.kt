@@ -1,15 +1,14 @@
 package com.example.mmp_app.feature.student.ui
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mmp_app.data.remote.exception.ApiException
+import com.example.mmp_app.data.repository.SettingsRepository
 import com.example.mmp_app.domain.model.*
-import com.example.mmp_app.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -17,129 +16,190 @@ class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository
 ) : ViewModel() {
 
-    private val _user = MutableStateFlow<FullUserDetailDto?>(null)
-    val user = _user.asStateFlow()
+    // UI state
+    private val _uiState = MutableStateFlow(SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
+    // One-time events (snackbar messages)
+    private val _events = MutableSharedFlow<SettingsEvent>()
+    val events: SharedFlow<SettingsEvent> = _events.asSharedFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
-    val error = _error.asStateFlow()
+    init { loadUser() }
 
-    private val _validationErrors = MutableStateFlow<Map<String, List<String>>>(emptyMap())
-    val validationErrors = _validationErrors.asStateFlow()
-
-    private val _successMessage = MutableStateFlow<String?>(null)
-    val successMessage = _successMessage.asStateFlow()
-
-    init {
-        loadCurrentUser()
-    }
-
-    fun loadCurrentUser() {
+    fun loadUser() {
         viewModelScope.launch {
-            _isLoading.value = true
-            repository.getCurrentUser().collect { result ->
-                _isLoading.value = false
-                result.onSuccess {
-                    _user.value = it
-                }.onFailure {
-                    handleError(it)
+            _uiState.update { it.copy(isLoading = true) }
+            repository.getUser().fold(
+                onSuccess = { user ->
+                    _uiState.update { it.copy(
+                        isLoading  = false,
+                        user       = user,
+                        name       = user.name,
+                        phone      = user.phone ?: "",
+                        gender     = user.gender ?: "",
+                        dob        = user.dob ?: "",
+                        address    = user.address ?: "",
+                        twoFactorEnabled = user.twoFactorEnabled,
+                        twoFactorMethod  = user.twoFactorMethod,
+                        notifPrefs = user.notificationPreferences ?: NotificationPreferences()
+                    ) }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _events.emit(SettingsEvent.Error(e.message ?: "Failed to load profile"))
                 }
-            }
+            )
         }
     }
 
-    fun updateProfile(
-        name: String,
-        phone: String?,
-        gender: String?,
-        dob: String?,
-        address: String?,
-        avatarFile: File?
-    ) {
-        viewModelScope.launch {
-            clearMessages()
-            _isLoading.value = true
-            val result = repository.updateProfile(name, phone, gender, dob, address, avatarFile)
-            _isLoading.value = false
-            result.onSuccess {
-                _successMessage.value = "Profile updated successfully"
-                loadCurrentUser()
-            }.onFailure {
-                handleError(it)
-            }
-        }
-    }
+    // Profile field updates (local state only — no API call yet)
+    fun onNameChange(v: String)    = _uiState.update { it.copy(name = v) }
+    fun onPhoneChange(v: String)   = _uiState.update { it.copy(phone = v) }
+    fun onGenderChange(v: String)  = _uiState.update { it.copy(gender = v) }
+    fun onDobChange(v: String)     = _uiState.update { it.copy(dob = v) }
+    fun onAddressChange(v: String) = _uiState.update { it.copy(address = v) }
+    fun onAvatarSelected(uri: Uri) = _uiState.update { it.copy(selectedAvatarUri = uri) }
 
-    fun changePassword(current: String, new: String, confirm: String) {
+    fun saveProfile(context: Context) {
         viewModelScope.launch {
-            clearMessages()
-            _isLoading.value = true
-            val result = repository.changePassword(current, new, confirm)
-            _isLoading.value = false
-            result.onSuccess {
-                _successMessage.value = "Password changed successfully"
-            }.onFailure {
-                handleError(it)
-            }
-        }
-    }
-
-    fun updateNotificationPreferences(prefs: NotificationPreferencesDto) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            val result = repository.updateNotificationPreferences(prefs)
-            _isLoading.value = false
-            result.onSuccess {
-                _successMessage.value = "Notification preferences updated"
-                // Update local user state if needed
-                _user.value = _user.value?.copy(notificationPreferences = it)
-            }.onFailure {
-                handleError(it)
-            }
-        }
-    }
-
-    fun updateTwoFactor(enabled: Boolean, method: String?) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            val result = repository.updateTwoFactor(enabled, method)
-            _isLoading.value = false
-            result.onSuccess {
-                _successMessage.value = if (enabled) "Two-factor authentication enabled" else "Two-factor authentication disabled"
-                _user.value = _user.value?.copy(
-                    twoFactorEnabled = it.twoFactorEnabled,
-                    twoFactorMethod = it.twoFactorMethod
+            _uiState.update { it.copy(isSavingProfile = true) }
+            val s = _uiState.value
+            val result = if (s.selectedAvatarUri != null) {
+                repository.updateProfileWithAvatar(
+                    s.name, s.phone, s.gender.ifBlank { null },
+                    s.dob.ifBlank { null }, s.address.ifBlank { null },
+                    s.selectedAvatarUri, context
                 )
-            }.onFailure {
-                handleError(it)
+            } else {
+                repository.updateProfile(UpdateProfileRequest(
+                    name    = s.name,
+                    phone   = s.phone.ifBlank { null },
+                    gender  = s.gender.ifBlank { null },
+                    dob     = s.dob.ifBlank { null },
+                    address = s.address.ifBlank { null }
+                ))
             }
+            result.fold(
+                onSuccess = { user ->
+                    _uiState.update { it.copy(isSavingProfile = false, user = user, selectedAvatarUri = null) }
+                    _events.emit(SettingsEvent.Success("Profile updated successfully"))
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isSavingProfile = false) }
+                    _events.emit(SettingsEvent.Error(e.message ?: "Failed to update profile"))
+                }
+            )
         }
     }
 
-    private fun handleError(throwable: Throwable) {
-        if (throwable is ApiException.ValidationException) {
-            _validationErrors.value = throwable.errors
-            _error.value = "Please fix the errors below"
-        } else if (throwable is ApiException) {
-            _error.value = throwable.getUserFriendlyMessage()
-        } else {
-            _error.value = throwable.message ?: "An unexpected error occurred"
+    // Password fields (local only)
+    fun onCurrentPasswordChange(v: String) = _uiState.update { it.copy(currentPassword = v) }
+    fun onNewPasswordChange(v: String)     = _uiState.update { it.copy(newPassword = v) }
+    fun onConfirmPasswordChange(v: String) = _uiState.update { it.copy(confirmPassword = v) }
+
+    fun changePassword() {
+        val s = _uiState.value
+        if (s.newPassword != s.confirmPassword) {
+            viewModelScope.launch { _events.emit(SettingsEvent.Error("Passwords do not match")) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isChangingPassword = true) }
+            repository.changePassword(s.currentPassword, s.newPassword, s.confirmPassword).fold(
+                onSuccess = { msg ->
+                    _uiState.update { it.copy(
+                        isChangingPassword = false,
+                        currentPassword = "", newPassword = "", confirmPassword = ""
+                    ) }
+                    _events.emit(SettingsEvent.PasswordChanged)
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isChangingPassword = false) }
+                    _events.emit(SettingsEvent.Error(e.message ?: "Failed to change password"))
+                }
+            )
         }
     }
 
-    private fun clearMessages() {
-        _error.value = null
-        _validationErrors.value = emptyMap()
-        _successMessage.value = null
+    // Notification prefs — call API immediately on toggle
+    fun toggleNotifPref(key: String, value: Boolean) {
+        val current = _uiState.value.notifPrefs
+        val updated = when (key) {
+            "email_notices"     -> current.copy(emailNotices = value)
+            "email_marks"       -> current.copy(emailMarks = value)
+            "email_assignments" -> current.copy(emailAssignments = value)
+            "push_notices"      -> current.copy(pushNotices = value)
+            "push_marks"        -> current.copy(pushMarks = value)
+            "push_assignments"  -> current.copy(pushAssignments = value)
+            "push_attendance"   -> current.copy(pushAttendance = value)
+            else -> current
+        }
+        // Optimistic update
+        _uiState.update { it.copy(notifPrefs = updated) }
+        viewModelScope.launch {
+            repository.updateNotificationPreferences(updated).fold(
+                onSuccess = { saved -> _uiState.update { it.copy(notifPrefs = saved) } },
+                onFailure = { _ ->
+                    // Revert on failure
+                    _uiState.update { it.copy(notifPrefs = current) }
+                    _events.emit(SettingsEvent.Error("Failed to save notification preference"))
+                }
+            )
+        }
     }
 
-    fun clearError() {
-        _error.value = null
+    // 2FA toggle
+    fun setTwoFactor(enabled: Boolean, method: String = _uiState.value.twoFactorMethod) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdating2FA = true) }
+            repository.updateTwoFactor(enabled, method).fold(
+                onSuccess = { data ->
+                    _uiState.update { it.copy(
+                        isUpdating2FA    = false,
+                        twoFactorEnabled = data.twoFactorEnabled,
+                        twoFactorMethod  = data.twoFactorMethod
+                    ) }
+                    _events.emit(SettingsEvent.Success(
+                        if (data.twoFactorEnabled) "2FA enabled" else "2FA disabled"
+                    ))
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isUpdating2FA = false) }
+                    _events.emit(SettingsEvent.Error(e.message ?: "Failed to update 2FA"))
+                }
+            )
+        }
     }
+}
 
-    fun clearSuccessMessage() {
-        _successMessage.value = null
-    }
+// UI State
+data class SettingsUiState(
+    val isLoading: Boolean = false,
+    val user: UserProfile? = null,
+    // Profile form
+    val name: String = "",
+    val phone: String = "",
+    val gender: String = "",
+    val dob: String = "",
+    val address: String = "",
+    val selectedAvatarUri: Uri? = null,
+    val isSavingProfile: Boolean = false,
+    // Password form
+    val currentPassword: String = "",
+    val newPassword: String = "",
+    val confirmPassword: String = "",
+    val isChangingPassword: Boolean = false,
+    // Notification prefs
+    val notifPrefs: NotificationPreferences = NotificationPreferences(),
+    // 2FA
+    val twoFactorEnabled: Boolean = false,
+    val twoFactorMethod: String = "email",
+    val isUpdating2FA: Boolean = false
+)
+
+// One-time events
+sealed class SettingsEvent {
+    data class Success(val message: String) : SettingsEvent()
+    data class Error(val message: String) : SettingsEvent()
+    object PasswordChanged : SettingsEvent()
 }

@@ -37,12 +37,14 @@ dependencies {
     // Retrofit
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)
-    
+    implementation("com.google.code.gson:gson:2.11.0")
+
     implementation(libs.hilt.android)
 
     ksp(libs.hilt.compiler)

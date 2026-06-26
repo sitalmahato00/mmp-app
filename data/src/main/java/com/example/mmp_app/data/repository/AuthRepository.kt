@@ -10,6 +10,7 @@ import com.example.mmp_app.core.utils.SessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 import retrofit2.Response
 import javax.inject.Inject
@@ -24,30 +25,41 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
     override fun getUserProfile(): Flow<UserProfile?> = userProfileDao.getUserProfile().map { entity ->
         entity?.let {
-            UserProfile(it.id, it.name, it.email, it.role, it.avatarUrl)
+            UserProfile(
+                id = it.id,
+                name = it.name,
+                email = it.email,
+                role = it.role,
+                avatarUrl = it.avatarUrl ?: ""
+            )
         }
     }
 
     override suspend fun login(email: String, password: String): Result<LoginResult> {
-
         return try {
             val response = apiService.login(LoginRequest(email, password))
-            val body = response.body()
-            if (response.isSuccessful && body != null) {
-                if (body.success) {
-                    sessionManager.saveCredentials(email, password)
-                    if (body.requires2fa == true) {
-                        Result.success(LoginResult.OtpRequired(email))
-                    } else {
-                        val loginData = json.decodeFromJsonElement<LoginResponse>(body.data!!)
-                        saveUserSession(loginData)
-                        Result.success(LoginResult.Success(loginData))
-                    }
-                } else {
-                    Result.failure(Exception(body.message ?: "Login failed"))
+            val body = response.body() ?: try {
+                response.errorBody()?.string()?.let { 
+                    json.decodeFromString<BaseResponse<JsonElement>>(it)
                 }
+            } catch (e: Exception) { null }
+
+            if (body != null) {
+                if (body.requires2fa == true) {
+                    sessionManager.saveCredentials(email, password)
+                    return Result.success(LoginResult.OtpRequired(email))
+                }
+                
+                val data = body.data
+                if (response.isSuccessful && body.success && data != null) {
+                    val loginData = json.decodeFromJsonElement<LoginResponse>(data)
+                    saveUserSession(loginData)
+                    return Result.success(LoginResult.Success(loginData))
+                }
+                
+                Result.failure(Exception(body.message ?: "Login failed"))
             } else {
-                val errorMsg = parseError(response)
+                val errorMsg = "Error: ${response.code()} ${response.message()}"
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
@@ -58,6 +70,7 @@ class AuthRepositoryImpl @Inject constructor(
     private suspend fun saveUserSession(loginData: LoginResponse) {
         sessionManager.saveAuthToken(loginData.accessToken)
         val user = loginData.user
+        sessionManager.saveUserRole(user.role)
         userProfileDao.insertProfile(
             UserProfileEntity(
                 id = user.id,

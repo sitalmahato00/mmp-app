@@ -110,6 +110,18 @@ class SessionManager @Inject constructor(@ApplicationContext private val context
     fun getUserEmail(): String? = sharedPreferences.getString("user_email", null)
     fun getUserPassword(): String? = sharedPreferences.getString("user_password", null)
 
+    fun saveUserRole(role: String) {
+        sharedPreferences.edit().putString("user_role", role).apply()
+    }
+
+    fun getUserRole(): String? = sharedPreferences.getString("user_role", null)
+
+    fun saveTheme(isDark: Boolean) {
+        sharedPreferences.edit().putBoolean("is_dark_theme", isDark).apply()
+    }
+
+    fun isDarkTheme(): Boolean = sharedPreferences.getBoolean("is_dark_theme", false)
+
     fun clearSession() {
         sharedPreferences.edit().clear().apply()
     }

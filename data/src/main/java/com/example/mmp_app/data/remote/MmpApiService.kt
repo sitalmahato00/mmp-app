@@ -145,7 +145,7 @@ interface MmpApiService {
 
     // User/Settings Endpoints
     @GET("v1/user")
-    suspend fun getCurrentUser(): Response<BaseResponse<FullUserDataDto>>
+    suspend fun getCurrentUser(): Response<BaseResponse<UserData>>
 
     @Multipart
     @POST("v1/user/profile")
@@ -157,20 +157,26 @@ interface MmpApiService {
         @Part("address") address: RequestBody?,
         @Part avatar: MultipartBody.Part?,
         @Query("_method") method: String = "PUT"
-    ): Response<BaseResponse<UserDataDto>>
+    ): Response<BaseResponse<UserData>>
 
     @PUT("v1/user/profile")
-    suspend fun updateProfileJson(@Body body: Map<String, String?>): Response<BaseResponse<UserDataDto>>
+    suspend fun updateProfileJson(
+        @Body body: UpdateProfileRequest
+    ): Response<BaseResponse<UserData>>
 
     @POST("v1/user/change-password")
-    suspend fun changePassword(@Body body: ChangePasswordRequest): Response<BaseResponse<TokenDataDto>>
+    suspend fun changePassword(@Body body: ChangePasswordRequest): Response<BaseResponse<TokenData>>
 
     @PUT("v1/user/notification-preferences")
-    suspend fun updateNotificationPreferences(@Body body: NotificationPreferencesRequest): Response<BaseResponse<NotificationPreferencesDataDto>>
+    suspend fun updateNotificationPreferences(
+        @Body body: NotificationPreferencesRequest
+    ): Response<BaseResponse<NotificationPreferencesData>>
 
     @PUT("v1/user/two-factor")
-    suspend fun updateTwoFactor(@Body body: TwoFactorRequest): Response<BaseResponse<TwoFactorDataDto>>
+    suspend fun updateTwoFactor(
+        @Body body: TwoFactorRequest
+    ): Response<BaseResponse<TwoFactorData>>
 
     @POST("auth/refresh-token")
-    suspend fun refreshToken(): Response<BaseResponse<TokenDataDto>>
+    suspend fun refreshToken(): Response<BaseResponse<TokenData>>
 }

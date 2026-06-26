@@ -1,8 +1,9 @@
 package com.example.mmp_app.data.di
 
-import com.example.mmp_app.core.network.AuthInterceptor
-import com.example.mmp_app.core.network.TokenAuthenticator
+import com.example.mmp_app.data.remote.AuthInterceptor
 import com.example.mmp_app.data.remote.MmpApiService
+import com.example.mmp_app.data.remote.SettingsApiService
+import com.example.mmp_app.data.remote.TokenAuthenticator
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,13 +11,12 @@ import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
-
-
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -59,11 +59,11 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit {
-        val contentType = "application/json".toMediaType()
         return Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(json.asConverterFactory(contentType))
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
@@ -71,5 +71,11 @@ object NetworkModule {
     @Singleton
     fun provideMmpApiService(retrofit: Retrofit): MmpApiService {
         return retrofit.create(MmpApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSettingsApiService(retrofit: Retrofit): SettingsApiService {
+        return retrofit.create(SettingsApiService::class.java)
     }
 }

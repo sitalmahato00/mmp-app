@@ -1,12 +1,11 @@
 package com.example.mmp_app.feature.student.ui
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,66 +14,49 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.mmp_app.domain.model.NotificationPreferencesDto
-import com.example.mmp_app.core.presentation.ThemeViewModel
-import java.io.File
-import java.io.FileOutputStream
+import com.example.mmp_app.core.R
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel(),
-    themeViewModel: ThemeViewModel = hiltViewModel()
+    onLogout: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val user by viewModel.user.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val validationErrors by viewModel.validationErrors.collectAsState()
-    val successMessage by viewModel.successMessage.collectAsState()
-    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHost = remember { SnackbarHostState() }
     val context = LocalContext.current
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(error) {
-        error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is SettingsEvent.Success -> snackbarHost.showSnackbar(event.message)
+                is SettingsEvent.Error   -> snackbarHost.showSnackbar(event.message)
+                is SettingsEvent.PasswordChanged -> {
+                    snackbarHost.showSnackbar("Password changed successfully")
+                }
+            }
         }
     }
-
-    LaunchedEffect(successMessage) {
-        successMessage?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearSuccessMessage()
-        }
-    }
-
-    val primaryColor = Color(0xFF2563EB)
-    val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
-    val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
-    val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
     Scaffold(
         topBar = {
@@ -82,494 +64,385 @@ fun SettingsScreen(
                 title = { Text("Settings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = textColor
-                )
+                }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = backgroundColor
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            if (user == null && isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = primaryColor)
-                }
-            } else if (user == null && error != null) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(Icons.Rounded.ErrorOutline, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = error ?: "Failed to load settings", color = textColor, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Button(onClick = { viewModel.loadCurrentUser() }, modifier = Modifier.padding(top = 16.dp)) {
-                        Text("Retry")
-                    }
-                }
-            } else if (user != null) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    item { 
-                        SectionHeader("Edit Profile", Icons.Rounded.Person, primaryColor, textColor)
-                        StyledCard(cardBgColor) {
-                            EditProfileSection(user, viewModel, validationErrors, primaryColor, isLoading)
-                        }
-                    }
-                    
-                    item { 
-                        SectionHeader("Change Password", Icons.Rounded.Lock, primaryColor, textColor)
-                        StyledCard(cardBgColor) {
-                            ChangePasswordSection(viewModel, validationErrors, primaryColor, isLoading)
-                        }
-                    }
-                    
-                    item { 
-                        SectionHeader("Notifications", Icons.Rounded.Notifications, primaryColor, textColor)
-                        StyledCard(cardBgColor) {
-                            NotificationPreferencesSection(user?.notificationPreferences, viewModel, primaryColor, isLoading)
-                        }
-                    }
-                    
-                    item { 
-                        SectionHeader("Security", Icons.Rounded.Security, primaryColor, textColor)
-                        StyledCard(cardBgColor) {
-                            TwoFactorSection(user, viewModel, primaryColor, isLoading)
-                        }
-                    }
-                    
-                    item { Spacer(modifier = Modifier.height(40.dp)) }
-                }
+        snackbarHost = { SnackbarHost(snackbarHost) }
+    ) { padding ->
+        if (state.isLoading && state.user == null) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-            
-            if (isLoading && user != null) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-                    color = primaryColor,
-                    trackColor = primaryColor.copy(alpha = 0.2f)
-                )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                item { Spacer(modifier = Modifier.height(padding.calculateTopPadding())) }
+                
+                item {
+                    SettingsSection(title = "Edit Profile", icon = Icons.Rounded.Person) {
+                        ProfileSection(state, viewModel, context)
+                    }
+                }
+
+                item {
+                    SettingsSection(title = "Change Password", icon = Icons.Rounded.Lock) {
+                        PasswordSection(state, viewModel)
+                    }
+                }
+
+                item {
+                    SettingsSection(title = "Notification Preferences", icon = Icons.Rounded.Notifications) {
+                        NotificationPrefsSection(state, viewModel)
+                    }
+                }
+
+                item {
+                    SettingsSection(title = "Two-Factor Authentication", icon = Icons.Rounded.Security) {
+                        TwoFactorSection(state, viewModel)
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onLogout,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Logout from Account")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun SectionHeader(title: String, icon: ImageVector, color: Color, textColor: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+fun SettingsSection(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    content: @Composable () -> Unit
+) {
+    var expanded by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = textColor
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                contentDescription = null
+            )
+        }
+        
+        AnimatedVisibility(visible = expanded) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                tonalElevation = 1.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    content()
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun StyledCard(backgroundColor: Color, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(24.dp)),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+fun ProfileSection(
+    state: SettingsUiState,
+    viewModel: SettingsViewModel,
+    context: Context
+) {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let { viewModel.onAvatarSelected(it) }
+    }
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Surface(
+                modifier = Modifier.size(100.dp),
+                shape = CircleShape,
+                color = Color.LightGray.copy(alpha = 0.3f)
+            ) {
+                AsyncImage(
+                    model = state.selectedAvatarUri ?: state.user?.avatarUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    fallback = painterResource(id = R.drawable.mmplogo)
+                )
+            }
+            IconButton(
+                onClick = { launcher.launch("image/*") },
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+            ) {
+                Icon(Icons.Rounded.CameraAlt, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = state.name,
+            onValueChange = { viewModel.onNameChange(it) },
+            label = { Text("Full Name") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = state.phone,
+            onValueChange = { viewModel.onPhoneChange(it) },
+            label = { Text("Phone Number") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        GenderDropdown(state.gender) { viewModel.onGenderChange(it) }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        DobPicker(state.dob) { viewModel.onDobChange(it) }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = state.address,
+            onValueChange = { viewModel.onAddressChange(it) },
+            label = { Text("Address") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = { viewModel.saveProfile(context) },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            enabled = !state.isSavingProfile,
+            shape = RoundedCornerShape(12.dp)
         ) {
-            content()
+            if (state.isSavingProfile) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+            else Text("Save Profile Changes")
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditProfileSection(
-    user: com.example.mmp_app.domain.model.FullUserDetailDto?,
-    viewModel: SettingsViewModel,
-    validationErrors: Map<String, List<String>>,
-    primaryColor: Color,
-    isLoading: Boolean = false
-) {
-    val context = LocalContext.current
-    var name by remember(user?.name) { mutableStateOf(user?.name ?: "") }
-    var phone by remember(user?.phone) { mutableStateOf(user?.phone ?: "") }
-    var gender by remember(user?.gender) { mutableStateOf(user?.gender ?: "") }
-    var dob by remember(user?.dob) { mutableStateOf(user?.dob ?: "") }
-    var address by remember(user?.address) { mutableStateOf(user?.address ?: "") }
-    var avatarUri by remember { mutableStateOf<Uri?>(null) }
+fun GenderDropdown(current: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf("male", "female", "other")
     
-    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        avatarUri = uri
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = Modifier.padding(bottom = 8.dp)) {
-            AsyncImage(
-                model = avatarUri ?: user?.avatarUrl,
-                contentDescription = "Avatar",
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray.copy(alpha = 0.3f))
-                    .clickable { imagePicker.launch("image/*") },
-                contentScale = ContentScale.Crop
-            )
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(32.dp)
-                    .clickable { imagePicker.launch("image/*") },
-                shape = CircleShape,
-                color = primaryColor,
-                tonalElevation = 4.dp
-            ) {
-                Icon(Icons.Rounded.CameraAlt, contentDescription = null, modifier = Modifier.padding(6.dp), tint = Color.White)
-            }
-        }
-
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
         OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Full Name") },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Rounded.Person, null, tint = primaryColor) },
-            shape = RoundedCornerShape(16.dp),
-            isError = validationErrors.containsKey("name"),
-            supportingText = { validationErrors["name"]?.firstOrNull()?.let { Text(it) } }
+            value = current.replaceFirstChar { it.uppercase() },
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Gender") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            shape = RoundedCornerShape(12.dp)
         )
-
-        OutlinedTextField(
-            value = phone,
-            onValueChange = { phone = it },
-            label = { Text("Phone Number") },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Rounded.Phone, null, tint = primaryColor) },
-            shape = RoundedCornerShape(16.dp),
-            isError = validationErrors.containsKey("phone"),
-            supportingText = { validationErrors["phone"]?.firstOrNull()?.let { Text(it) } }
-        )
-
-        var genderExpanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(
-            expanded = genderExpanded,
-            onExpandedChange = { genderExpanded = !genderExpanded }
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
         ) {
-            OutlinedTextField(
-                value = gender.replaceFirstChar { it.uppercase() },
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Gender") },
-                modifier = Modifier.fillMaxWidth().menuAnchor(),
-                leadingIcon = { Icon(Icons.Rounded.Wc, null, tint = primaryColor) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
-                shape = RoundedCornerShape(16.dp)
-            )
-            ExposedDropdownMenu(
-                expanded = genderExpanded,
-                onDismissRequest = { genderExpanded = false }
-            ) {
-                listOf("male", "female", "other").forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option.replaceFirstChar { it.uppercase() }) },
-                        onClick = {
-                            gender = option
-                            genderExpanded = false
-                        }
-                    )
-                }
-            }
-        }
-
-        val calendar = Calendar.getInstance()
-        val datePickerDialog = DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                dob = String.format("%04d-%02d-%02d", year, month + 1, day)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = dob,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Date of Birth") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Rounded.Cake, null, tint = primaryColor) },
-                shape = RoundedCornerShape(16.dp),
-                enabled = false,
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLeadingIconColor = primaryColor,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-            Box(Modifier.matchParentSize().clickable { datePickerDialog.show() })
-        }
-
-        OutlinedTextField(
-            value = address,
-            onValueChange = { address = it },
-            label = { Text("Address") },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Rounded.Home, null, tint = primaryColor) },
-            shape = RoundedCornerShape(16.dp)
-        )
-
-        Button(
-            onClick = {
-                val file = avatarUri?.let { uri ->
-                    val inputStream = context.contentResolver.openInputStream(uri)
-                    val tempFile = File(context.cacheDir, "avatar_upload.jpg")
-                    val outputStream = FileOutputStream(tempFile)
-                    inputStream?.copyTo(outputStream)
-                    tempFile
-                }
-                viewModel.updateProfile(name, phone.ifBlank { null }, gender.ifBlank { null }, dob.ifBlank { null }, address.ifBlank { null }, file)
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-            shape = RoundedCornerShape(16.dp),
-            enabled = name.isNotBlank() && !isLoading // Prevent sending empty name and multiple clicks
-        ) {
-            Text("Save Profile Changes", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        }
-    }
-}
-
-@Composable
-fun ChangePasswordSection(viewModel: SettingsViewModel, validationErrors: Map<String, List<String>>, primaryColor: Color, isLoading: Boolean = false) {
-    var currentPassword by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var showCurrent by remember { mutableStateOf(false) }
-    var showNew by remember { mutableStateOf(false) }
-    var showConfirm by remember { mutableStateOf(false) }
-
-    // Instant validation
-    val isPasswordStrong = remember(newPassword) {
-        newPassword.length >= 8 && 
-        newPassword.any { it.isUpperCase() } && 
-        newPassword.any { it.isLowerCase() } && 
-        newPassword.any { it.isDigit() }
-    }
-    
-    val passwordsMatch = remember(newPassword, confirmPassword) {
-        newPassword == confirmPassword && confirmPassword.isNotEmpty()
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        OutlinedTextField(
-            value = currentPassword,
-            onValueChange = { currentPassword = it },
-            label = { Text("Current Password") },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Rounded.LockOpen, null, tint = primaryColor) },
-            shape = RoundedCornerShape(16.dp),
-            visualTransformation = if (showCurrent) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { showCurrent = !showCurrent }) {
-                    Icon(if (showCurrent) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null)
-                }
-            },
-            isError = validationErrors.containsKey("current_password"),
-            supportingText = { validationErrors["current_password"]?.firstOrNull()?.let { Text(it) } }
-        )
-
-        OutlinedTextField(
-            value = newPassword,
-            onValueChange = { newPassword = it },
-            label = { Text("New Password") },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Rounded.Lock, null, tint = primaryColor) },
-            shape = RoundedCornerShape(16.dp),
-            visualTransformation = if (showNew) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { showNew = !showNew }) {
-                    Icon(if (showNew) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null)
-                }
-            },
-            supportingText = { 
-                if (newPassword.isEmpty()) {
-                    Text("Min 8 chars, mixed case + numbers")
-                } else if (!isPasswordStrong) {
-                    Text("Weak password: Need mixed case and digits", color = MaterialTheme.colorScheme.error)
-                } else {
-                    Text("Strong password", color = Color(0xFF10B981)) // Success green
-                }
-            },
-            isError = newPassword.isNotEmpty() && !isPasswordStrong
-        )
-
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
-            label = { Text("Confirm New Password") },
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = { Icon(Icons.Rounded.CheckCircle, null, tint = primaryColor) },
-            shape = RoundedCornerShape(16.dp),
-            visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { showConfirm = !showConfirm }) {
-                    Icon(if (showConfirm) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null)
-                }
-            },
-            supportingText = {
-                if (confirmPassword.isNotEmpty()) {
-                    if (passwordsMatch) {
-                        Text("Passwords match", color = Color(0xFF10B981))
-                    } else {
-                        Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.replaceFirstChar { it.uppercase() }) },
+                    onClick = {
+                        onSelect(option)
+                        expanded = false
                     }
-                }
-            },
-            isError = confirmPassword.isNotEmpty() && !passwordsMatch
-        )
-
-        Button(
-            onClick = {
-                if (passwordsMatch && isPasswordStrong) {
-                    viewModel.changePassword(currentPassword, newPassword, confirmPassword)
-                    currentPassword = ""; newPassword = ""; confirmPassword = ""
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            enabled = currentPassword.isNotBlank() && isPasswordStrong && passwordsMatch && !isLoading,
-            colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("Update Password", fontWeight = FontWeight.Bold)
+                )
+            }
         }
     }
 }
 
 @Composable
-fun NotificationPreferencesSection(prefs: NotificationPreferencesDto?, viewModel: SettingsViewModel, primaryColor: Color, isLoading: Boolean = false) {
-    var localPrefs by remember(prefs) { 
-        mutableStateOf(prefs ?: NotificationPreferencesDto(false, false, false, false, false, false, false)) 
-    }
+fun DobPicker(current: String, onSelect: (String) -> Unit) {
+    val context = LocalContext.current
+    val calendar = Calendar.getInstance()
     
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Email Notifications", style = MaterialTheme.typography.titleMedium, color = primaryColor, fontWeight = FontWeight.Bold)
-        NotificationToggle("Notices", localPrefs.emailNotices, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(emailNotices = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
-        }
-        NotificationToggle("Marks", localPrefs.emailMarks, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(emailMarks = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
-        }
-        NotificationToggle("Assignments", localPrefs.emailAssignments, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(emailAssignments = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
-        }
+    val dialog = DatePickerDialog(
+        context,
+        { _, year, month, day ->
+            val formatted = String.format("%04d-%02d-%02d", year, month + 1, day)
+            onSelect(formatted)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
 
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Push Notifications", style = MaterialTheme.typography.titleMedium, color = primaryColor, fontWeight = FontWeight.Bold)
-        NotificationToggle("Notices", localPrefs.pushNotices, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(pushNotices = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
-        }
-        NotificationToggle("Marks", localPrefs.pushMarks, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(pushMarks = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
-        }
-        NotificationToggle("Assignments", localPrefs.pushAssignments, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(pushAssignments = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
-        }
-        NotificationToggle("Attendance", localPrefs.pushAttendance, primaryColor, !isLoading) { 
-            localPrefs = localPrefs.copy(pushAttendance = it)
-            viewModel.updateNotificationPreferences(localPrefs) 
+    OutlinedTextField(
+        value = current,
+        onValueChange = {},
+        readOnly = true,
+        label = { Text("Date of Birth") },
+        modifier = Modifier.fillMaxWidth().clickable { dialog.show() },
+        enabled = false,
+        colors = OutlinedTextFieldDefaults.colors(
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledBorderColor = MaterialTheme.colorScheme.outline,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+fun PasswordSection(state: SettingsUiState, viewModel: SettingsViewModel) {
+    var curVisible by remember { mutableStateOf(false) }
+    var newVisible by remember { mutableStateOf(false) }
+    var conVisible by remember { mutableStateOf(false) }
+
+    Column {
+        PasswordField(
+            value = state.currentPassword,
+            onValueChange = { viewModel.onCurrentPasswordChange(it) },
+            label = "Current Password",
+            visible = curVisible,
+            onVisibleChange = { curVisible = it }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        PasswordField(
+            value = state.newPassword,
+            onValueChange = { viewModel.onNewPasswordChange(it) },
+            label = "New Password",
+            visible = newVisible,
+            onVisibleChange = { newVisible = it }
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        PasswordField(
+            value = state.confirmPassword,
+            onValueChange = { viewModel.onConfirmPasswordChange(it) },
+            label = "Confirm Password",
+            visible = conVisible,
+            onVisibleChange = { conVisible = it }
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = { viewModel.changePassword() },
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            enabled = !state.isChangingPassword && state.currentPassword.isNotBlank() && state.newPassword.isNotBlank(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            if (state.isChangingPassword) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+            else Text("Update Password")
         }
     }
 }
 
 @Composable
-fun NotificationToggle(label: String, checked: Boolean, primaryColor: Color, enabled: Boolean = true, onCheckedChange: (Boolean) -> Unit) {
+fun PasswordField(value: String, onValueChange: (String) -> Unit, label: String, visible: Boolean, onVisibleChange: (Boolean) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            IconButton(onClick = { onVisibleChange(!visible) }) {
+                Icon(if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null)
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+fun NotificationPrefsSection(state: SettingsUiState, viewModel: SettingsViewModel) {
+    Column {
+        Text("Email Notifications", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        NotificationRow("Notices", state.notifPrefs.emailNotices) { viewModel.toggleNotifPref("email_notices", it) }
+        NotificationRow("Marks", state.notifPrefs.emailMarks) { viewModel.toggleNotifPref("email_marks", it) }
+        NotificationRow("Assignments", state.notifPrefs.emailAssignments) { viewModel.toggleNotifPref("email_assignments", it) }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text("Push Notifications", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        NotificationRow("Notices", state.notifPrefs.pushNotices) { viewModel.toggleNotifPref("push_notices", it) }
+        NotificationRow("Marks", state.notifPrefs.pushMarks) { viewModel.toggleNotifPref("push_marks", it) }
+        NotificationRow("Assignments", state.notifPrefs.pushAssignments) { viewModel.toggleNotifPref("push_assignments", it) }
+        NotificationRow("Attendance", state.notifPrefs.pushAttendance) { viewModel.toggleNotifPref("push_attendance", it) }
+    }
+}
+
+@Composable
+fun NotificationRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge)
-        Switch(
-            checked = checked, 
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = primaryColor)
-        )
+        Text(label, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Composable
-fun TwoFactorSection(user: com.example.mmp_app.domain.model.FullUserDetailDto?, viewModel: SettingsViewModel, primaryColor: Color, isLoading: Boolean = false) {
-    // Use local state to handle the switch immediately, then update when user state changes
-    var localEnabled by remember(user?.twoFactorEnabled) { mutableStateOf(user?.twoFactorEnabled ?: false) }
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+fun TwoFactorSection(state: SettingsUiState, viewModel: SettingsViewModel) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Two-Factor Authentication", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text("Verification codes will be sent to your email", style = MaterialTheme.typography.bodySmall)
+                Text("Enable Two-Factor Auth", style = MaterialTheme.typography.bodyLarge)
+                Text("Receive a code when you log in", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
-            Switch(
-                checked = localEnabled,
-                onCheckedChange = { 
-                    localEnabled = it
-                    // Force email method
-                    viewModel.updateTwoFactor(it, if (it) "email" else null) 
-                },
-                enabled = !isLoading,
-                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = primaryColor)
-            )
+            if (state.isUpdating2FA) CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            else Switch(checked = state.twoFactorEnabled, onCheckedChange = { viewModel.setTwoFactor(it) })
         }
-
-        AnimatedVisibility(
-            visible = localEnabled,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            Column(modifier = Modifier.padding(top = 8.dp).fillMaxWidth()) {
-                Text("Verification Method", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = primaryColor)
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically, 
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    ) {
-                        RadioButton(
-                            selected = true, 
-                            onClick = null, // Always selected since it's the only method
-                            colors = RadioButtonDefaults.colors(selectedColor = primaryColor)
-                        )
-                        Text("Email (${user?.email ?: "loading..."})")
-                    }
-                }
+        
+        if (state.twoFactorEnabled) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Verification Method", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = state.twoFactorMethod == "email", onClick = { viewModel.setTwoFactor(true, "email") })
+                Text("Email", modifier = Modifier.clickable { viewModel.setTwoFactor(true, "email") })
+                Spacer(modifier = Modifier.width(24.dp))
+                RadioButton(selected = state.twoFactorMethod == "phone", onClick = { viewModel.setTwoFactor(true, "phone") })
+                Text("Phone", modifier = Modifier.clickable { viewModel.setTwoFactor(true, "phone") })
             }
         }
     }
 }
-

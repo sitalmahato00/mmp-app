@@ -19,7 +19,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.example.mmp_app.core.ui.theme.MMPAppTheme
-import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.domain.repository.AuthRepository
 
 
@@ -215,16 +214,25 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 isDarkTheme = isDarkTheme
             )
         }
-        entry<Routes.Settings> { SettingsScreen(onBack = { navigator.goBack() }) }
+        entry<Routes.Settings> { 
+            SettingsScreen(
+                onBack = { navigator.goBack() },
+                onLogout = {
+                    scope.launch {
+                        authRepository.logout()
+                        authViewModel.resetAuthState()
+                        navigator.replace(Routes.Login)
+                    }
+                }
+            ) 
+        }
         entry<Routes.Notifications> { 
             NotificationScreen(
                 onBack = { navigator.goBack() },
                 onOpenUrl = { url ->
                     try {
                         val intent = androidx.browser.customtabs.CustomTabsIntent.Builder().build()
-                        intent.launchUrl(cont
-
-                                ext, android.net.Uri.parse(url))
+                        intent.launchUrl(context, android.net.Uri.parse(url))
                     } catch (e: Exception) {
                         // Fallback to basic browser intent if custom tabs fail
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
@@ -267,7 +275,7 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
     )
 }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaceholderScreen(title: String, onBack: () -> Unit) {
     Scaffold(
