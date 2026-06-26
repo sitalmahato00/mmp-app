@@ -31,6 +31,7 @@ import com.example.mmp_app.core.ui.theme.MMPAppTheme
 import com.example.mmp_app.core.ui.StudentDashboard
 
 import com.example.mmp_app.domain.model.*
+import com.example.mmp_app.domain.model.ParentNoticeDto
 import com.example.mmp_app.feature.teacher.ui.TeacherDashboard
 import com.example.mmp_app.feature.parent.ui.ParentDashboard
 import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
@@ -180,8 +181,15 @@ fun DashboardAdaptiveContent(
     MMPAppTheme(darkTheme = isDarkTheme) {
         var selectedItem by remember { mutableIntStateOf(0) }
         val isStudent = userProfile?.role?.lowercase() == "student"
+        val isParent = userProfile?.role?.lowercase() == "parent"
 
-        if (isStudent && selectedItem == 0) {
+        if (isLoading && studentData == null && teacherData == null && parentData == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (error != null && studentData == null && teacherData == null && parentData == null) {
+            ErrorState(error!!, onRetry)
+        } else if (isStudent && selectedItem == 0) {
             MainDashboardContent(
                 userProfile, studentData, recentNotices, attendanceSummary, 
                 subjects, assignments, timetable, downloads, teacherData, parentData,
@@ -193,6 +201,39 @@ fun DashboardAdaptiveContent(
                 onNavigateToSettings, onNavigateToNotifications, onLogout, 
                 unreadCount, isDarkTheme, onToggleTheme
             )
+        } else if (isParent) {
+            when (selectedItem) {
+                0 -> MainDashboardContent(
+                    userProfile, studentData, recentNotices, attendanceSummary,
+                    subjects, assignments, timetable, downloads, teacherData, parentData,
+                    onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
+                    onNavigateToFees, { selectedItem = 1 }, onRecordAttendance,
+                    onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
+                    onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
+                    { selectedItem = 2 }, onNavigateToDownloads, { selectedItem = 3 },
+                    onNavigateToSettings, onNavigateToNotifications, onLogout,
+                    unreadCount, isDarkTheme, onToggleTheme
+                )
+                1 -> ParentNoticesScreen(
+                    onBack = { selectedItem = 0 },
+                    isDarkTheme = isDarkTheme
+                )
+                2 -> TimetableScreen(onBack = { selectedItem = 0 })
+                3 -> ParentProfileScreen(onLogout = onLogout)
+                else -> {
+                    MainDashboardContent(
+                        userProfile, studentData, recentNotices, attendanceSummary,
+                        subjects, assignments, timetable, downloads, teacherData, parentData,
+                        onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
+                        onNavigateToFees, { selectedItem = 1 }, onRecordAttendance,
+                        onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
+                        onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
+                        { selectedItem = 2 }, onNavigateToDownloads, { selectedItem = 3 },
+                        onNavigateToSettings, onNavigateToNotifications, onLogout,
+                        unreadCount, isDarkTheme, onToggleTheme
+                    )
+                }
+            }
         } else {
             // Otherwise, use the standard adaptive layout
             val adaptiveInfo = currentWindowAdaptiveInfo()
@@ -452,7 +493,10 @@ fun DashboardAdaptiveContent(
                                     1 -> if (userProfile?.role?.lowercase() == "student") {
                                         SubjectsScreenContent(onNavigateToSubjects)
                                     } else if (userProfile?.role?.lowercase() == "parent") {
-                                        ParentNoticesScreen(onNoticeClick = { /* Handle notice click if needed */ })
+                                        ParentNoticesScreen(
+                                            onBack = { selectedItem = 0 },
+                                            isDarkTheme = isDarkTheme
+                                        )
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
@@ -570,7 +614,26 @@ fun MainDashboardContent(
             if (parentData != null) {
                 ParentDashboard(
                     data = parentData,
-                    onChildClick = onNavigateToChildDetails
+                    recentNotices = recentNotices.map { notice ->
+                        ParentNoticeDto(
+                            id = notice.id,
+                            title = notice.title,
+                            type = notice.type ?: "general",
+                            publishedAt = notice.publishedAt,
+                            content = notice.content
+                        )
+                    },
+                    onChildClick = onNavigateToChildDetails,
+                    onAttendanceClick = onNavigateToChildDetails, // Reusing child details for now or as a proxy
+                    onMarksClick = onNavigateToChildDetails,
+                    onAssignmentsClick = onNavigateToChildDetails,
+                    onTimetableClick = onNavigateToChildDetails,
+                    onNoticesClick = onNavigateToNotices,
+                    onProfileClick = onNavigateToProfile,
+                    onSettingsClick = onNavigateToSettings,
+                    onLogoutClick = onLogout,
+                    onToggleTheme = onToggleTheme,
+                    isDarkTheme = isDarkTheme
                 )
             }
         }

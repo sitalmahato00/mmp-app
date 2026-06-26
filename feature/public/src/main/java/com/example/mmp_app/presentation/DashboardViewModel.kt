@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.domain.repository.DashboardRepository
+import com.example.mmp_app.domain.repository.ParentRepository
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val repository: DashboardRepository
+    private val repository: DashboardRepository,
+    private val parentRepository: ParentRepository
 ) : ViewModel() {
 
     private val _studentDashboard = MutableStateFlow<StudentDashboardDto?>(null)
@@ -190,14 +192,32 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
-            repository.getParentDashboard().collect { result ->
-                _isLoading.value = false
-                result.onSuccess {
-                    _parentDashboard.value = it
-                }.onFailure {
-                    _error.value = it.message
+            
+            val dashboardJob = launch {
+                repository.getParentDashboard().collect { result ->
+                    result.onSuccess { _parentDashboard.value = it }
+                        .onFailure { _error.value = it.message }
                 }
             }
+            
+            val noticesJob = launch {
+                parentRepository.getNotices().collect { result ->
+                    result.onSuccess { parentNotices ->
+                        _notices.value = parentNotices.map { pn ->
+                            NoticeDto(
+                                id = pn.id,
+                                title = pn.title,
+                                content = pn.content,
+                                type = pn.type,
+                                publishedAt = pn.publishedAt
+                            )
+                        }
+                    }
+                }
+            }
+            
+            joinAll(dashboardJob, noticesJob)
+            _isLoading.value = false
         }
     }
 
