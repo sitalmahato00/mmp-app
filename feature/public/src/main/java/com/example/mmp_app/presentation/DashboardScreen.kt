@@ -33,7 +33,10 @@ import com.example.mmp_app.core.ui.StudentDashboard
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.feature.teacher.ui.TeacherDashboard
 import com.example.mmp_app.feature.parent.ui.ParentDashboard
+import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
+import com.example.mmp_app.feature.parent.ui.ParentProfileScreen
 import com.example.mmp_app.feature.student.ui.NotificationViewModel
+import com.example.mmp_app.feature.student.ui.TimetableScreen
 import kotlinx.coroutines.launch
 
 
@@ -246,6 +249,29 @@ fun DashboardAdaptiveContent(
                             icon = { Icon(Icons.Rounded.Dashboard, null) },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
+
+                        if (userProfile?.role?.lowercase() == "parent") {
+                            NavigationDrawerItem(
+                                label = { Text("Notices") },
+                                selected = selectedItem == 1,
+                                onClick = {
+                                    selectedItem = 1
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.Notifications, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Profile") },
+                                selected = selectedItem == 3,
+                                onClick = {
+                                    selectedItem = 3
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
                         
                         NavigationDrawerItem(
                             label = { Text("Logout") },
@@ -339,6 +365,19 @@ fun DashboardAdaptiveContent(
                                             icon = { Icon(Icons.Rounded.EventNote, null) },
                                             label = { Text("Schedule") }
                                         )
+                                    } else if (userProfile?.role?.lowercase() == "parent") {
+                                        NavigationBarItem(
+                                            selected = selectedItem == 1,
+                                            onClick = { selectedItem = 1 },
+                                            icon = { Icon(Icons.Rounded.Notifications, null) },
+                                            label = { Text("Notices") }
+                                        )
+                                        NavigationBarItem(
+                                            selected = selectedItem == 2,
+                                            onClick = { selectedItem = 2 },
+                                            icon = { Icon(Icons.Rounded.EventNote, null) },
+                                            label = { Text("Schedule") }
+                                        )
                                     } else {
                                         NavigationBarItem(
                                             selected = selectedItem == 1,
@@ -369,6 +408,26 @@ fun DashboardAdaptiveContent(
                                     icon = { Icon(Icons.Rounded.Dashboard, null) },
                                     label = { Text("Home") }
                                 )
+                                if (userProfile?.role?.lowercase() == "parent") {
+                                    NavigationRailItem(
+                                        selected = selectedItem == 1,
+                                        onClick = { selectedItem = 1 },
+                                        icon = { Icon(Icons.Rounded.Notifications, null) },
+                                        label = { Text("Notices") }
+                                    )
+                                    NavigationRailItem(
+                                        selected = selectedItem == 2,
+                                        onClick = { selectedItem = 2 },
+                                        icon = { Icon(Icons.Rounded.EventNote, null) },
+                                        label = { Text("Schedule") }
+                                    )
+                                    NavigationRailItem(
+                                        selected = selectedItem == 3,
+                                        onClick = { selectedItem = 3 },
+                                        icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                        label = { Text("Profile") }
+                                    )
+                                }
                             }
                         }
                         
@@ -392,11 +451,21 @@ fun DashboardAdaptiveContent(
                                     )
                                     1 -> if (userProfile?.role?.lowercase() == "student") {
                                         SubjectsScreenContent(onNavigateToSubjects)
+                                    } else if (userProfile?.role?.lowercase() == "parent") {
+                                        ParentNoticesScreen(onNoticeClick = { /* Handle notice click if needed */ })
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
-                                    2 -> TimetableScreenContent(onNavigateToTimetable)
-                                    3 -> ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
+                                    2 -> if (userProfile?.role?.lowercase() == "parent") {
+                                        TimetableScreen(onBack = { selectedItem = 0 })
+                                    } else {
+                                        TimetableScreenContent(onNavigateToTimetable)
+                                    }
+                                    3 -> if (userProfile?.role?.lowercase() == "parent") {
+                                        ParentProfileScreen(onLogout = onLogout)
+                                    } else {
+                                        ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
+                                    }
                                 }
                             }
                         }

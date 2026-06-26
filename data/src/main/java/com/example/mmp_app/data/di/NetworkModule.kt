@@ -2,6 +2,7 @@ package com.example.mmp_app.data.di
 
 import com.example.mmp_app.data.remote.AuthInterceptor
 import com.example.mmp_app.data.remote.MmpApiService
+import com.example.mmp_app.data.remote.ParentApiService
 import com.example.mmp_app.data.remote.SettingsApiService
 import com.example.mmp_app.data.remote.TokenAuthenticator
 import dagger.Module
@@ -89,5 +90,11 @@ object NetworkModule {
     @Singleton
     fun provideSettingsApiService(@Named("GsonRetrofit") retrofit: Retrofit): SettingsApiService {
         return retrofit.create(SettingsApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideParentApiService(@Named("KotlinxRetrofit") retrofit: Retrofit): ParentApiService {
+        return retrofit.create(ParentApiService::class.java)
     }
 }

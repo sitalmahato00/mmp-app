@@ -12,8 +12,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.mmp_app.domain.model.ChildDto
 import com.example.mmp_app.domain.model.ParentDashboardDto
+import com.example.mmp_app.domain.model.ChildSummaryDto
 import com.example.mmp_app.core.ui.KpiCard
 import com.example.mmp_app.core.ui.theme.MMPAppTheme
 
@@ -30,9 +30,14 @@ fun ParentDashboard(
     ) {
         item {
             Text(
-                text = "Children Overview",
-                style = MaterialTheme.typography.titleLarge,
+                text = "Welcome, ${data.parentName}",
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Children Overview",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -47,11 +52,11 @@ fun ParentDashboard(
 
 @Composable
 fun ChildCard(
-    child: ChildDto,
+    child: ChildSummaryDto,
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         onClick = onClick
@@ -60,26 +65,39 @@ fun ChildCard(
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Person, contentDescription = null, modifier = Modifier.size(32.dp))
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = child.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Column {
+                    Text(text = child.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = child.program, style = MaterialTheme.typography.bodySmall)
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 KpiCard(
                     title = "Attendance",
-                    value = "${child.attendancePercentage}%",
-                    icon = Icons.Rounded.Person, // Replace with appropriate icon
-                    containerColor = Color(0xFFE3F2FD),
+                    value = "${child.attendancePercent.toInt()}%",
+                    icon = Icons.Rounded.Person,
+                    containerColor = getAttendanceColor(child.attendanceStatus),
                     modifier = Modifier.weight(1f)
                 )
+                // Using program as a placeholder for another KPI if needed, or keeping it clean
                 KpiCard(
-                    title = "Avg Marks",
-                    value = "${child.averageMarks}%",
-                    icon = Icons.Rounded.Person, // Replace with appropriate icon
+                    title = "Status",
+                    value = child.attendanceStatus.replaceFirstChar { it.uppercase() },
+                    icon = Icons.Rounded.Person,
                     containerColor = Color(0xFFF1F8E9),
                     modifier = Modifier.weight(1f)
                 )
             }
         }
+    }
+}
+
+fun getAttendanceColor(status: String): Color {
+    return when (status.lowercase()) {
+        "good" -> Color(0xFFE8F5E9)
+        "medium" -> Color(0xFFFFF8E1)
+        "low" -> Color(0xFFFFEBEE)
+        else -> Color(0xFFE3F2FD)
     }
 }
 
@@ -89,10 +107,11 @@ fun ParentDashboardPreview() {
     MMPAppTheme {
         ParentDashboard(
             data = ParentDashboardDto(
+                parentName = "John Smith",
                 childrenCount = 2,
                 children = listOf(
-                    ChildDto(1, "Alice Smith", "Student", 92f, 88.5f),
-                    ChildDto(2, "Bob Smith", "Student", 85f, 76f)
+                    ChildSummaryDto(1, "Alice Smith", "S001", "CS", 1, "A", "", 92.0, "good"),
+                    ChildSummaryDto(2, "Bob Smith", "S002", "CS", 1, "A", "", 65.0, "medium")
                 )
             )
         )
