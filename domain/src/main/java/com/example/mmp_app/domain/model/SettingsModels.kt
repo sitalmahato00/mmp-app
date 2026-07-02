@@ -1,5 +1,6 @@
 package com.example.mmp_app.domain.model
 
+import kotlinx.serialization.Serializable
 import com.google.gson.annotations.SerializedName
 
 // GET /api/v1/user response
@@ -111,8 +112,11 @@ data class RefreshTokenResponse(
 )
 
 // Generic error response (HTTP 422 / 401 / 500)
+@Serializable
 data class ApiError(
     val success: Boolean,
     val message: String,
     val errors: Map<String, List<String>>? = null  // validation errors map
 )
+
+class ValidationException(val messageStr: String, val errors: Map<String, List<String>>?) : Exception(messageStr)

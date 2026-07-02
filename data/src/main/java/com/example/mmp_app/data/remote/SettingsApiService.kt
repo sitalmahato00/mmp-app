@@ -12,9 +12,9 @@ interface SettingsApiService {
     @GET("v1/user")
     suspend fun getUser(): Response<UserResponse>
 
-    // Update profile
+    // Use this when avatar IS being uploaded (MUST be POST, not PUT)
     @Multipart
-    @PUT("v1/user/profile")
+    @POST("v1/user/profile")
     suspend fun updateProfileWithAvatar(
         @Part("name") name: RequestBody?,
         @Part("phone") phone: RequestBody?,
@@ -24,8 +24,9 @@ interface SettingsApiService {
         @Part avatar: MultipartBody.Part?
     ): Response<ProfileUpdateResponse>
 
+    // Use this when NO avatar is being uploaded (text fields only)
     @PUT("v1/user/profile")
-    suspend fun updateProfile(
+    suspend fun updateProfileJson(
         @Body request: UpdateProfileRequest
     ): Response<ProfileUpdateResponse>
 

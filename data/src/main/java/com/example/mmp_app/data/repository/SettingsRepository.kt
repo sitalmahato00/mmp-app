@@ -22,13 +22,12 @@ class SettingsRepository @Inject constructor(
     private val userProfileDao: UserProfileDao
 ) {
     // Parse error body from Retrofit Response
-    private fun parseError(response: Response<*>): String {
+    private fun parseError(response: Response<*>): Exception {
         return try {
-            val json = response.errorBody()?.string() ?: return "Unknown error"
+            val json = response.errorBody()?.string() ?: return Exception("Unknown error")
             val err = Gson().fromJson(json, ApiError::class.java)
-            // If validation errors exist, join them
-            err.errors?.values?.flatten()?.firstOrNull() ?: err.message
-        } catch (e: Exception) { "Unknown error" }
+            ValidationException(err.message, err.errors)
+        } catch (e: Exception) { Exception("Unknown error") }
     }
 
     private suspend fun syncToLocal(user: UserProfile) {
@@ -49,39 +48,54 @@ class SettingsRepository @Inject constructor(
             val user = r.body()!!.data.user
             syncToLocal(user)
             Result.success(user)
-        } else Result.failure(Exception(parseError(r)))
+        } else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 
-    suspend fun updateProfile(request: UpdateProfileRequest): Result<UserProfile> = try {
-        val r = api.updateProfile(request)
-        if (r.isSuccessful && r.body()?.success == true) {
-            val user = r.body()!!.data.user
-            syncToLocal(user)
-            Result.success(user)
-        } else Result.failure(Exception(parseError(r)))
-    } catch (e: Exception) { Result.failure(e) }
-
-    suspend fun updateProfileWithAvatar(
-        name: String?, phone: String?, gender: String?,
-        dob: String?, address: String?, avatarUri: Uri?, context: Context
+    suspend fun updateProfile(
+        name: String?,
+        phone: String?,
+        gender: String?,
+        dob: String?,
+        address: String?,
+        avatarUri: Uri?,
+        context: Context
     ): Result<UserProfile> = try {
-        val namePart   = name?.toRequestBody("text/plain".toMediaType())
-        val phonePart  = phone?.toRequestBody("text/plain".toMediaType())
-        val genderPart = gender?.toRequestBody("text/plain".toMediaType())
-        val dobPart    = dob?.toRequestBody("text/plain".toMediaType())
-        val addrPart   = address?.toRequestBody("text/plain".toMediaType())
-        val avatarPart = avatarUri?.let {
-            val stream = context.contentResolver.openInputStream(it)!!
-            val bytes  = stream.readBytes()
-            val body   = bytes.toRequestBody("image/*".toMediaType())
-            MultipartBody.Part.createFormData("avatar", "avatar.jpg", body)
+        val response = if (avatarUri != null) {
+            // POST with multipart when avatar selected
+            val toRequestBody = { s: String? -> s?.toRequestBody("text/plain".toMediaType()) }
+
+            val avatarPart = context.contentResolver
+                .openInputStream(avatarUri)!!
+                .readBytes()
+                .toRequestBody("image/*".toMediaType())
+                .let { MultipartBody.Part.createFormData("avatar", "avatar.jpg", it) }
+
+            api.updateProfileWithAvatar(
+                name    = toRequestBody(name),
+                phone   = toRequestBody(phone),
+                gender  = toRequestBody(gender),
+                dob     = toRequestBody(dob),
+                address = toRequestBody(address),
+                avatar  = avatarPart
+            )
+        } else {
+            // PUT with JSON when no avatar
+            api.updateProfileJson(
+                UpdateProfileRequest(
+                    name    = name,
+                    phone   = phone,
+                    gender  = gender,
+                    dob     = dob,
+                    address = address
+                )
+            )
         }
-        val r = api.updateProfileWithAvatar(namePart, phonePart, genderPart, dobPart, addrPart, avatarPart)
-        if (r.isSuccessful && r.body()?.success == true) {
-            val user = r.body()!!.data.user
+
+        if (response.isSuccessful && response.body()?.success == true) {
+            val user = response.body()!!.data.user
             syncToLocal(user)
             Result.success(user)
-        } else Result.failure(Exception(parseError(r)))
+        } else Result.failure(parseError(response))
     } catch (e: Exception) { Result.failure(e) }
 
     suspend fun changePassword(
@@ -92,7 +106,7 @@ class SettingsRepository @Inject constructor(
             // Save new token immediately
             r.body()!!.data?.token?.let { tokenManager.saveToken(it) }
             Result.success(r.body()!!.message)
-        } else Result.failure(Exception(parseError(r)))
+        } else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 
     suspend fun updateNotificationPreferences(
@@ -101,7 +115,7 @@ class SettingsRepository @Inject constructor(
         val r = api.updateNotificationPreferences(NotificationPreferencesRequest(prefs))
         if (r.isSuccessful && r.body()?.success == true)
             Result.success(r.body()!!.data.notificationPreferences)
-        else Result.failure(Exception(parseError(r)))
+        else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 
     suspend fun updateTwoFactor(
@@ -110,6 +124,6 @@ class SettingsRepository @Inject constructor(
         val r = api.updateTwoFactor(TwoFactorRequest(enabled, method))
         if (r.isSuccessful && r.body()?.success == true)
             Result.success(r.body()!!.data)
-        else Result.failure(Exception(parseError(r)))
+        else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 }

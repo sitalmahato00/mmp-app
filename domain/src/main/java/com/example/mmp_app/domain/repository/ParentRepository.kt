@@ -18,4 +18,11 @@ interface ParentRepository {
     fun getNoticeDetail(noticeId: Int): Flow<Result<ParentNoticeDto>>
     fun getProfile(): Flow<Result<ParentProfileDto>>
     suspend fun updateProfile(request: UpdateParentProfileRequest): Result<ParentProfileDto>
+    suspend fun updateProfileMultipart(
+        name: String,
+        phone: String?,
+        address: String?,
+        occupation: String?,
+        avatarBytes: ByteArray?
+    ): Result<ParentProfileDto>
 }

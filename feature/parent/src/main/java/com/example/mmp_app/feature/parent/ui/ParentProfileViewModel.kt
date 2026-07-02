@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mmp_app.domain.model.ParentProfileDto
 import com.example.mmp_app.domain.model.UpdateParentProfileRequest
+import com.example.mmp_app.domain.model.ValidationException
 import com.example.mmp_app.domain.repository.ParentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,9 @@ data class ParentProfileState(
     val isLoading: Boolean = false,
     val isUpdating: Boolean = false,
     val error: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val selectedAvatarBytes: ByteArray? = null,
+    val fieldErrors: Map<String, List<String>> = emptyMap()
 )
 
 @HiltViewModel
@@ -47,15 +50,30 @@ class ParentProfileViewModel @Inject constructor(
 
     fun updateProfile(name: String, phone: String?, address: String?, occupation: String?) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isUpdating = true, error = null, successMessage = null) }
-            val request = UpdateParentProfileRequest(name, phone, address, occupation)
-            val result = repository.updateProfile(request)
+            _uiState.update { it.copy(isUpdating = true, error = null, successMessage = null, fieldErrors = emptyMap()) }
+            val avatarBytes = _uiState.value.selectedAvatarBytes
+            val result = if (avatarBytes != null) {
+                repository.updateProfileMultipart(name, phone, address, occupation, avatarBytes)
+            } else {
+                val request = UpdateParentProfileRequest(name, phone, address, occupation)
+                repository.updateProfile(request)
+            }
             result.onSuccess { data ->
-                _uiState.update { it.copy(profile = data, isUpdating = false, successMessage = "Profile updated successfully") }
+                _uiState.update { it.copy(profile = data, isUpdating = false, successMessage = "Profile updated successfully", selectedAvatarBytes = null) }
             }.onFailure { error ->
-                _uiState.update { it.copy(error = error.message, isUpdating = false) }
+                _uiState.update { it.copy(isUpdating = false) }
+                if (error is ValidationException) {
+                    _uiState.update { it.copy(fieldErrors = error.errors ?: emptyMap()) }
+                    _uiState.update { it.copy(error = error.message) }
+                } else {
+                    _uiState.update { it.copy(error = error.message) }
+                }
             }
         }
+    }
+
+    fun onAvatarSelected(bytes: ByteArray) {
+        _uiState.update { it.copy(selectedAvatarBytes = bytes) }
     }
 
     fun clearMessages() {

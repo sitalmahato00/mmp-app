@@ -29,10 +29,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mmp_app.core.R
+import java.io.File
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -177,14 +179,24 @@ fun SettingsSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSection(
     state: SettingsUiState,
     viewModel: SettingsViewModel,
     context: Context
 ) {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    var showImagePicker by remember { mutableStateOf(false) }
+
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { viewModel.onAvatarSelected(it) }
+    }
+
+    var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            tempPhotoUri?.let { viewModel.onAvatarSelected(it) }
+        }
     }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -203,7 +215,7 @@ fun ProfileSection(
                 )
             }
             IconButton(
-                onClick = { launcher.launch("image/*") },
+                onClick = { showImagePicker = true },
                 modifier = Modifier
                     .size(32.dp)
                     .background(MaterialTheme.colorScheme.primary, CircleShape)
@@ -219,7 +231,9 @@ fun ProfileSection(
             onValueChange = { viewModel.onNameChange(it) },
             label = { Text("Full Name") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            isError = state.fieldErrors.containsKey("name"),
+            supportingText = state.fieldErrors["name"]?.let { { Text(it.joinToString(", ")) } }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -229,16 +243,18 @@ fun ProfileSection(
             onValueChange = { viewModel.onPhoneChange(it) },
             label = { Text("Phone Number") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            isError = state.fieldErrors.containsKey("phone"),
+            supportingText = state.fieldErrors["phone"]?.let { { Text(it.joinToString(", ")) } }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        GenderDropdown(state.gender) { viewModel.onGenderChange(it) }
+        GenderDropdown(state.gender, state.fieldErrors["gender"]) { viewModel.onGenderChange(it) }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        DobPicker(state.dob) { viewModel.onDobChange(it) }
+        DobPicker(state.dob, state.fieldErrors["dob"]) { viewModel.onDobChange(it) }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -247,7 +263,9 @@ fun ProfileSection(
             onValueChange = { viewModel.onAddressChange(it) },
             label = { Text("Address") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            isError = state.fieldErrors.containsKey("address"),
+            supportingText = state.fieldErrors["address"]?.let { { Text(it.joinToString(", ")) } }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -262,11 +280,37 @@ fun ProfileSection(
             else Text("Save Profile Changes")
         }
     }
+
+    if (showImagePicker) {
+        ModalBottomSheet(onDismissRequest = { showImagePicker = false }) {
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+                Text("Update Profile Photo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                ListItem(
+                    headlineContent = { Text("Camera") },
+                    leadingContent = { Icon(Icons.Rounded.CameraAlt, null) },
+                    modifier = Modifier.clickable {
+                        val file = File(context.cacheDir, "temp_photo.jpg")
+                        tempPhotoUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        cameraLauncher.launch(tempPhotoUri!!)
+                        showImagePicker = false
+                    }
+                )
+                ListItem(
+                    headlineContent = { Text("Gallery") },
+                    leadingContent = { Icon(Icons.Rounded.PhotoLibrary, null) },
+                    modifier = Modifier.clickable {
+                        galleryLauncher.launch("image/*")
+                        showImagePicker = false
+                    }
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GenderDropdown(current: String, onSelect: (String) -> Unit) {
+fun GenderDropdown(current: String, errors: List<String>?, onSelect: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val options = listOf("male", "female", "other")
     
@@ -281,7 +325,9 @@ fun GenderDropdown(current: String, onSelect: (String) -> Unit) {
             label = { Text("Gender") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            isError = errors != null,
+            supportingText = errors?.let { { Text(it.joinToString(", ")) } }
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -301,7 +347,7 @@ fun GenderDropdown(current: String, onSelect: (String) -> Unit) {
 }
 
 @Composable
-fun DobPicker(current: String, onSelect: (String) -> Unit) {
+fun DobPicker(current: String, errors: List<String>?, onSelect: (String) -> Unit) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
     
@@ -325,10 +371,12 @@ fun DobPicker(current: String, onSelect: (String) -> Unit) {
         enabled = false,
         colors = OutlinedTextFieldDefaults.colors(
             disabledTextColor = MaterialTheme.colorScheme.onSurface,
-            disabledBorderColor = MaterialTheme.colorScheme.outline,
-            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            disabledBorderColor = if (errors != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline,
+            disabledLabelColor = if (errors != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        isError = errors != null,
+        supportingText = errors?.let { { Text(it.joinToString(", ")) } }
     )
 }
 

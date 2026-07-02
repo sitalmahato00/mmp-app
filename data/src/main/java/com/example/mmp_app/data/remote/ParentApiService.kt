@@ -49,4 +49,14 @@ interface ParentApiService {
 
     @PUT("api/v1/parent/profile")
     suspend fun updateProfile(@Body request: UpdateParentProfileRequest): Response<BaseResponse<ParentProfileDto>>
+
+    @Multipart
+    @PUT("api/v1/parent/profile")
+    suspend fun updateProfileMultipart(
+        @Part("name") name: okhttp3.RequestBody?,
+        @Part("phone") phone: okhttp3.RequestBody?,
+        @Part("address") address: okhttp3.RequestBody?,
+        @Part("occupation") occupation: okhttp3.RequestBody?,
+        @Part avatar: okhttp3.MultipartBody.Part?
+    ): Response<BaseResponse<ParentProfileDto>>
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil.imageLoader
 import com.example.mmp_app.data.repository.SettingsRepository
 import com.example.mmp_app.domain.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,40 +54,56 @@ class SettingsViewModel @Inject constructor(
     }
 
     // Profile field updates (local state only — no API call yet)
-    fun onNameChange(v: String)    = _uiState.update { it.copy(name = v) }
-    fun onPhoneChange(v: String)   = _uiState.update { it.copy(phone = v) }
-    fun onGenderChange(v: String)  = _uiState.update { it.copy(gender = v) }
-    fun onDobChange(v: String)     = _uiState.update { it.copy(dob = v) }
-    fun onAddressChange(v: String) = _uiState.update { it.copy(address = v) }
-    fun onAvatarSelected(uri: Uri) = _uiState.update { it.copy(selectedAvatarUri = uri) }
+    fun onNameChange(v: String)    = _uiState.update { it.copy(name = v, fieldErrors = it.fieldErrors - "name") }
+    fun onPhoneChange(v: String)   = _uiState.update { it.copy(phone = v, fieldErrors = it.fieldErrors - "phone") }
+    fun onGenderChange(v: String)  = _uiState.update { it.copy(gender = v, fieldErrors = it.fieldErrors - "gender") }
+    fun onDobChange(v: String)     = _uiState.update { it.copy(dob = v, fieldErrors = it.fieldErrors - "dob") }
+    fun onAddressChange(v: String) = _uiState.update { it.copy(address = v, fieldErrors = it.fieldErrors - "address") }
+    fun onAvatarSelected(uri: Uri) = _uiState.update { it.copy(selectedAvatarUri = uri, fieldErrors = it.fieldErrors - "avatar") }
 
     fun saveProfile(context: Context) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSavingProfile = true) }
+            _uiState.update { it.copy(isSavingProfile = true, fieldErrors = emptyMap()) }
             val s = _uiState.value
-            val result = if (s.selectedAvatarUri != null) {
-                repository.updateProfileWithAvatar(
-                    s.name, s.phone, s.gender.ifBlank { null },
-                    s.dob.ifBlank { null }, s.address.ifBlank { null },
-                    s.selectedAvatarUri, context
-                )
-            } else {
-                repository.updateProfile(UpdateProfileRequest(
-                    name    = s.name,
-                    phone   = s.phone.ifBlank { null },
-                    gender  = s.gender.ifBlank { null },
-                    dob     = s.dob.ifBlank { null },
-                    address = s.address.ifBlank { null }
-                ))
-            }
+
+            val result = repository.updateProfile(
+                name      = s.name.ifBlank { null },
+                phone     = s.phone.ifBlank { null },
+                gender    = s.gender.ifBlank { null },
+                dob       = s.dob.ifBlank { null },
+                address   = s.address.ifBlank { null },
+                avatarUri = s.selectedAvatarUri,
+                context   = context
+            )
+
             result.fold(
                 onSuccess = { user ->
-                    _uiState.update { it.copy(isSavingProfile = false, user = user, selectedAvatarUri = null) }
+                    _uiState.update { it.copy(
+                        isSavingProfile    = false,
+                        user               = user,
+                        selectedAvatarUri  = null,
+                        name               = user.name,
+                        phone              = user.phone ?: "",
+                        gender             = user.gender ?: "",
+                        dob                = user.dob ?: "",
+                        address            = user.address ?: ""
+                    ) }
+                    // Invalidate cached avatar in Coil so it reloads
+                    user.avatarUrl?.let { url ->
+                        if (url.contains("storage")) {
+                            context.imageLoader.memoryCache?.clear()
+                        }
+                    }
                     _events.emit(SettingsEvent.Success("Profile updated successfully"))
                 },
                 onFailure = { e ->
                     _uiState.update { it.copy(isSavingProfile = false) }
-                    _events.emit(SettingsEvent.Error(e.message ?: "Failed to update profile"))
+                    if (e is ValidationException) {
+                        _uiState.update { it.copy(fieldErrors = e.errors ?: emptyMap()) }
+                        _events.emit(SettingsEvent.Error(e.message ?: "Validation failed"))
+                    } else {
+                        _events.emit(SettingsEvent.Error(e.message ?: "Failed to update profile"))
+                    }
                 }
             )
         }
@@ -184,6 +201,7 @@ data class SettingsUiState(
     val address: String = "",
     val selectedAvatarUri: Uri? = null,
     val isSavingProfile: Boolean = false,
+    val fieldErrors: Map<String, List<String>> = emptyMap(),
     // Password form
     val currentPassword: String = "",
     val newPassword: String = "",
