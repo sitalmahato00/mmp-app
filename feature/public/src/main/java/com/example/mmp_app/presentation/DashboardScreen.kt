@@ -469,20 +469,25 @@ fun DashboardAdaptiveContent(
                                         onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
                                         onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
                                         onNavigateToSettings, onNavigateToNotifications, onLogout, 
-                                        unreadCount, isDarkTheme, onToggleTheme
+                                        unreadCount, isDarkTheme, onToggleTheme,
+                                        showSystemHeader = false // ParentDashboard should hide internal header
                                     )
                                     1 -> if (userProfile?.role?.lowercase() == "student") {
                                         SubjectsScreenContent(onNavigateToSubjects)
                                     } else if (userProfile?.role?.lowercase() == "parent") {
                                         ParentNoticesScreen(
-                                            onBack = { selectedItem = 0 },
-                                            isDarkTheme = isDarkTheme
+                                            onMenuClick = { scope.launch { drawerState.open() } },
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
                                     2 -> if (userProfile?.role?.lowercase() == "parent") {
-                                        TimetableScreen(onBack = { selectedItem = 0 })
+                                        TimetableScreen(
+                                            onMenuClick = { scope.launch { drawerState.open() } },
+                                            showSystemHeader = false
+                                        )
                                     } else {
                                         TimetableScreenContent(onNavigateToTimetable)
                                     }
@@ -490,7 +495,9 @@ fun DashboardAdaptiveContent(
                                         ParentProfileScreen(
                                             onLogout = onLogout,
                                             onEditProfile = onNavigateToSettings,
-                                            isDarkTheme = isDarkTheme
+                                            onMenuClick = { scope.launch { drawerState.open() } },
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
@@ -552,7 +559,8 @@ fun MainDashboardContent(
     onLogout: () -> Unit,
     unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
-    onToggleTheme: () -> Unit = {}
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     when (userProfile?.role?.lowercase()) {
         "student" -> {
@@ -618,7 +626,8 @@ fun MainDashboardContent(
                     onSettingsClick = onNavigateToSettings,
                     onLogoutClick = onLogout,
                     onToggleTheme = onToggleTheme,
-                    isDarkTheme = isDarkTheme
+                    isDarkTheme = isDarkTheme,
+                    showSystemHeader = showSystemHeader
                 )
             }
         }

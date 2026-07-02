@@ -29,7 +29,9 @@ import com.example.mmp_app.domain.model.ParentNoticeDto
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParentNoticesScreen(
-    onBack: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
+    onMenuClick: (() -> Unit)? = null,
+    showSystemHeader: Boolean = true,
     viewModel: ParentNoticesViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false
 ) {
@@ -40,29 +42,7 @@ fun ParentNoticesScreen(
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8F9FF)
 
-    Scaffold(
-        containerColor = backgroundColor,
-        topBar = {
-            TopAppBar(
-                title = { Text(if (state.selectedNotice == null) "College Notices" else "Notice Detail", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (state.selectedNotice != null) {
-                            viewModel.clearSelectedNotice()
-                        } else {
-                            onBack()
-                        }
-                    }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardBgColor,
-                    titleContentColor = textColor
-                )
-            )
-        }
-    ) { padding ->
+    val content = @Composable { padding: PaddingValues ->
         Box(modifier = Modifier.padding(padding)) {
             AnimatedContent(targetState = state.selectedNotice, label = "notice_transition") { selectedNotice ->
                 if (selectedNotice == null) {
@@ -83,6 +63,40 @@ fun ParentNoticesScreen(
                 }
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            containerColor = backgroundColor,
+            topBar = {
+                TopAppBar(
+                    title = { Text(if (state.selectedNotice == null) "College Notices" else "Notice Detail", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        if (state.selectedNotice != null) {
+                            IconButton(onClick = { viewModel.clearSelectedNotice() }) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        } else if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        } else if (onMenuClick != null) {
+                            IconButton(onClick = onMenuClick) {
+                                Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
+                )
+            }
+        ) { padding ->
+            content(padding)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 

@@ -97,7 +97,8 @@ fun ParentDashboard(
     onSettingsClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    showSystemHeader: Boolean = true
 ) {
     var showChildPicker by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(Int, String) -> Unit>({ _, _ -> }) }
@@ -121,215 +122,160 @@ fun ParentDashboard(
         }
     }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                drawerContainerColor = cardBgColor,
-                drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
-            ) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "☰ MENU",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryColor
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                NavigationDrawerItem(
-                    label = { Text("Dashboard") },
-                    selected = true,
-                    onClick = { scope.launch { drawerState.close() } },
-                    icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                ParentDrawerMenuItem("My Profile", Icons.Rounded.Person) { scope.launch { drawerState.close() }; onProfileClick() }
-                ParentDrawerMenuItem("Notices", Icons.Rounded.Notifications) { scope.launch { drawerState.close() }; onNoticesClick() }
-                ParentDrawerMenuItem("Settings", Icons.Rounded.Settings) { scope.launch { drawerState.close() }; onSettingsClick() }
-                Spacer(Modifier.weight(1f))
-                ParentDrawerMenuItem("Logout", Icons.Rounded.Logout) { scope.launch { drawerState.close() }; onLogoutClick() }
-                Spacer(Modifier.height(16.dp))
+    val content = @Composable { paddingValues: PaddingValues ->
+        ParentDashboardContent(
+            data = data,
+            recentNotices = recentNotices,
+            paddingValues = paddingValues,
+            onChildClick = onChildClick,
+            handleAction = handleAction,
+            onAttendanceClick = onAttendanceClick,
+            onMarksClick = onMarksClick,
+            onAssignmentsClick = onAssignmentsClick,
+            onTimetableClick = onTimetableClick,
+            onNoticesClick = onNoticesClick
+        )
+    }
+
+    if (showSystemHeader) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                ModalDrawerSheet(
+                    drawerContainerColor = cardBgColor,
+                    drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
+                ) {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "☰ MENU",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    NavigationDrawerItem(
+                        label = { Text("Dashboard") },
+                        selected = true,
+                        onClick = { scope.launch { drawerState.close() } },
+                        icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    ParentDrawerMenuItem("My Profile", Icons.Rounded.Person) { scope.launch { drawerState.close() }; onProfileClick() }
+                    ParentDrawerMenuItem("Notices", Icons.Rounded.Notifications) { scope.launch { drawerState.close() }; onNoticesClick() }
+                    ParentDrawerMenuItem("Settings", Icons.Rounded.Settings) { scope.launch { drawerState.close() }; onSettingsClick() }
+                    Spacer(Modifier.weight(1f))
+                    ParentDrawerMenuItem("Logout", Icons.Rounded.Logout) { scope.launch { drawerState.close() }; onLogoutClick() }
+                    Spacer(Modifier.height(16.dp))
+                }
             }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                modifier = Modifier.size(36.dp),
-                                shape = CircleShape,
-                                color = Color.White,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.mmplogo),
-                                    contentDescription = "College Logo",
-                                    modifier = Modifier.padding(4.dp),
-                                    contentScale = ContentScale.Fit
+        ) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    modifier = Modifier.size(36.dp),
+                                    shape = CircleShape,
+                                    color = Color.White,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.mmplogo),
+                                        contentDescription = "College Logo",
+                                        modifier = Modifier.padding(4.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    "MMP College",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = textColor
                                 )
                             }
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                "MMP College",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = textColor
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Rounded.Menu, contentDescription = "Menu", tint = primaryColor)
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onToggleTheme) {
-                            Icon(
-                                if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                                contentDescription = "Theme Toggle",
-                                tint = textColor.copy(alpha = 0.7f)
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = cardBgColor,
-                        titleContentColor = textColor
-                    ),
-                    modifier = Modifier.shadow(2.dp)
-                )
-            },
-            bottomBar = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 24.dp),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Surface(
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(Icons.Rounded.Menu, contentDescription = "Menu", tint = primaryColor)
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = onToggleTheme) {
+                                Icon(
+                                    if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                                    contentDescription = "Theme Toggle",
+                                    tint = textColor.copy(alpha = 0.7f)
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = cardBgColor,
+                            titleContentColor = textColor
+                        ),
+                        modifier = Modifier.shadow(2.dp)
+                    )
+                },
+                bottomBar = {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(72.dp)
-                            .shadow(12.dp, RoundedCornerShape(36.dp)),
-                        shape = RoundedCornerShape(36.dp),
-                        color = cardBgColor
+                            .padding(horizontal = 16.dp, vertical = 24.dp),
+                        contentAlignment = Alignment.BottomCenter
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceAround,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CapsuleNavItem(Icons.Rounded.Home, "Home", { }, textColor, selected = true)
-                            CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick, textColor)
-                            
-                            Spacer(modifier = Modifier.width(48.dp)) // Center space
-                            
-                            CapsuleNavItem(Icons.Rounded.EventNote, "Schedule", { onTimetableClick(0, "") }, textColor)
-                            CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick, textColor)
-                        }
-                    }
-                    
-                    // Floating Center Button
-                    Surface(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .offset(y = (-20).dp)
-                            .shadow(8.dp, CircleShape)
-                            .clickable(onClick = { /* Home Action already handled */ }),
-                        shape = CircleShape,
-                        color = Color.Transparent
-                    ) {
-                        Box(
+                        Surface(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .height(72.dp)
+                                .shadow(12.dp, RoundedCornerShape(36.dp)),
+                            shape = RoundedCornerShape(36.dp),
+                            color = cardBgColor
                         ) {
-                            Icon(Icons.Rounded.Dashboard, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
+                            Row(
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CapsuleNavItem(Icons.Rounded.Home, "Home", { }, textColor, selected = true)
+                                CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick, textColor)
+                                
+                                Spacer(modifier = Modifier.width(48.dp)) // Center space
+                                
+                                CapsuleNavItem(Icons.Rounded.EventNote, "Schedule", { onTimetableClick(0, "") }, textColor)
+                                CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick, textColor)
+                            }
+                        }
+                        
+                        // Floating Center Button
+                        Surface(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .offset(y = (-20).dp)
+                                .shadow(8.dp, CircleShape)
+                                .clickable(onClick = { /* Home Action already handled */ }),
+                            shape = CircleShape,
+                            color = Color.Transparent
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Rounded.Dashboard, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
+                            }
                         }
                     }
-                }
-            },
-            containerColor = backgroundColor
-        ) { padding ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(bottom = 110.dp)
-            ) {
-                // Section 1: Header
-                item {
-                    ParentHeader(
-                        name = data.parentName,
-                        childrenCount = data.childrenCount
-                    )
-                }
-
-                // Section 2: My Children
-                item {
-                    SectionHeader(
-                        title = "My Children (${data.childrenCount})",
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-
-                items(data.children) { child ->
-                    ChildCard(
-                        child = child,
-                        onClick = { onChildClick(child.id, child.name) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-
-                // Section 3: Quick Actions
-                item {
-                    QuickActionsGrid(
-                        onAttendanceClick = { handleAction(onAttendanceClick) },
-                        onMarksClick = { handleAction(onMarksClick) },
-                        onAssignmentsClick = { handleAction(onAssignmentsClick) },
-                        onTimetableClick = { handleAction(onTimetableClick) },
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-
-                // Section 4: Recent Notices
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Recent Notices",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        TextButton(onClick = onNoticesClick) {
-                            Text("See All")
-                            Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                }
-
-                items(recentNotices) { notice ->
-                    NoticeRow(
-                        notice = notice,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-                
-                if (recentNotices.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("No notices available", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
+                },
+                containerColor = backgroundColor
+            ) { padding ->
+                content(padding)
             }
         }
+    } else {
+        content(PaddingValues(0.dp))
     }
 
     if (showChildPicker) {
@@ -371,6 +317,97 @@ fun ParentDashboard(
 }
 
 @Composable
+fun ParentDashboardContent(
+    data: ParentDashboardDto,
+    recentNotices: List<ParentNoticeDto>,
+    paddingValues: PaddingValues,
+    onChildClick: (Int, String) -> Unit,
+    handleAction: ((Int, String) -> Unit) -> Unit,
+    onAttendanceClick: (Int, String) -> Unit,
+    onMarksClick: (Int, String) -> Unit,
+    onAssignmentsClick: (Int, String) -> Unit,
+    onTimetableClick: (Int, String) -> Unit,
+    onNoticesClick: () -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(paddingValues),
+        contentPadding = PaddingValues(bottom = 110.dp)
+    ) {
+        // Section 1: Header
+        item {
+            ParentHeader(
+                name = data.parentName,
+                childrenCount = data.childrenCount,
+                avatarUrl = data.children.firstOrNull()?.avatarUrl // Or get parent avatar if available
+            )
+        }
+
+        // Section 2: My Children
+        item {
+            SectionHeader(
+                title = "My Children (${data.childrenCount})",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        items(data.children) { child ->
+            ChildCard(
+                child = child,
+                onClick = { onChildClick(child.id, child.name) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
+        // Section 3: Quick Actions
+        item {
+            QuickActionsGrid(
+                onAttendanceClick = { handleAction(onAttendanceClick) },
+                onMarksClick = { handleAction(onMarksClick) },
+                onAssignmentsClick = { handleAction(onAssignmentsClick) },
+                onTimetableClick = { handleAction(onTimetableClick) },
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        // Section 4: Recent Notices
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Recent Notices",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                TextButton(onClick = onNoticesClick) {
+                    Text("See All")
+                    Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+
+        items(recentNotices) { notice ->
+            NoticeRow(
+                notice = notice,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+        }
+        
+        if (recentNotices.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Text("No notices available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ParentDrawerMenuItem(label: String, icon: ImageVector, onClick: () -> Unit) {
     NavigationDrawerItem(
         label = { Text(label) },
@@ -382,7 +419,7 @@ fun ParentDrawerMenuItem(label: String, icon: ImageVector, onClick: () -> Unit) 
 }
 
 @Composable
-fun ParentHeader(name: String, childrenCount: Int) {
+fun ParentHeader(name: String, childrenCount: Int, avatarUrl: String? = null) {
     val greeting = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
         in 0..11 -> "Good Morning"
         in 12..16 -> "Good Afternoon"
@@ -406,32 +443,61 @@ fun ParentHeader(name: String, childrenCount: Int) {
                 )
                 .padding(24.dp)
         ) {
-            Column {
-                Text(
-                    text = greeting,
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = "Welcome, $name",
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Rounded.People,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Parent  ·  $childrenCount Child${if (childrenCount > 1) "ren" else ""} enrolled",
+                        text = greeting,
                         color = Color.White.copy(alpha = 0.8f),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyLarge
                     )
+                    Text(
+                        text = "Welcome, $name",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Rounded.People,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Parent  ·  $childrenCount Child${if (childrenCount > 1) "ren" else ""} enrolled",
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                
+                Surface(
+                    modifier = Modifier.size(64.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.2f),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color.White.copy(alpha = 0.5f))
+                ) {
+                    if (!avatarUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            Icons.Rounded.Person,
+                            contentDescription = null,
+                            modifier = Modifier.padding(16.dp),
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }

@@ -31,6 +31,8 @@ fun ParentProfileScreen(
     onLogout: () -> Unit = {},
     onEditProfile: () -> Unit = {},
     onBack: (() -> Unit)? = null,
+    onMenuClick: (() -> Unit)? = null,
+    showSystemHeader: Boolean = true,
     viewModel: ParentProfileViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false
@@ -49,30 +51,7 @@ fun ParentProfileScreen(
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Profile", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onEditProfile) {
-                        Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = textColor
-                )
-            )
-        },
-        containerColor = backgroundColor
-    ) { paddingValues ->
+    val content = @Composable { paddingValues: PaddingValues ->
         state.profile?.let { data ->
             LazyColumn(
                 modifier = Modifier
@@ -92,7 +71,8 @@ fun ParentProfileScreen(
                         childrenCount = data.childrenCount,
                         primaryColor = primaryColor,
                         secondaryColor = secondaryColor,
-                        isDarkTheme = isDarkTheme
+                        isDarkTheme = isDarkTheme,
+                        onEditClick = onEditProfile
                     )
                 }
 
@@ -158,6 +138,41 @@ fun ParentProfileScreen(
             }
         }
     }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("My Profile", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
+                            }
+                        } else if (onMenuClick != null) {
+                            IconButton(onClick = onMenuClick) {
+                                Icon(Icons.Rounded.Menu, contentDescription = "Menu", tint = primaryColor)
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onEditProfile) {
+                            Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = backgroundColor,
+                        titleContentColor = textColor
+                    )
+                )
+            },
+            containerColor = backgroundColor
+        ) { paddingValues ->
+            content(paddingValues)
+        }
+    } else {
+        content(PaddingValues(0.dp))
+    }
 }
 
 @Composable
@@ -168,7 +183,8 @@ fun ParentProfileHeaderCard(
     childrenCount: Int,
     primaryColor: Color,
     secondaryColor: Color,
-    isDarkTheme: Boolean
+    isDarkTheme: Boolean,
+    onEditClick: () -> Unit = {}
 ) {
     val gradientColors = if (isDarkTheme) {
         listOf(Color(0xFF1E293B), Color(0xFF0F172A))
@@ -194,6 +210,13 @@ fun ParentProfileHeaderCard(
                     radius = 300f,
                     center = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * 0.2f)
                 )
+            }
+
+            IconButton(
+                onClick = onEditClick,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+            ) {
+                Icon(Icons.Rounded.Edit, contentDescription = "Edit", tint = Color.White)
             }
 
             Column(

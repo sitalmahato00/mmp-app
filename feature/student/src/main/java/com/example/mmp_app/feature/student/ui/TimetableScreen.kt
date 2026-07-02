@@ -30,7 +30,9 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimetableScreen(
-    onBack: () -> Unit
+    onBack: (() -> Unit)? = null,
+    onMenuClick: (() -> Unit)? = null,
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: TimetableViewModel = hiltViewModel()
     val timetableData by viewModel.timetableData.collectAsState()
@@ -50,32 +52,10 @@ fun TimetableScreen(
         viewModel.loadFullTimetable()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text("Weekly Timetable", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        timetableData?.academicSession?.let {
-                            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { padding ->
+    val content = @Composable { paddingValues: PaddingValues ->
         Column(
             modifier = Modifier
-                .padding(padding)
+                .padding(paddingValues)
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
@@ -122,6 +102,42 @@ fun TimetableScreen(
                 }
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { 
+                        Column {
+                            Text("Weekly Timetable", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                            timetableData?.academicSession?.let {
+                                Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                            }
+                        } else if (onMenuClick != null) {
+                            IconButton(onClick = onMenuClick) {
+                                Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+        ) { padding ->
+            content(padding)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 
