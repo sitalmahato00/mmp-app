@@ -283,6 +283,16 @@ fun DashboardAdaptiveContent(
                                 icon = { Icon(Icons.Rounded.AccountCircle, null) },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
+                            NavigationDrawerItem(
+                                label = { Text("Settings") },
+                                selected = false,
+                                onClick = {
+                                    scope.launch { drawerState.close() }
+                                    onNavigateToSettings()
+                                },
+                                icon = { Icon(Icons.Rounded.Settings, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
                         }
                         
                         NavigationDrawerItem(
@@ -477,7 +487,11 @@ fun DashboardAdaptiveContent(
                                         TimetableScreenContent(onNavigateToTimetable)
                                     }
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
-                                        ParentProfileScreen(onLogout = onLogout)
+                                        ParentProfileScreen(
+                                            onLogout = onLogout,
+                                            onEditProfile = onNavigateToSettings,
+                                            isDarkTheme = isDarkTheme
+                                        )
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
                                     }

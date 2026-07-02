@@ -36,12 +36,16 @@ fun StudentProfileScreen(
     isDarkTheme: Boolean = false
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
+    
     val studentData by viewModel.studentDashboard.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         if (studentData == null) {
             viewModel.loadStudentDashboard()
         }
+        settingsViewModel.loadUser()
     }
 
     val primaryColor = Color(0xFF2563EB)
@@ -72,7 +76,8 @@ fun StudentProfileScreen(
         },
         containerColor = backgroundColor
     ) { paddingValues ->
-        studentData?.let { data ->
+        if (studentData != null) {
+            val data = studentData!!
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -80,9 +85,19 @@ fun StudentProfileScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // 1. Profile Header Card (Adapted from StudentDashboard's ProfileGradientCard)
+                // 1. Profile Header Card
                 item {
-                    ProfileHeaderCard(data, primaryColor, secondaryColor, isDarkTheme)
+                    val avatarUrl = settingsState.user?.avatarUrl ?: data.avatarUrl
+                    val displayName = settingsState.name.ifBlank { data.studentName }
+                    ProfileHeaderCard(
+                        name = displayName,
+                        program = data.program,
+                        semester = data.semester,
+                        avatarUrl = avatarUrl,
+                        primaryColor = primaryColor,
+                        secondaryColor = secondaryColor,
+                        isDarkTheme = isDarkTheme
+                    )
                 }
 
                 // 2. Personal Information Section
@@ -94,11 +109,11 @@ fun StudentProfileScreen(
                         cardBgColor = cardBgColor,
                         textColor = textColor
                     ) {
-                        InfoRow("Full Name", data.studentName, Icons.Rounded.Badge, textColor)
-                        InfoRow("Email Address", data.email ?: "N/A", Icons.Rounded.Email, textColor)
-                        InfoRow("Phone Number", data.phone ?: "N/A", Icons.Rounded.Phone, textColor)
-                        InfoRow("Gender", "Not Specified", Icons.Rounded.Wc, textColor)
-                        InfoRow("Date of Birth", "Not Specified", Icons.Rounded.Cake, textColor)
+                        InfoRow("Full Name", settingsState.name.ifBlank { data.studentName }, Icons.Rounded.Badge, textColor)
+                        InfoRow("Email Address", settingsState.user?.email ?: data.email ?: "N/A", Icons.Rounded.Email, textColor)
+                        InfoRow("Phone Number", settingsState.phone.ifBlank { data.phone ?: "N/A" }, Icons.Rounded.Phone, textColor)
+                        InfoRow("Gender", settingsState.gender.ifBlank { "Not Specified" }.replaceFirstChar { it.uppercase() }, Icons.Rounded.Wc, textColor)
+                        InfoRow("Date of Birth", settingsState.dob.ifBlank { "Not Specified" }, Icons.Rounded.Cake, textColor)
                     }
                 }
 
@@ -128,8 +143,7 @@ fun StudentProfileScreen(
                         cardBgColor = cardBgColor,
                         textColor = textColor
                     ) {
-                        InfoRow("Current Address", "Not Specified", Icons.Rounded.Home, textColor)
-                        InfoRow("Emergency Contact", "Not Specified", Icons.Rounded.ContactPhone, textColor)
+                        InfoRow("Current Address", settingsState.address.ifBlank { "Not Specified" }, Icons.Rounded.Home, textColor)
                     }
                 }
                 
@@ -148,7 +162,7 @@ fun StudentProfileScreen(
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
-        } ?: run {
+        } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = primaryColor)
             }
@@ -157,7 +171,15 @@ fun StudentProfileScreen(
 }
 
 @Composable
-fun ProfileHeaderCard(data: StudentDashboardDto, primaryColor: Color, secondaryColor: Color, isDarkTheme: Boolean) {
+fun ProfileHeaderCard(
+    name: String,
+    program: String,
+    semester: Int,
+    avatarUrl: String?,
+    primaryColor: Color,
+    secondaryColor: Color,
+    isDarkTheme: Boolean
+) {
     val gradientColors = if (isDarkTheme) {
         listOf(Color(0xFF1E293B), Color(0xFF0F172A))
     } else {
@@ -195,9 +217,9 @@ fun ProfileHeaderCard(data: StudentDashboardDto, primaryColor: Color, secondaryC
                     color = Color.White.copy(alpha = 0.2f),
                     border = androidx.compose.foundation.BorderStroke(4.dp, Color.White)
                 ) {
-                    if (!data.avatarUrl.isNullOrEmpty()) {
+                    if (!avatarUrl.isNullOrEmpty()) {
                         AsyncImage(
-                            model = data.avatarUrl,
+                            model = avatarUrl,
                             contentDescription = "Profile Picture",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -213,13 +235,13 @@ fun ProfileHeaderCard(data: StudentDashboardDto, primaryColor: Color, secondaryC
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = data.studentName,
+                    text = name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Text(
-                    text = "${data.program} • Semester ${data.semester}",
+                    text = "$program • Semester $semester",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f)
                 )
