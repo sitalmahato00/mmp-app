@@ -3,11 +3,13 @@ package com.example.mmp_app.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mmp_app.domain.model.*
+import com.example.mmp_app.domain.repository.AuthRepository
 import com.example.mmp_app.domain.repository.DashboardRepository
 import com.example.mmp_app.domain.repository.ParentRepository
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.joinAll
@@ -16,8 +18,12 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: DashboardRepository,
-    private val parentRepository: ParentRepository
+    private val parentRepository: ParentRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
+
+    private val _userProfile = MutableStateFlow<UserProfile?>(null)
+    val userProfile = _userProfile.asStateFlow()
 
     private val _studentDashboard = MutableStateFlow<StudentDashboardDto?>(null)
     val studentDashboard = _studentDashboard.asStateFlow()
@@ -78,6 +84,14 @@ class DashboardViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            authRepository.getUserProfile().collect {
+                _userProfile.value = it
+            }
+        }
+    }
 
     fun clearError() {
         _error.value = null

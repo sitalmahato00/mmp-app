@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.core.R
+import com.example.mmp_app.core.ui.ModernBottomNavBar
+import com.example.mmp_app.core.ui.ModernNavItem
 import com.example.mmp_app.domain.model.ChildSummaryDto
 import com.example.mmp_app.domain.model.ParentDashboardDto
 import com.example.mmp_app.domain.model.ParentNoticeDto
@@ -98,7 +100,8 @@ fun ParentDashboard(
     onLogoutClick: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
     isDarkTheme: Boolean = false,
-    showSystemHeader: Boolean = true
+    showSystemHeader: Boolean = true,
+    parentAvatarUrl: String? = null
 ) {
     var showChildPicker by remember { mutableStateOf(false) }
     var pendingAction by remember { mutableStateOf<(Int, String) -> Unit>({ _, _ -> }) }
@@ -133,7 +136,8 @@ fun ParentDashboard(
             onMarksClick = onMarksClick,
             onAssignmentsClick = onAssignmentsClick,
             onTimetableClick = onTimetableClick,
-            onNoticesClick = onNoticesClick
+            onNoticesClick = onNoticesClick,
+            parentAvatarUrl = parentAvatarUrl
         )
     }
 
@@ -218,57 +222,6 @@ fun ParentDashboard(
                         modifier = Modifier.shadow(2.dp)
                     )
                 },
-                bottomBar = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 24.dp),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(72.dp)
-                                .shadow(12.dp, RoundedCornerShape(36.dp)),
-                            shape = RoundedCornerShape(36.dp),
-                            color = cardBgColor
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CapsuleNavItem(Icons.Rounded.Home, "Home", { }, textColor, selected = true)
-                                CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick, textColor)
-                                
-                                Spacer(modifier = Modifier.width(48.dp)) // Center space
-                                
-                                CapsuleNavItem(Icons.Rounded.EventNote, "Schedule", { onTimetableClick(0, "") }, textColor)
-                                CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick, textColor)
-                            }
-                        }
-                        
-                        // Floating Center Button
-                        Surface(
-                            modifier = Modifier
-                                .size(72.dp)
-                                .offset(y = (-20).dp)
-                                .shadow(8.dp, CircleShape)
-                                .clickable(onClick = { /* Home Action already handled */ }),
-                            shape = CircleShape,
-                            color = Color.Transparent
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Rounded.Dashboard, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
-                            }
-                        }
-                    }
-                },
                 containerColor = backgroundColor
             ) { padding ->
                 content(padding)
@@ -327,7 +280,8 @@ fun ParentDashboardContent(
     onMarksClick: (Int, String) -> Unit,
     onAssignmentsClick: (Int, String) -> Unit,
     onTimetableClick: (Int, String) -> Unit,
-    onNoticesClick: () -> Unit
+    onNoticesClick: () -> Unit,
+    parentAvatarUrl: String? = null
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(paddingValues),
@@ -338,7 +292,7 @@ fun ParentDashboardContent(
             ParentHeader(
                 name = data.parentName,
                 childrenCount = data.childrenCount,
-                avatarUrl = data.children.firstOrNull()?.avatarUrl // Or get parent avatar if available
+                avatarUrl = parentAvatarUrl ?: data.children.firstOrNull()?.avatarUrl
             )
         }
 
@@ -825,30 +779,6 @@ fun DashboardShimmer() {
         Box(modifier = Modifier.width(150.dp).height(24.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)))
         Spacer(modifier = Modifier.height(16.dp))
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(20.dp)))
-    }
-}
-
-@Composable
-fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit, textColor: Color, selected: Boolean = false) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(4.dp)
-    ) {
-        Icon(
-            icon,
-            contentDescription = label,
-            tint = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
-            modifier = Modifier.size(24.dp)
-        )
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
-            fontSize = 10.sp
-        )
     }
 }
 

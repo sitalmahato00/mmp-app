@@ -27,6 +27,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.core.R
 import com.example.mmp_app.core.presentation.ThemeViewModel
+import com.example.mmp_app.core.ui.ModernBottomNavBar
+import com.example.mmp_app.core.ui.ModernNavItem
 import com.example.mmp_app.core.ui.theme.MMPAppTheme
 import com.example.mmp_app.core.ui.StudentDashboard
 
@@ -36,6 +38,7 @@ import com.example.mmp_app.feature.teacher.ui.TeacherDashboard
 import com.example.mmp_app.feature.parent.ui.ParentDashboard
 import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
 import com.example.mmp_app.feature.parent.ui.ParentProfileScreen
+import com.example.mmp_app.feature.parent.ui.ParentResultsScreen
 import com.example.mmp_app.feature.student.ui.NotificationViewModel
 import com.example.mmp_app.feature.student.ui.TimetableScreen
 import kotlinx.coroutines.launch
@@ -79,6 +82,7 @@ fun DashboardScreen(
     val assignments = viewModel.assignments.collectAsState().value
     val timetable = viewModel.timetable.collectAsState().value
     val downloads = viewModel.downloads.collectAsState().value
+    val userProfileState by viewModel.userProfile.collectAsState()
     val teacherData by viewModel.teacherDashboard.collectAsState()
     val parentData by viewModel.parentDashboard.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -95,7 +99,7 @@ fun DashboardScreen(
     }
 
     DashboardAdaptiveContent(
-        userProfile = userProfile,
+        userProfile = userProfileState ?: userProfile,
         studentData = studentData,
         recentNotices = notices,
         attendanceSummary = attendanceSummary,
@@ -180,8 +184,6 @@ fun DashboardAdaptiveContent(
 ) {
     MMPAppTheme(darkTheme = isDarkTheme) {
         var selectedItem by remember { mutableIntStateOf(0) }
-        val isStudent = userProfile?.role?.lowercase() == "student"
-        val isParent = userProfile?.role?.lowercase() == "parent"
 
         if (isLoading && studentData == null && teacherData == null && parentData == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -189,24 +191,21 @@ fun DashboardAdaptiveContent(
             }
         } else if (error != null && studentData == null && teacherData == null && parentData == null) {
             ErrorState(error!!, onRetry)
-        } else if ((isStudent || isParent) && selectedItem == 0) {
+        } else if (userProfile?.role?.lowercase() == "student" && selectedItem == 0) {
             MainDashboardContent(
                 userProfile, studentData, recentNotices, attendanceSummary, 
                 subjects, assignments, timetable, downloads, teacherData, parentData,
                 onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                onNavigateToFees, 
-                onNavigateToNotices = { if (isParent) selectedItem = 1 else onNavigateToNotices() },
-                onRecordAttendance,
+                onNavigateToFees, onNavigateToNotices, onRecordAttendance,
                 onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
                 onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                onNavigateToTimetable = { if (isParent) selectedItem = 2 else onNavigateToTimetable() },
-                onNavigateToDownloads, 
-                onNavigateToProfile = { if (isParent) selectedItem = 3 else onNavigateToProfile() },
+                onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
                 onNavigateToSettings, onNavigateToNotifications, onLogout, 
-                unreadCount, isDarkTheme, onToggleTheme
+                unreadCount, isDarkTheme, onToggleTheme,
+                showSystemHeader = true 
             )
         } else {
-            // Otherwise, use the standard adaptive layout
+            // Use the standard adaptive layout for all screens to ensure nav bar is always present
             val adaptiveInfo = currentWindowAdaptiveInfo()
             val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo)
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -238,6 +237,7 @@ fun DashboardAdaptiveContent(
                                 }
                             }
                             Spacer(modifier = Modifier.height(12.dp))
+                            @Suppress("KotlinConstantConditions")
                             Text(
                                 text = userProfile?.name ?: "Guest User",
                                 style = MaterialTheme.typography.titleLarge,
@@ -354,66 +354,70 @@ fun DashboardAdaptiveContent(
                     },
                     bottomBar = {
                         if (navSuiteType == NavigationSuiteType.NavigationBar) {
-                            Surface(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(bottom = 16.dp)
-                                    .navigationBarsPadding(),
-                                shape = RoundedCornerShape(24.dp),
-                                tonalElevation = 8.dp,
-                                shadowElevation = 8.dp,
-                                color = MaterialTheme.colorScheme.surface
-                            ) {
-                                NavigationBar(
-                                    containerColor = Color.Transparent,
-                                    modifier = Modifier.height(72.dp)
+                            if (userProfile?.role?.lowercase() == "parent") {
+                                ModernBottomNavBar(
+                                    selectedItem = selectedItem,
+                                    onItemSelected = { selectedItem = it },
+                                    items = listOf(
+                                        ModernNavItem(Icons.Rounded.Notifications, "Notices"),
+                                        ModernNavItem(Icons.Rounded.EventNote, "Schedule"),
+                                        ModernNavItem(Icons.Rounded.Star, "Results"),
+                                        ModernNavItem(Icons.Rounded.Settings, "Settings")
+                                    ),
+                                    primaryColor = if (userProfile?.role?.lowercase() == "student") Color(0xFF2563EB) else Color(0xFF6366F1),
+                                    secondaryColor = if (userProfile?.role?.lowercase() == "student") Color(0xFF60A5FA) else Color(0xFFA855F7),
+                                    cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                                    textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
+                                )
+                            } else {
+                                Surface(
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(bottom = 16.dp)
+                                        .navigationBarsPadding(),
+                                    shape = RoundedCornerShape(24.dp),
+                                    tonalElevation = 8.dp,
+                                    shadowElevation = 8.dp,
+                                    color = MaterialTheme.colorScheme.surface
                                 ) {
-                                    NavigationBarItem(
-                                        selected = selectedItem == 0,
-                                        onClick = { selectedItem = 0 },
-                                        icon = { Icon(Icons.Rounded.Dashboard, null) },
-                                        label = { Text("Home") }
-                                    )
-                                    if (userProfile?.role?.lowercase() == "student") {
+                                    NavigationBar(
+                                        containerColor = Color.Transparent,
+                                        modifier = Modifier.height(72.dp)
+                                    ) {
                                         NavigationBarItem(
-                                            selected = selectedItem == 1,
-                                            onClick = { selectedItem = 1 },
-                                            icon = { Icon(Icons.Rounded.AutoStories, null) },
-                                            label = { Text("Courses") }
+                                            selected = selectedItem == 0,
+                                            onClick = { selectedItem = 0 },
+                                            icon = { Icon(Icons.Rounded.Dashboard, null) },
+                                            label = { Text("Home") }
                                         )
+                                        if (userProfile?.role?.lowercase() == "student") {
+                                            NavigationBarItem(
+                                                selected = selectedItem == 1,
+                                                onClick = { selectedItem = 1 },
+                                                icon = { Icon(Icons.Rounded.Notifications, null) },
+                                                label = { Text("Notices") }
+                                            )
+                                            NavigationBarItem(
+                                                selected = selectedItem == 2,
+                                                onClick = { selectedItem = 2 },
+                                                icon = { Icon(Icons.Rounded.EventNote, null) },
+                                                label = { Text("Schedule") }
+                                            )
+                                        } else {
+                                            NavigationBarItem(
+                                                selected = selectedItem == 1,
+                                                onClick = { selectedItem = 1 },
+                                                icon = { Icon(Icons.Rounded.Groups, null) },
+                                                label = { Text("Users") }
+                                            )
+                                        }
                                         NavigationBarItem(
-                                            selected = selectedItem == 2,
-                                            onClick = { selectedItem = 2 },
-                                            icon = { Icon(Icons.Rounded.EventNote, null) },
-                                            label = { Text("Schedule") }
-                                        )
-                                    } else if (userProfile?.role?.lowercase() == "parent") {
-                                        NavigationBarItem(
-                                            selected = selectedItem == 1,
-                                            onClick = { selectedItem = 1 },
-                                            icon = { Icon(Icons.Rounded.Notifications, null) },
-                                            label = { Text("Notices") }
-                                        )
-                                        NavigationBarItem(
-                                            selected = selectedItem == 2,
-                                            onClick = { selectedItem = 2 },
-                                            icon = { Icon(Icons.Rounded.EventNote, null) },
-                                            label = { Text("Schedule") }
-                                        )
-                                    } else {
-                                        NavigationBarItem(
-                                            selected = selectedItem == 1,
-                                            onClick = { selectedItem = 1 },
-                                            icon = { Icon(Icons.Rounded.Groups, null) },
-                                            label = { Text("Users") }
+                                            selected = selectedItem == 3,
+                                            onClick = { selectedItem = 3 },
+                                            icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                            label = { Text("Profile") }
                                         )
                                     }
-                                    NavigationBarItem(
-                                        selected = selectedItem == 3,
-                                        onClick = { selectedItem = 3 },
-                                        icon = { Icon(Icons.Rounded.AccountCircle, null) },
-                                        label = { Text("Profile") }
-                                    )
                                 }
                             }
                         }
@@ -470,16 +474,16 @@ fun DashboardAdaptiveContent(
                                         onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
                                         onNavigateToSettings, onNavigateToNotifications, onLogout, 
                                         unreadCount, isDarkTheme, onToggleTheme,
-                                        showSystemHeader = false // ParentDashboard should hide internal header
+                                        showSystemHeader = false 
                                     )
-                                    1 -> if (userProfile?.role?.lowercase() == "student") {
-                                        SubjectsScreenContent(onNavigateToSubjects)
-                                    } else if (userProfile?.role?.lowercase() == "parent") {
+                                    1 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ParentNoticesScreen(
                                             onMenuClick = { scope.launch { drawerState.open() } },
                                             isDarkTheme = isDarkTheme,
                                             showSystemHeader = false
                                         )
+                                    } else if (userProfile?.role?.lowercase() == "student") {
+                                        NoticesScreenContent(onNavigateToNotices)
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
@@ -489,16 +493,19 @@ fun DashboardAdaptiveContent(
                                             showSystemHeader = false
                                         )
                                     } else {
-                                        TimetableScreenContent(onNavigateToTimetable)
+                                        TimetableScreen(
+                                            onMenuClick = { scope.launch { drawerState.open() } },
+                                            showSystemHeader = false
+                                        )
                                     }
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
-                                        ParentProfileScreen(
-                                            onLogout = onLogout,
-                                            onEditProfile = onNavigateToSettings,
+                                        ParentResultsScreen(
                                             onMenuClick = { scope.launch { drawerState.open() } },
                                             isDarkTheme = isDarkTheme,
                                             showSystemHeader = false
                                         )
+                                    } else if (userProfile?.role?.lowercase() == "student") {
+                                        ResultsScreenContent(onNavigateToResults)
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
                                     }
@@ -627,7 +634,8 @@ fun MainDashboardContent(
                     onLogoutClick = onLogout,
                     onToggleTheme = onToggleTheme,
                     isDarkTheme = isDarkTheme,
-                    showSystemHeader = showSystemHeader
+                    showSystemHeader = showSystemHeader,
+                    parentAvatarUrl = userProfile?.avatarUrl
                 )
             }
         }
@@ -640,24 +648,24 @@ fun MainDashboardContent(
 }
 
 @Composable
-fun SubjectsScreenContent(onNavigateToSubjects: () -> Unit) {
+fun NoticesScreenContent(onNavigateToNotices: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Subjects Screen")
-            Button(onClick = onNavigateToSubjects) {
-                Text("View Detailed Subjects")
+            Text("Notices Screen")
+            Button(onClick = onNavigateToNotices) {
+                Text("View Detailed Notices")
             }
         }
     }
 }
 
 @Composable
-fun TimetableScreenContent(onNavigateToTimetable: () -> Unit) {
+fun ResultsScreenContent(onNavigateToResults: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Timetable Screen")
-            Button(onClick = onNavigateToTimetable) {
-                Text("View Detailed Timetable")
+            Text("Results Screen")
+            Button(onClick = onNavigateToResults) {
+                Text("View Detailed Results")
             }
         }
     }

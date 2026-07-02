@@ -1,15 +1,22 @@
 package com.example.mmp_app.core.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +54,107 @@ fun KpiCard(
                 Text(text = title, style = MaterialTheme.typography.bodySmall)
             }
         }
+    }
+}
+
+@Composable
+fun ModernBottomNavBar(
+    selectedItem: Int,
+    onItemSelected: (Int) -> Unit,
+    items: List<ModernNavItem>,
+    primaryColor: Color,
+    secondaryColor: Color,
+    cardBgColor: Color,
+    textColor: Color,
+    onCenterClick: () -> Unit = {}
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .shadow(12.dp, RoundedCornerShape(36.dp)),
+            shape = RoundedCornerShape(36.dp),
+            color = cardBgColor
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left Items (first 2)
+                items.take(2).forEachIndexed { index, item ->
+                    CapsuleNavItem(item.icon, item.label, { onItemSelected(index + 1) }, textColor, selected = selectedItem == index + 1)
+                }
+                
+                Spacer(modifier = Modifier.width(48.dp)) // Center space for FAB
+                
+                // Right Items (remaining)
+                items.drop(2).take(2).forEachIndexed { index, item ->
+                    val actualIndex = index + 3
+                    CapsuleNavItem(item.icon, item.label, { onItemSelected(actualIndex) }, textColor, selected = selectedItem == actualIndex)
+                }
+            }
+        }
+        
+        // Floating Center Button
+        Surface(
+            modifier = Modifier
+                .size(72.dp)
+                .offset(y = (-20).dp)
+                .shadow(8.dp, CircleShape)
+                .clickable(onClick = { onItemSelected(0) }),
+            shape = CircleShape,
+            color = Color.Transparent
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.Dashboard, 
+                    contentDescription = "Dashboard", 
+                    tint = Color.White, 
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+    }
+}
+
+data class ModernNavItem(
+    val icon: ImageVector,
+    val label: String
+)
+
+@Composable
+fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit, textColor: Color, selected: Boolean = false) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(4.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
+            fontSize = 10.sp
+        )
     }
 }
 
