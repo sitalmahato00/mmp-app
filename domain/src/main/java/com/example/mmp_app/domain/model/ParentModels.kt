@@ -135,13 +135,13 @@ data class ParentNoticeDto(
 data class ParentProfileDto(
     val name: String,
     val email: String,
-    val phone: String?,
-    val gender: String?,
-    val address: String?,
-    @SerialName("avatar_url") val avatarUrl: String,
-    val occupation: String?,
-    @SerialName("relation_to_student") val relationToStudent: String,
-    @SerialName("children_count") val childrenCount: Int
+    val phone: String? = null,
+    val gender: String? = null,
+    val address: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    val occupation: String? = null,
+    @SerialName("relation_to_student") val relationToStudent: String = "parent",
+    @SerialName("children_count") val childrenCount: Int = 0
 )
 
 // Update profile request

@@ -1,4 +1,4 @@
-package com.example.mmp_app.feature.student.ui
+package com.example.mmp_app.core.ui
 
 import android.app.DatePickerDialog
 import android.content.Context
@@ -34,6 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.mmp_app.core.R
+import com.example.mmp_app.core.presentation.*
 import java.io.File
 import java.util.*
 
@@ -73,11 +74,12 @@ fun SettingsScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHost) }
     ) { padding ->
-        if (state.isLoading && state.user == null) {
+        if (state.isLoading && state.user == null && state.parentProfile == null) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
+            val isParent = state.role.lowercase().trim() == "parent"
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 32.dp)
@@ -96,15 +98,17 @@ fun SettingsScreen(
                     }
                 }
 
-                item {
-                    SettingsSection(title = "Notification Preferences", icon = Icons.Rounded.Notifications) {
-                        NotificationPrefsSection(state, viewModel)
+                if (!isParent) {
+                    item {
+                        SettingsSection(title = "Notification Preferences", icon = Icons.Rounded.Notifications) {
+                            NotificationPrefsSection(state, viewModel)
+                        }
                     }
-                }
 
-                item {
-                    SettingsSection(title = "Two-Factor Authentication", icon = Icons.Rounded.Security) {
-                        TwoFactorSection(state, viewModel)
+                    item {
+                        SettingsSection(title = "Two-Factor Authentication", icon = Icons.Rounded.Security) {
+                            TwoFactorSection(state, viewModel)
+                        }
                     }
                 }
 
@@ -207,7 +211,7 @@ fun ProfileSection(
                 color = Color.LightGray.copy(alpha = 0.3f)
             ) {
                 AsyncImage(
-                    model = state.selectedAvatarUri ?: state.user?.avatarUrl,
+                    model = state.selectedAvatarUri ?: state.user?.avatarUrl ?: state.parentProfile?.avatarUrl,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -254,7 +258,31 @@ fun ProfileSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        DobPicker(state.dob, state.fieldErrors["dob"]) { viewModel.onDobChange(it) }
+        if (state.role.lowercase().trim() == "parent") {
+            OutlinedTextField(
+                value = state.occupation,
+                onValueChange = { viewModel.onOccupationChange(it) },
+                label = { Text("Occupation") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                isError = state.fieldErrors.containsKey("occupation"),
+                supportingText = state.fieldErrors["occupation"]?.let { { Text(it.joinToString(", ")) } }
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            OutlinedTextField(
+                value = state.relationToStudent,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Relation to Student") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                enabled = false
+            )
+        } else {
+            DobPicker(state.dob, state.fieldErrors["dob"]) { viewModel.onDobChange(it) }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 

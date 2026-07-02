@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.example.mmp_app.core.presentation.SettingsViewModel
 import com.example.mmp_app.domain.model.ParentProfileDto
 
 @OptIn(ExperimentalMaterial3Api::class)

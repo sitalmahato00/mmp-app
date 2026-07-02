@@ -1,12 +1,15 @@
-package com.example.mmp_app.feature.student.ui
+package com.example.mmp_app.core.presentation
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.imageLoader
-import com.example.mmp_app.data.repository.SettingsRepository
+import com.example.mmp_app.core.utils.SessionManager
 import com.example.mmp_app.domain.model.*
+import com.example.mmp_app.domain.repository.AuthRepository
+import com.example.mmp_app.domain.repository.ParentRepository
+import com.example.mmp_app.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -14,10 +17,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val repository: SettingsRepository
+    private val repository: SettingsRepository,
+    private val parentRepository: ParentRepository,
+    private val authRepository: AuthRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    // UI state
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
@@ -25,31 +30,91 @@ class SettingsViewModel @Inject constructor(
     private val _events = MutableSharedFlow<SettingsEvent>()
     val events: SharedFlow<SettingsEvent> = _events.asSharedFlow()
 
-    init { loadUser() }
+    init {
+        // Collect user profile to stay in sync with role
+        viewModelScope.launch {
+            authRepository.getUserProfile().collect { profile ->
+                profile?.role?.let { r ->
+                    _uiState.update { it.copy(role = r.lowercase()) }
+                }
+            }
+        }
+        
+        // Initial load
+        refreshRole()
+        loadUser()
+    }
+
+    private fun refreshRole() {
+        val role = sessionManager.getUserRole()?.lowercase() ?: "student"
+        _uiState.update { it.copy(role = role) }
+    }
 
     fun loadUser() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            repository.getUser().fold(
-                onSuccess = { user ->
-                    _uiState.update { it.copy(
-                        isLoading  = false,
-                        user       = user,
-                        name       = user.name,
-                        phone      = user.phone ?: "",
-                        gender     = user.gender ?: "",
-                        dob        = user.dob ?: "",
-                        address    = user.address ?: "",
-                        twoFactorEnabled = user.twoFactorEnabled,
-                        twoFactorMethod  = user.twoFactorMethod ?: "email",
-                        notifPrefs = user.notificationPreferences ?: NotificationPreferences()
-                    ) }
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(isLoading = false) }
-                    _events.emit(SettingsEvent.Error(e.message ?: "Failed to load profile"))
+            refreshRole() // Ensure role is up to date
+            
+            val role = _uiState.value.role
+            
+            // Reset fields to avoid data leakage between roles
+            _uiState.update { it.copy(
+                isLoading = true,
+                user = null,
+                parentProfile = null,
+                name = "",
+                phone = "",
+                gender = "",
+                dob = "",
+                address = "",
+                occupation = "",
+                relationToStudent = ""
+            ) }
+            
+            if (role == "parent") {
+                parentRepository.getProfile().collect { result ->
+                    result.fold(
+                        onSuccess = { parent ->
+                            _uiState.update { it.copy(
+                                isLoading = false,
+                                name = parent.name,
+                                phone = parent.phone ?: "",
+                                gender = parent.gender ?: "",
+                                address = parent.address ?: "",
+                                occupation = parent.occupation ?: "",
+                                relationToStudent = parent.relationToStudent,
+                                parentProfile = parent,
+                                user = null // Ensure student user is null for parent
+                            ) }
+                        },
+                        onFailure = { e ->
+                            _uiState.update { it.copy(isLoading = false) }
+                            _events.emit(SettingsEvent.Error(e.message ?: "Failed to load parent profile"))
+                        }
+                    )
                 }
-            )
+            } else {
+                repository.getUser().fold(
+                    onSuccess = { user ->
+                        _uiState.update { it.copy(
+                            isLoading  = false,
+                            user       = user,
+                            parentProfile = null, // Ensure parent profile is null for others
+                            name       = user.name,
+                            phone      = user.phone ?: "",
+                            gender     = user.gender ?: "",
+                            dob        = user.dob ?: "",
+                            address    = user.address ?: "",
+                            twoFactorEnabled = user.twoFactorEnabled,
+                            twoFactorMethod  = user.twoFactorMethod ?: "email",
+                            notifPrefs = user.notificationPreferences ?: NotificationPreferences()
+                        ) }
+                    },
+                    onFailure = { e ->
+                        _uiState.update { it.copy(isLoading = false) }
+                        _events.emit(SettingsEvent.Error(e.message ?: "Failed to load profile"))
+                    }
+                )
+            }
         }
     }
 
@@ -59,6 +124,7 @@ class SettingsViewModel @Inject constructor(
     fun onGenderChange(v: String)  = _uiState.update { it.copy(gender = v, fieldErrors = it.fieldErrors - "gender") }
     fun onDobChange(v: String)     = _uiState.update { it.copy(dob = v, fieldErrors = it.fieldErrors - "dob") }
     fun onAddressChange(v: String) = _uiState.update { it.copy(address = v, fieldErrors = it.fieldErrors - "address") }
+    fun onOccupationChange(v: String) = _uiState.update { it.copy(occupation = v, fieldErrors = it.fieldErrors - "occupation") }
     fun onAvatarSelected(uri: Uri) = _uiState.update { it.copy(selectedAvatarUri = uri, fieldErrors = it.fieldErrors - "avatar") }
 
     fun saveProfile(context: Context) {
@@ -66,21 +132,43 @@ class SettingsViewModel @Inject constructor(
             _uiState.update { it.copy(isSavingProfile = true, fieldErrors = emptyMap()) }
             val s = _uiState.value
 
-            val result = repository.updateProfile(
-                name      = s.name.ifBlank { null },
-                phone     = s.phone.ifBlank { null },
-                gender    = s.gender.ifBlank { null },
-                dob       = s.dob.ifBlank { null },
-                address   = s.address.ifBlank { null },
-                avatarUri = s.selectedAvatarUri,
-                context   = context
-            )
+            val result = if (s.role == "parent") {
+                if (s.selectedAvatarUri != null) {
+                    val bytes = context.contentResolver.openInputStream(s.selectedAvatarUri)!!.readBytes()
+                    parentRepository.updateProfileMultipart(
+                        name = s.name,
+                        phone = s.phone.ifBlank { null },
+                        address = s.address.ifBlank { null },
+                        occupation = s.occupation.ifBlank { null },
+                        avatarBytes = bytes
+                    ).map { UserProfile(0, it.name, it.email, it.phone, it.gender, null, it.address, it.avatarUrl) }
+                } else {
+                    parentRepository.updateProfile(UpdateParentProfileRequest(
+                        name = s.name,
+                        phone = s.phone.ifBlank { null },
+                        address = s.address.ifBlank { null },
+                        occupation = s.occupation.ifBlank { null }
+                    )).map { UserProfile(0, it.name, it.email, it.phone, it.gender, null, it.address, it.avatarUrl) }
+                }
+            } else {
+                val avatarBytes = s.selectedAvatarUri?.let {
+                    context.contentResolver.openInputStream(it)?.use { stream -> stream.readBytes() }
+                }
+                repository.updateProfile(
+                    name      = s.name.ifBlank { null },
+                    phone     = s.phone.ifBlank { null },
+                    gender    = s.gender.ifBlank { null },
+                    dob       = s.dob.ifBlank { null },
+                    address   = s.address.ifBlank { null },
+                    avatarBytes = avatarBytes
+                )
+            }
 
             result.fold(
                 onSuccess = { user ->
                     _uiState.update { it.copy(
                         isSavingProfile    = false,
-                        user               = user,
+                        user               = if (s.role != "parent") user else null,
                         selectedAvatarUri  = null,
                         name               = user.name,
                         phone              = user.phone ?: "",
@@ -95,6 +183,10 @@ class SettingsViewModel @Inject constructor(
                         }
                     }
                     _events.emit(SettingsEvent.Success("Profile updated successfully"))
+                    if (s.role == "parent") {
+                        loadUser() // Refresh parent specific data
+                        return@fold
+                    }
                 },
                 onFailure = { e ->
                     _uiState.update { it.copy(isSavingProfile = false) }
@@ -192,13 +284,17 @@ class SettingsViewModel @Inject constructor(
 // UI State
 data class SettingsUiState(
     val isLoading: Boolean = false,
+    val role: String = "student",
     val user: UserProfile? = null,
+    val parentProfile: ParentProfileDto? = null,
     // Profile form
     val name: String = "",
     val phone: String = "",
     val gender: String = "",
     val dob: String = "",
     val address: String = "",
+    val occupation: String = "",
+    val relationToStudent: String = "",
     val selectedAvatarUri: Uri? = null,
     val isSavingProfile: Boolean = false,
     val fieldErrors: Map<String, List<String>> = emptyMap(),

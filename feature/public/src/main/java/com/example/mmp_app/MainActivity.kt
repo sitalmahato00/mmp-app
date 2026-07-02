@@ -35,7 +35,7 @@ import com.example.mmp_app.feature.student.ui.FeesScreen
 import com.example.mmp_app.feature.student.ui.MarksScreen
 import com.example.mmp_app.feature.student.ui.NoticesScreen
 import com.example.mmp_app.feature.student.ui.NotificationScreen
-import com.example.mmp_app.feature.student.ui.SettingsScreen
+import com.example.mmp_app.core.ui.SettingsScreen
 import com.example.mmp_app.feature.student.ui.StudentProfileScreen
 import com.example.mmp_app.feature.student.ui.SubjectDetailScreen
 import com.example.mmp_app.feature.student.ui.SubjectsScreen

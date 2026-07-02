@@ -1,12 +1,11 @@
 package com.example.mmp_app.data.repository
 
-import android.content.Context
-import android.net.Uri
 import com.example.mmp_app.core.utils.TokenManager
 import com.example.mmp_app.data.local.dao.UserProfileDao
 import com.example.mmp_app.data.local.entity.UserProfileEntity
 import com.example.mmp_app.data.remote.SettingsApiService
 import com.example.mmp_app.domain.model.*
+import com.example.mmp_app.domain.repository.SettingsRepository
 import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -16,11 +15,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SettingsRepository @Inject constructor(
+class SettingsRepositoryImpl @Inject constructor(
     private val api: SettingsApiService,
     private val tokenManager: TokenManager,
     private val userProfileDao: UserProfileDao
-) {
+) : SettingsRepository {
+
     // Parse error body from Retrofit Response
     private fun parseError(response: Response<*>): Exception {
         return try {
@@ -36,13 +36,13 @@ class SettingsRepository @Inject constructor(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                role = user.role ?: "student", // Provide default role if null
+                role = user.role ?: "student",
                 avatarUrl = user.avatarUrl
             )
         )
     }
 
-    suspend fun getUser(): Result<UserProfile> = try {
+    override suspend fun getUser(): Result<UserProfile> = try {
         val r = api.getUser()
         if (r.isSuccessful && r.body()?.success == true) {
             val user = r.body()!!.data.user
@@ -51,23 +51,18 @@ class SettingsRepository @Inject constructor(
         } else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 
-    suspend fun updateProfile(
+    override suspend fun updateProfile(
         name: String?,
         phone: String?,
         gender: String?,
         dob: String?,
         address: String?,
-        avatarUri: Uri?,
-        context: Context
+        avatarBytes: ByteArray?
     ): Result<UserProfile> = try {
-        val response = if (avatarUri != null) {
-            // POST with multipart when avatar selected
+        val response = if (avatarBytes != null) {
             val toRequestBody = { s: String? -> s?.toRequestBody("text/plain".toMediaType()) }
 
-            val avatarPart = context.contentResolver
-                .openInputStream(avatarUri)!!
-                .readBytes()
-                .toRequestBody("image/*".toMediaType())
+            val avatarPart = avatarBytes.toRequestBody("image/*".toMediaType())
                 .let { MultipartBody.Part.createFormData("avatar", "avatar.jpg", it) }
 
             api.updateProfileWithAvatar(
@@ -79,7 +74,6 @@ class SettingsRepository @Inject constructor(
                 avatar  = avatarPart
             )
         } else {
-            // PUT with JSON when no avatar
             api.updateProfileJson(
                 UpdateProfileRequest(
                     name    = name,
@@ -98,18 +92,17 @@ class SettingsRepository @Inject constructor(
         } else Result.failure(parseError(response))
     } catch (e: Exception) { Result.failure(e) }
 
-    suspend fun changePassword(
+    override suspend fun changePassword(
         current: String, new: String, confirm: String
     ): Result<String> = try {
         val r = api.changePassword(ChangePasswordRequest(current, new, confirm))
         if (r.isSuccessful && r.body()?.success == true) {
-            // Save new token immediately
             r.body()!!.data?.token?.let { tokenManager.saveToken(it) }
             Result.success(r.body()!!.message)
         } else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 
-    suspend fun updateNotificationPreferences(
+    override suspend fun updateNotificationPreferences(
         prefs: NotificationPreferences
     ): Result<NotificationPreferences> = try {
         val r = api.updateNotificationPreferences(NotificationPreferencesRequest(prefs))
@@ -118,7 +111,7 @@ class SettingsRepository @Inject constructor(
         else Result.failure(parseError(r))
     } catch (e: Exception) { Result.failure(e) }
 
-    suspend fun updateTwoFactor(
+    override suspend fun updateTwoFactor(
         enabled: Boolean, method: String
     ): Result<TwoFactorData> = try {
         val r = api.updateTwoFactor(TwoFactorRequest(enabled, method))

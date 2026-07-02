@@ -1,8 +1,7 @@
-package com.example.mmp_app.feature.student.ui
+package com.example.mmp_app.feature.teacher.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -14,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -22,35 +20,29 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.core.presentation.SettingsViewModel
-import com.example.mmp_app.domain.model.StudentDashboardDto
+import com.example.mmp_app.domain.model.TeacherDashboardDto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudentProfileScreen(
-    onBack: () -> Unit,
+fun TeacherProfileScreen(
     onLogout: () -> Unit = {},
     onEditProfile: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
+    teacherData: TeacherDashboardDto? = null,
     isDarkTheme: Boolean = false
 ) {
-    val viewModel: StudentViewModel = hiltViewModel()
     val settingsViewModel: SettingsViewModel = hiltViewModel()
-    
-    val studentData by viewModel.studentDashboard.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        if (studentData == null) {
-            viewModel.loadStudentDashboard()
-        }
         settingsViewModel.loadUser()
     }
 
-    val primaryColor = Color(0xFF2563EB)
-    val secondaryColor = Color(0xFF60A5FA)
+    val primaryColor = Color(0xFF10B981) // Green for Teacher
+    val secondaryColor = Color(0xFF34D399)
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
@@ -60,8 +52,10 @@ fun StudentProfileScreen(
             TopAppBar(
                 title = { Text("My Profile", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
+                        }
                     }
                 },
                 actions = {
@@ -77,8 +71,7 @@ fun StudentProfileScreen(
         },
         containerColor = backgroundColor
     ) { paddingValues ->
-        if (studentData != null) {
-            val data = studentData!!
+        settingsState.user?.let { data ->
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -88,13 +81,10 @@ fun StudentProfileScreen(
             ) {
                 // 1. Profile Header Card
                 item {
-                    val avatarUrl = settingsState.user?.avatarUrl ?: data.avatarUrl
-                    val displayName = settingsState.name.ifBlank { data.studentName }
-                    ProfileHeaderCard(
-                        name = displayName,
-                        program = data.program,
-                        semester = data.semester,
-                        avatarUrl = avatarUrl,
+                    TeacherProfileHeaderCard(
+                        name = settingsState.name.ifBlank { data.name },
+                        email = data.email,
+                        avatarUrl = data.avatarUrl,
                         primaryColor = primaryColor,
                         secondaryColor = secondaryColor,
                         isDarkTheme = isDarkTheme
@@ -103,48 +93,35 @@ fun StudentProfileScreen(
 
                 // 2. Personal Information Section
                 item {
-                    InfoSection(
+                    TeacherInfoSection(
                         title = "Personal Information",
                         icon = Icons.Rounded.Person,
                         primaryColor = primaryColor,
                         cardBgColor = cardBgColor,
                         textColor = textColor
                     ) {
-                        InfoRow("Full Name", settingsState.name.ifBlank { data.studentName }, Icons.Rounded.Badge, textColor)
-                        InfoRow("Email Address", settingsState.user?.email ?: data.email ?: "N/A", Icons.Rounded.Email, textColor)
-                        InfoRow("Phone Number", settingsState.phone.ifBlank { data.phone ?: "N/A" }, Icons.Rounded.Phone, textColor)
-                        InfoRow("Gender", settingsState.gender.ifBlank { "Not Specified" }.replaceFirstChar { it.uppercase() }, Icons.Rounded.Wc, textColor)
-                        InfoRow("Date of Birth", settingsState.dob.ifBlank { "Not Specified" }, Icons.Rounded.Cake, textColor)
+                        TeacherInfoRow("Full Name", settingsState.name.ifBlank { data.name }, Icons.Rounded.Badge, textColor, primaryColor)
+                        TeacherInfoRow("Email Address", data.email, Icons.Rounded.Email, textColor, primaryColor)
+                        TeacherInfoRow("Phone Number", settingsState.phone.ifBlank { data.phone ?: "N/A" }, Icons.Rounded.Phone, textColor, primaryColor)
+                        TeacherInfoRow("Gender", settingsState.gender.ifBlank { "Not Specified" }.replaceFirstChar { it.uppercase() }, Icons.Rounded.Wc, textColor, primaryColor)
                     }
                 }
 
-                // 3. Academic Information Section
+                // 3. Professional Details Section
                 item {
-                    InfoSection(
-                        title = "Academic Details",
-                        icon = Icons.Rounded.School,
+                    TeacherInfoSection(
+                        title = "Professional Details",
+                        icon = Icons.Rounded.Work,
                         primaryColor = primaryColor,
                         cardBgColor = cardBgColor,
                         textColor = textColor
                     ) {
-                        InfoRow("Student ID", data.studentId.toString(), Icons.Rounded.Fingerprint, textColor)
-                        InfoRow("Roll Number", data.rollNumber ?: "N/A", Icons.Rounded.FormatListNumbered, textColor)
-                        InfoRow("Program", data.program, Icons.Rounded.Book, textColor)
-                        InfoRow("Semester", "Semester ${data.semester}", Icons.Rounded.Timeline, textColor)
-                        InfoRow("Department", "Computer Science", Icons.Rounded.Business, textColor)
-                    }
-                }
-
-                // 4. Contact/Address Section
-                item {
-                    InfoSection(
-                        title = "Contact Details",
-                        icon = Icons.Rounded.LocationOn,
-                        primaryColor = primaryColor,
-                        cardBgColor = cardBgColor,
-                        textColor = textColor
-                    ) {
-                        InfoRow("Current Address", settingsState.address.ifBlank { "Not Specified" }, Icons.Rounded.Home, textColor)
+                        TeacherInfoRow("Role", data.role?.replaceFirstChar { it.uppercase() } ?: "Teacher", Icons.Rounded.VerifiedUser, textColor, primaryColor)
+                        teacherData?.let {
+                            TeacherInfoRow("Total Students", "${it.totalStudents}", Icons.Rounded.Groups, textColor, primaryColor)
+                            TeacherInfoRow("Total Classes", "${it.totalClasses}", Icons.Rounded.Schedule, textColor, primaryColor)
+                        }
+                        TeacherInfoRow("Address", settingsState.address.ifBlank { data.address ?: "Not Specified" }, Icons.Rounded.Home, textColor, primaryColor)
                     }
                 }
                 
@@ -163,7 +140,7 @@ fun StudentProfileScreen(
                     Spacer(modifier = Modifier.height(40.dp))
                 }
             }
-        } else {
+        } ?: run {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = primaryColor)
             }
@@ -172,10 +149,9 @@ fun StudentProfileScreen(
 }
 
 @Composable
-fun ProfileHeaderCard(
+fun TeacherProfileHeaderCard(
     name: String,
-    program: String,
-    semester: Int,
+    email: String,
     avatarUrl: String?,
     primaryColor: Color,
     secondaryColor: Color,
@@ -242,7 +218,7 @@ fun ProfileHeaderCard(
                     color = Color.White
                 )
                 Text(
-                    text = "$program • Semester $semester",
+                    text = email,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f)
                 )
@@ -252,7 +228,7 @@ fun ProfileHeaderCard(
 }
 
 @Composable
-fun InfoSection(
+fun TeacherInfoSection(
     title: String,
     icon: ImageVector,
     primaryColor: Color,
@@ -289,7 +265,7 @@ fun InfoSection(
 }
 
 @Composable
-fun InfoRow(label: String, value: String, icon: ImageVector, textColor: Color) {
+fun TeacherInfoRow(label: String, value: String, icon: ImageVector, textColor: Color, primaryColor: Color) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -297,13 +273,13 @@ fun InfoRow(label: String, value: String, icon: ImageVector, textColor: Color) {
         Surface(
             modifier = Modifier.size(36.dp),
             shape = RoundedCornerShape(10.dp),
-            color = Color(0xFF2563EB).copy(alpha = 0.1f)
+            color = primaryColor.copy(alpha = 0.1f)
         ) {
             Icon(
                 icon,
                 contentDescription = null,
                 modifier = Modifier.padding(8.dp),
-                tint = Color(0xFF2563EB)
+                tint = primaryColor
             )
         }
         Spacer(modifier = Modifier.width(16.dp))

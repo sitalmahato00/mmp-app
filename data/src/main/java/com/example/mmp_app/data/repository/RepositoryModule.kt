@@ -4,6 +4,7 @@ import com.example.mmp_app.domain.repository.AuthRepository
 import com.example.mmp_app.domain.repository.DashboardRepository
 import com.example.mmp_app.domain.repository.NotificationRepository
 import com.example.mmp_app.domain.repository.ParentRepository
+import com.example.mmp_app.domain.repository.SettingsRepository
 import dagger.Binds
 
 import dagger.Module
@@ -39,4 +40,10 @@ abstract class RepositoryModule {
     abstract fun bindParentRepository(
         parentRepositoryImpl: ParentRepositoryImpl
     ): ParentRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(
+        settingsRepositoryImpl: SettingsRepositoryImpl
+    ): SettingsRepository
 }
