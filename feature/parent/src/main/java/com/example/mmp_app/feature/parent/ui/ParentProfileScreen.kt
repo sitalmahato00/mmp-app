@@ -32,9 +32,16 @@ fun ParentProfileScreen(
     onEditProfile: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     viewModel: ParentProfileViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false
 ) {
     val state by viewModel.uiState.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfile()
+        settingsViewModel.loadUser()
+    }
 
     val primaryColor = Color(0xFF6366F1)
     val secondaryColor = Color(0xFFA855F7)
@@ -76,7 +83,17 @@ fun ParentProfileScreen(
             ) {
                 // 1. Profile Header Card
                 item {
-                    ParentProfileHeaderCard(data, primaryColor, secondaryColor, isDarkTheme)
+                    val avatarUrl = settingsState.parentProfile?.avatarUrl ?: data.avatarUrl
+                    val displayName = settingsState.name.ifBlank { data.name }
+                    ParentProfileHeaderCard(
+                        name = displayName,
+                        email = data.email,
+                        avatarUrl = avatarUrl,
+                        childrenCount = data.childrenCount,
+                        primaryColor = primaryColor,
+                        secondaryColor = secondaryColor,
+                        isDarkTheme = isDarkTheme
+                    )
                 }
 
                 // 2. Personal Information Section
@@ -88,11 +105,11 @@ fun ParentProfileScreen(
                         cardBgColor = cardBgColor,
                         textColor = textColor
                     ) {
-                        ParentInfoRow("Full Name", data.name, Icons.Rounded.Badge, textColor)
+                        ParentInfoRow("Full Name", settingsState.name.ifBlank { data.name }, Icons.Rounded.Badge, textColor)
                         ParentInfoRow("Email Address", data.email, Icons.Rounded.Email, textColor)
-                        ParentInfoRow("Phone Number", data.phone ?: "N/A", Icons.Rounded.Phone, textColor)
-                        ParentInfoRow("Gender", data.gender?.replaceFirstChar { it.uppercase() } ?: "Not Specified", Icons.Rounded.Wc, textColor)
-                        ParentInfoRow("Occupation", data.occupation ?: "Not Specified", Icons.Rounded.Work, textColor)
+                        ParentInfoRow("Phone Number", settingsState.phone.ifBlank { data.phone ?: "N/A" }, Icons.Rounded.Phone, textColor)
+                        ParentInfoRow("Gender", settingsState.gender.ifBlank { data.gender ?: "Not Specified" }.replaceFirstChar { it.uppercase() }, Icons.Rounded.Wc, textColor)
+                        ParentInfoRow("Occupation", settingsState.occupation.ifBlank { data.occupation ?: "Not Specified" }, Icons.Rounded.Work, textColor)
                     }
                 }
 
@@ -105,9 +122,9 @@ fun ParentProfileScreen(
                         cardBgColor = cardBgColor,
                         textColor = textColor
                     ) {
-                        ParentInfoRow("Relationship", data.relationToStudent.replaceFirstChar { it.uppercase() }, Icons.Rounded.FamilyRestroom, textColor)
+                        ParentInfoRow("Relationship", settingsState.relationToStudent.ifBlank { data.relationToStudent }.replaceFirstChar { it.uppercase() }, Icons.Rounded.FamilyRestroom, textColor)
                         ParentInfoRow("Linked Children", "${data.childrenCount} Child(ren)", Icons.Rounded.People, textColor)
-                        ParentInfoRow("Current Address", data.address ?: "Not Specified", Icons.Rounded.Home, textColor)
+                        ParentInfoRow("Current Address", settingsState.address.ifBlank { data.address ?: "Not Specified" }, Icons.Rounded.Home, textColor)
                     }
                 }
                 
@@ -144,7 +161,15 @@ fun ParentProfileScreen(
 }
 
 @Composable
-fun ParentProfileHeaderCard(data: ParentProfileDto, primaryColor: Color, secondaryColor: Color, isDarkTheme: Boolean) {
+fun ParentProfileHeaderCard(
+    name: String,
+    email: String,
+    avatarUrl: String?,
+    childrenCount: Int,
+    primaryColor: Color,
+    secondaryColor: Color,
+    isDarkTheme: Boolean
+) {
     val gradientColors = if (isDarkTheme) {
         listOf(Color(0xFF1E293B), Color(0xFF0F172A))
     } else {
@@ -182,9 +207,9 @@ fun ParentProfileHeaderCard(data: ParentProfileDto, primaryColor: Color, seconda
                     color = Color.White.copy(alpha = 0.2f),
                     border = androidx.compose.foundation.BorderStroke(4.dp, Color.White)
                 ) {
-                    if (!data.avatarUrl.isNullOrEmpty()) {
+                    if (!avatarUrl.isNullOrEmpty()) {
                         AsyncImage(
-                            model = data.avatarUrl,
+                            model = avatarUrl,
                             contentDescription = "Profile Picture",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -200,13 +225,13 @@ fun ParentProfileHeaderCard(data: ParentProfileDto, primaryColor: Color, seconda
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = data.name,
+                    text = name,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Text(
-                    text = "Parent Account • ${data.childrenCount} Child(ren)",
+                    text = "Parent Account • $childrenCount Child(ren)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f)
                 )
