@@ -3,8 +3,7 @@ package com.example.mmp_app.feature.parent.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mmp_app.domain.model.ChildDetailDto
-import com.example.mmp_app.domain.model.TimetableData
+import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.domain.repository.ParentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +63,13 @@ class ChildTimetableViewModel @Inject constructor(
         loadTimetable(childId)
     }
 
+    fun setChildId(childId: Int) {
+        if (childId != 0 && childId != _uiState.value.selectedChildId) {
+            _uiState.update { it.copy(selectedChildId = childId) }
+            loadTimetable(childId)
+        }
+    }
+
     fun loadTimetable(childId: Int) {
         viewModelScope.launch {
             _uiState.update { it.copy(isTimetableLoading = true) }
@@ -93,18 +99,18 @@ class ChildTimetableViewModel @Inject constructor(
 // if ParentTimetableDto and TimetableData are different types in domain.
 // Based on ParentRepository, it returns ParentTimetableDto.
 // Based on student's TimetableScreen, it uses TimetableData.
-private fun com.example.mmp_app.domain.model.ParentTimetableDto.toTimetableData(): TimetableData {
+private fun ParentTimetableDto.toTimetableData(): TimetableData {
     return TimetableData(
         hasTimetable = this.hasTimetable,
         semester = this.semester,
         section = this.section,
         effectiveFrom = this.effectiveFrom,
-        academicSession = null, // Not present in ParentTimetableDto?
+        academicSession = this.academicSession,
         timetable = this.timetable.map { day ->
-            com.example.mmp_app.domain.model.DaySchedule(
+            DaySchedule(
                 day = day.day,
                 classes = day.classes.map { cls ->
-                    com.example.mmp_app.domain.model.TimetableClass(
+                    TimetableClass(
                         id = cls.id,
                         subject = cls.subject,
                         subjectCode = cls.subjectCode,
@@ -113,8 +119,8 @@ private fun com.example.mmp_app.domain.model.ParentTimetableDto.toTimetableData(
                         endTime = cls.endTime,
                         room = cls.room,
                         type = cls.type,
-                        group = null, // Will need to check if group is in ParentTimetableClassDto
-                        duration = null
+                        group = cls.group,
+                        duration = cls.duration
                     )
                 }
             )

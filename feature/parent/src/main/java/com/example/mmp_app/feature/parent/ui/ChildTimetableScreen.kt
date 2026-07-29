@@ -1,6 +1,5 @@
 package com.example.mmp_app.feature.parent.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.domain.model.ChildDetailDto
+import androidx.compose.material.icons.rounded.Warning
 import com.example.mmp_app.feature.student.ui.TimetableEmptyState
 import com.example.mmp_app.feature.student.ui.TimetableGrid
 import com.example.mmp_app.feature.student.ui.TimetableInfoHeader
@@ -36,6 +36,12 @@ fun ChildTimetableScreen(
     isDarkTheme: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    LaunchedEffect(childId) {
+        if (childId != 0) {
+            viewModel.setChildId(childId)
+        }
+    }
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
@@ -101,7 +107,7 @@ fun ChildTimetableScreen(
 private fun TimetableErrorState(message: String, onRetry: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
-            Icon(Icons.Rounded.ErrorOutline, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)
+            Icon(Icons.Rounded.Warning, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error)
             Spacer(modifier = Modifier.height(16.dp))
             Text(text = message, color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             Spacer(modifier = Modifier.height(24.dp))

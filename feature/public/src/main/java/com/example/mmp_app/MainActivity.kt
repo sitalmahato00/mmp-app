@@ -28,6 +28,7 @@ import com.example.mmp_app.feature.auth.ui.LoginScreen
 import com.example.mmp_app.feature.auth.ui.OtpVerificationScreen
 import com.example.mmp_app.feature.auth.ui.SplashScreen
 import com.example.mmp_app.feature.parent.ui.ChildMarksScreen
+import com.example.mmp_app.feature.parent.ui.ChildTimetableScreen
 import com.example.mmp_app.feature.parent.ui.ChildDetailsScreen
 import com.example.mmp_app.feature.parent.ui.ChildrenListScreen
 import com.example.mmp_app.feature.parent.ui.ParentAttendanceScreen
@@ -272,7 +273,7 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToAttendance = { id -> navigator.navigate(Routes.ChildAttendance(id)) },
                 onNavigateToMarks = { id -> navigator.navigate(Routes.ChildResults(id)) },
                 onNavigateToAssignments = { id -> navigator.navigate(Routes.ChildAssignments(id)) },
-                onNavigateToTimetable = { id -> navigator.navigate(Routes.Timetable) }, // Placeholder for ChildTimetable if not exist
+                onNavigateToTimetable = { id -> navigator.navigate(Routes.ChildTimetable(id)) },
                 isDarkTheme = isDarkTheme
             )
         }
@@ -299,6 +300,13 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
         }
         entry<Routes.ChildResults> { route ->
             ChildMarksScreen(
+                childId = route.childId,
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme
+            )
+        }
+        entry<Routes.ChildTimetable> { route ->
+            ChildTimetableScreen(
                 childId = route.childId,
                 onBack = { navigator.goBack() },
                 isDarkTheme = isDarkTheme

@@ -39,6 +39,7 @@ import com.example.mmp_app.feature.parent.ui.ParentDashboard
 import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
 import com.example.mmp_app.feature.parent.ui.ParentProfileScreen
 import com.example.mmp_app.feature.parent.ui.ChildMarksScreen
+import com.example.mmp_app.feature.parent.ui.ChildTimetableScreen
 import com.example.mmp_app.feature.parent.ui.ChildrenListScreen
 import com.example.mmp_app.feature.student.ui.MarksScreen
 import com.example.mmp_app.feature.student.ui.NoticesScreen
@@ -694,10 +695,18 @@ fun DashboardAdaptiveContent(
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
-                                    2 -> TimetableScreen(
-                                        onMenuClick = { scope.launch { drawerState.open() } },
-                                        showSystemHeader = false
-                                    )
+                                    2 -> if (userProfile?.role?.lowercase() == "parent") {
+                                        ChildTimetableScreen(
+                                            childId = 0,
+                                            onBack = { selectedItem = 0 },
+                                            isDarkTheme = isDarkTheme
+                                        )
+                                    } else {
+                                        TimetableScreen(
+                                            onMenuClick = { scope.launch { drawerState.open() } },
+                                            showSystemHeader = false
+                                        )
+                                    }
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ChildMarksScreen(
                                             childId = 0,

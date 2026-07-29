@@ -101,6 +101,7 @@ data class ParentTimetableDto(
     val semester: Int,
     val section: String,
     @SerialName("effective_from") val effectiveFrom: String?,
+    @SerialName("academic_session") val academicSession: String? = null,
     val timetable: List<ParentDayTimetableDto>
 )
 
@@ -119,7 +120,9 @@ data class ParentTimetableClassDto(
     @SerialName("start_time") val startTime: String,
     @SerialName("end_time") val endTime: String,
     val room: String,
-    val type: String
+    val type: String,
+    val group: String? = null,
+    val duration: Int? = null
 )
 
 @Serializable
