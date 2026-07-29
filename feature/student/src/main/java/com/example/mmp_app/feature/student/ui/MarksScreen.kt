@@ -45,7 +45,8 @@ import kotlin.math.roundToInt
 @Composable
 fun MarksScreen(
     onBack: () -> Unit,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
 
@@ -84,36 +85,7 @@ fun MarksScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (currentView) {
-                            MarksView.Summary -> "Marks & Results"
-                            MarksView.ExamDetail -> examDetail?.examName ?: "Exam Results"
-                            MarksView.SubjectMarks -> subjectMarks?.subjectName ?: "Subject History"
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (currentView == MarksView.Summary) onBack()
-                        else currentView = MarksView.Summary
-                    }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                )
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+    val content = @Composable { padding: PaddingValues ->
         Box(modifier = Modifier
             .padding(padding)
             .fillMaxSize()
@@ -176,6 +148,43 @@ fun MarksScreen(
                 }
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            when (currentView) {
+                                MarksView.Summary -> "Marks & Results"
+                                MarksView.ExamDetail -> examDetail?.examName ?: "Exam Results"
+                                MarksView.SubjectMarks -> subjectMarks?.subjectName ?: "Subject History"
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (currentView == MarksView.Summary) onBack()
+                            else currentView = MarksView.Summary
+                        }) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground
+                    )
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { padding ->
+            content(padding)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
     
     LaunchedEffect(marksheet) {

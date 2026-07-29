@@ -33,7 +33,8 @@ fun ChildTimetableScreen(
     childId: Int,
     onBack: () -> Unit,
     viewModel: ChildTimetableViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    showSystemHeader: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -48,23 +49,7 @@ fun ChildTimetableScreen(
     
     val pullToRefreshState = rememberPullToRefreshState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Timetable", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardBgColor,
-                    titleContentColor = textColor
-                )
-            )
-        },
-        containerColor = backgroundColor
-    ) { paddingValues ->
+    val content = @Composable { paddingValues: PaddingValues ->
         PullToRefreshBox(
             isRefreshing = uiState.isLoading || uiState.isTimetableLoading,
             onRefresh = { viewModel.refresh() },
@@ -100,6 +85,30 @@ fun ChildTimetableScreen(
                 }
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Timetable", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
+                )
+            },
+            containerColor = backgroundColor
+        ) { paddingValues ->
+            content(paddingValues)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 

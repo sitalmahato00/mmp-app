@@ -34,7 +34,8 @@ fun StudentProfileScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit = {},
     onEditProfile: () -> Unit = {},
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
     val settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -55,28 +56,7 @@ fun StudentProfileScreen(
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Profile", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onEditProfile) {
-                        Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = textColor
-                )
-            )
-        },
-        containerColor = backgroundColor
-    ) { paddingValues ->
+    val content = @Composable { paddingValues: PaddingValues ->
         if (studentData != null) {
             val data = studentData!!
             LazyColumn(
@@ -168,6 +148,35 @@ fun StudentProfileScreen(
                 CircularProgressIndicator(color = primaryColor)
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("My Profile", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onEditProfile) {
+                            Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = backgroundColor,
+                        titleContentColor = textColor
+                    )
+                )
+            },
+            containerColor = backgroundColor
+        ) { paddingValues ->
+            content(paddingValues)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 

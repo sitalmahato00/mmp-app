@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.EventNote
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -212,60 +214,21 @@ fun DashboardAdaptiveContent(
     MMPAppTheme(darkTheme = isDarkTheme) {
         var selectedItem by remember { mutableIntStateOf(0) }
 
+        val isTopLevelDestination = remember(selectedItem, userProfile?.role) {
+            when (userProfile?.role?.lowercase()) {
+                "student" -> selectedItem in 0..4
+                "parent" -> selectedItem in 0..4
+                "teacher" -> selectedItem in listOf(0, 1, 3)
+                else -> selectedItem == 0
+            }
+        }
+
         if (isLoading && studentData == null && teacherData == null && parentData == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else if (error != null && studentData == null && teacherData == null && parentData == null) {
             ErrorState(error!!, onRetry)
-        } else if (userProfile?.role?.lowercase() == "student" && selectedItem == 0) {
-            MainDashboardContent(
-                userProfile = userProfile,
-                studentData = studentData,
-                recentNotices = recentNotices,
-                attendanceSummary = attendanceSummary,
-                subjects = subjects,
-                assignments = assignments,
-                timetable = timetable,
-                downloads = downloads,
-                teacherData = teacherData,
-                parentData = parentData,
-                parentProfile = parentProfile,
-                onNavigateToAttendance = onNavigateToAttendance,
-                onNavigateToMarks = onNavigateToMarks,
-                onNavigateToAssignments = onNavigateToAssignments,
-                onNavigateToFees = onNavigateToFees,
-                onNavigateToNotices = onNavigateToNotices,
-                onRecordAttendance = onRecordAttendance,
-                onRecordMarks = onRecordMarks,
-                onNavigateToChildDetails = onNavigateToChildDetails,
-                onNavigateToChildAttendance = onNavigateToChildAttendance,
-                onNavigateToChildAssignments = onNavigateToChildAssignments,
-                onNavigateToChildResults = onNavigateToChildResults,
-                onNavigateToChildrenList = {
-            if (parentData != null && parentData!!.children.size == 1) {
-                val child = parentData!!.children[0]
-                onNavigateToChildDetails(child.id, child.name)
-            } else {
-                onNavigateToChildrenList()
-            }
-        },
-                onNavigateToRoutines = onNavigateToRoutines,
-                onNavigateToExams = onNavigateToExams,
-                onNavigateToResults = onNavigateToResults,
-                onNavigateToSubjects = onNavigateToSubjects,
-                onNavigateToTimetable = onNavigateToTimetable,
-                onNavigateToDownloads = onNavigateToDownloads,
-                onNavigateToProfile = onNavigateToProfile,
-                onNavigateToSettings = onNavigateToSettings,
-                onNavigateToNotifications = onNavigateToNotifications,
-                onLogout = onLogout,
-                onSelectItem = { selectedItem = it },
-                unreadCount = unreadCount,
-                isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme,
-                showSystemHeader = true
-            )
         } else {
             // Use the standard adaptive layout for all screens to ensure nav bar is always present
             val adaptiveInfo = currentWindowAdaptiveInfo()
@@ -425,7 +388,7 @@ fun DashboardAdaptiveContent(
                                     selectedItem = 2
                                     scope.launch { drawerState.close() }
                                 },
-                                icon = { Icon(Icons.Rounded.EventNote, null) },
+                                icon = { Icon(Icons.AutoMirrored.Rounded.EventNote, null) },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                         }
@@ -472,56 +435,85 @@ fun DashboardAdaptiveContent(
                 Scaffold(
                     containerColor = MaterialTheme.colorScheme.background,
                     topBar = {
-                        CenterAlignedTopAppBar(
-                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.background,
-                            ),
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Rounded.Menu, "Menu", tint = MaterialTheme.colorScheme.primary)
-                                }
-                            },
-                            title = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.mmplogo),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = "MMP College", 
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            },
-                            actions = {
-                                IconButton(onClick = onToggleTheme) {
-                                    Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
-                                }
-                                IconButton(onClick = onNavigateToNotifications) {
-                                    BadgedBox(badge = {
-                                        if (unreadCount > 0) {
-                                            Badge { Text(unreadCount.toString()) }
+                        if (isTopLevelDestination) {
+                            CenterAlignedTopAppBar(
+                                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.background,
+                                ),
+                                navigationIcon = {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(Icons.Rounded.Menu, "Menu", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                },
+                                title = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.mmplogo),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "MMP College", 
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                },
+                                actions = {
+                                    IconButton(onClick = onToggleTheme) {
+                                        Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                                    }
+                                    IconButton(onClick = onNavigateToNotifications) {
+                                        BadgedBox(badge = {
+                                            if (unreadCount > 0) {
+                                                Badge { Text(unreadCount.toString()) }
+                                            }
+                                        }) {
+                                            Icon(Icons.Rounded.NotificationsNone, null)
                                         }
-                                    }) {
-                                        Icon(Icons.Rounded.NotificationsNone, null)
                                     }
                                 }
-                            }
-                        )
+                            )
+                        } else {
+                            TopAppBar(
+                                title = { 
+                                    Text(
+                                        text = when(selectedItem) {
+                                            5 -> "My Profile"
+                                            2 -> if (userProfile?.role?.lowercase() == "teacher") "Schedule" else "Timetable"
+                                            else -> "Details"
+                                        },
+                                        fontWeight = FontWeight.Bold 
+                                    ) 
+                                },
+                                navigationIcon = {
+                                    IconButton(onClick = { selectedItem = 0 }) {
+                                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
+                                    }
+                                },
+                                actions = {
+                                    IconButton(onClick = onToggleTheme) {
+                                        Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                                    }
+                                },
+                                colors = TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.background,
+                                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                                )
+                            )
+                        }
                     },
                     bottomBar = {
                         if (navSuiteType == NavigationSuiteType.NavigationBar) {
                             if (userProfile?.role?.lowercase() == "parent") {
                                 ModernBottomNavBar(
-                                    selectedItem = selectedItem,
-                                    onItemSelected = { selectedItem = it },
+                                    selectedItem = if (selectedItem == 0) -1 else selectedItem - 1,
+                                    onItemSelected = { selectedItem = it + 1 },
                                     items = listOf(
                                         ModernNavItem(Icons.Rounded.Notifications, "Notices"),
-                                        ModernNavItem(Icons.Rounded.EventNote, "Schedule"),
+                                        ModernNavItem(Icons.AutoMirrored.Rounded.EventNote, "Schedule"),
                                         ModernNavItem(Icons.Rounded.Star, "Results"),
                                         ModernNavItem(Icons.Rounded.People, "Children")
                                     ),
@@ -561,7 +553,7 @@ fun DashboardAdaptiveContent(
                                             NavigationBarItem(
                                                 selected = selectedItem == 2,
                                                 onClick = { selectedItem = 2 },
-                                                icon = { Icon(Icons.Rounded.EventNote, null) },
+                                                icon = { Icon(Icons.AutoMirrored.Rounded.EventNote, null) },
                                                 label = { Text("Schedule") }
                                             )
                                             NavigationBarItem(
@@ -617,7 +609,7 @@ fun DashboardAdaptiveContent(
                                     NavigationRailItem(
                                         selected = selectedItem == 2,
                                         onClick = { selectedItem = 2 },
-                                        icon = { Icon(Icons.Rounded.EventNote, null) },
+                                        icon = { Icon(Icons.AutoMirrored.Rounded.EventNote, null) },
                                         label = { Text("Schedule") }
                                     )
                                     NavigationRailItem(
@@ -686,12 +678,12 @@ fun DashboardAdaptiveContent(
                                     )
                                     1 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ParentNoticesScreen(
-                                            onMenuClick = { scope.launch { drawerState.open() } },
+                                            onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
                                             showSystemHeader = false
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        NoticesScreen(onBack = { selectedItem = 0 })
+                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
@@ -699,10 +691,12 @@ fun DashboardAdaptiveContent(
                                         ChildTimetableScreen(
                                             childId = 0,
                                             onBack = { selectedItem = 0 },
-                                            isDarkTheme = isDarkTheme
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     } else {
                                         TimetableScreen(
+                                            onBack = { selectedItem = 0 },
                                             onMenuClick = { scope.launch { drawerState.open() } },
                                             showSystemHeader = false
                                         )
@@ -711,10 +705,11 @@ fun DashboardAdaptiveContent(
                                         ChildMarksScreen(
                                             childId = 0,
                                             onBack = { selectedItem = 0 },
-                                            isDarkTheme = isDarkTheme
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        MarksScreen(onBack = { selectedItem = 0 })
+                                        MarksScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
                                     }
@@ -722,21 +717,24 @@ fun DashboardAdaptiveContent(
                                         ChildrenListScreen(
                                             onBack = { selectedItem = 0 },
                                             onNavigateToChildDetail = { id -> onNavigateToChildDetails(id, "") },
-                                            isDarkTheme = isDarkTheme
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
                                         StudentProfileScreen(
                                             onBack = { selectedItem = 0 },
                                             onLogout = onLogout,
                                             onEditProfile = onNavigateToSettings,
-                                            isDarkTheme = isDarkTheme
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     }
                                     5 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ParentProfileScreen(
                                             onBack = { selectedItem = 0 },
                                             onLogout = onLogout,
-                                            isDarkTheme = isDarkTheme
+                                            isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
                                         )
                                     }
                                 }

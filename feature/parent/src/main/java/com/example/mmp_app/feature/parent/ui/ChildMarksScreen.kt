@@ -36,7 +36,8 @@ fun ChildMarksScreen(
     childId: Int,
     onBack: () -> Unit,
     viewModel: ParentMarksViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    showSystemHeader: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
@@ -50,23 +51,7 @@ fun ChildMarksScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Marks", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardBgColor,
-                    titleContentColor = textColor
-                )
-            )
-        },
-        containerColor = backgroundColor
-    ) { padding ->
+    val content = @Composable { padding: PaddingValues ->
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,
             onRefresh = { viewModel.refresh() },
@@ -161,7 +146,32 @@ fun ChildMarksScreen(
         }
     }
 
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Marks", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
+                )
+            },
+            containerColor = backgroundColor
+        ) { padding ->
+            content(padding)
+        }
+    } else {
+        content(PaddingValues(0.dp))
+    }
+
     if (showExamPicker) {
+        // ... dialog code ...
         val exams = uiState.marks.filter { it.examType.lowercase() == "assessment" }.map { it.exam }.distinct()
         ExamPickerDialog(
             exams = exams,

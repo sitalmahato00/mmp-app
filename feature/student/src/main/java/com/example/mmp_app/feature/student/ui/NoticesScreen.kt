@@ -41,7 +41,8 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoticesScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
     val notices by viewModel.notices.collectAsState()
@@ -55,25 +56,7 @@ fun NoticesScreen(
         viewModel.loadStudentNotices(type = selectedType)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (selectedNoticeId == null) "Notices" else "Notice Detail") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (selectedNoticeId != null) {
-                            selectedNoticeId = null
-                            viewModel.clearNoticeDetail()
-                        } else {
-                            onBack()
-                        }
-                    }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    val content = @Composable { padding: PaddingValues ->
         Box(modifier = Modifier.padding(padding)) {
             AnimatedContent(targetState = selectedNoticeId, label = "notice_transition") { id ->
                 if (id == null) {
@@ -95,6 +78,32 @@ fun NoticesScreen(
                 }
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(if (selectedNoticeId == null) "Notices" else "Notice Detail") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (selectedNoticeId != null) {
+                                selectedNoticeId = null
+                                viewModel.clearNoticeDetail()
+                            } else {
+                                onBack()
+                            }
+                        }) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            content(padding)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 
