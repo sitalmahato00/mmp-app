@@ -13,6 +13,7 @@ data class TimetableClass(
     @SerialName("end_time") val endTime: String? = null,
     @SerialName("room") val room: String? = null,
     @SerialName("type") val type: String? = null,
+    @SerialName("group") val group: String? = null,
     @SerialName("duration") val duration: Int? = null
 )
 
