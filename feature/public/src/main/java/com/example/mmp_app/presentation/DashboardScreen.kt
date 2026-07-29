@@ -38,7 +38,7 @@ import com.example.mmp_app.feature.teacher.ui.TeacherDashboard
 import com.example.mmp_app.feature.parent.ui.ParentDashboard
 import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
 import com.example.mmp_app.feature.parent.ui.ParentProfileScreen
-import com.example.mmp_app.feature.parent.ui.ParentResultsScreen
+import com.example.mmp_app.feature.parent.ui.ChildMarksScreen
 import com.example.mmp_app.feature.parent.ui.ChildrenListScreen
 import com.example.mmp_app.feature.student.ui.NotificationViewModel
 import com.example.mmp_app.feature.student.ui.TimetableScreen
@@ -624,10 +624,10 @@ fun DashboardAdaptiveContent(
                                         )
                                     }
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
-                                        ParentResultsScreen(
-                                            onMenuClick = { scope.launch { drawerState.open() } },
-                                            isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                        ChildMarksScreen(
+                                            childId = 0,
+                                            onBack = { selectedItem = 0 },
+                                            isDarkTheme = isDarkTheme
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
                                         ResultsScreenContent(onNavigateToResults)

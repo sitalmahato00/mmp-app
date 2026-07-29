@@ -53,7 +53,7 @@ class MarksheetPrinter(private val context: Context) {
         val dateStr = SimpleDateFormat("yyyy-MM-dd 'at' hh:mm a", Locale.getDefault()).format(Date())
         val logoBase64 = getBase64Logo()
 
-        val deptName = student?.program?.replace("Diploma in ", "") ?: "Computer Engineering"
+        val deptName = student?.department ?: student?.program?.replace("Diploma in ", "") ?: "Computer Engineering"
         val progName = if (student?.program?.contains("Diploma") == true) student.program else "Diploma in ${student?.program ?: "Computer Engineering"}"
 
         val rows = exam.subjects.joinToString("") { mark ->
@@ -125,7 +125,7 @@ class MarksheetPrinter(private val context: Context) {
                 </div>
                 <div class="info-item">
                     <span class="summary-label">SECTION</span>
-                    <span class="info-value">A</span>
+                    <span class="info-value">${student?.section ?: "A"}</span>
                 </div>
             </div>
 

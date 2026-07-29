@@ -659,7 +659,7 @@ fun OfficialMarksheetView(student: StudentDashboardDto?, exam: ExamSummaryDto) {
                 textAlign = TextAlign.Center
             )
             Text(
-                student?.program?.replace("Diploma in ", "") ?: "Computer Engineering",
+                student?.department ?: student?.program?.replace("Diploma in ", "") ?: "Computer Engineering",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF4B5563),
                 textAlign = TextAlign.Center
@@ -706,8 +706,8 @@ fun OfficialMarksheetView(student: StudentDashboardDto?, exam: ExamSummaryDto) {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text("SECTION", style = MaterialTheme.typography.labelSmall, color = Color(0xFF9CA3AF))
-                // Try to extract section from roll number or default to A
-                val section = student?.rollNumber?.lastOrNull()?.toString()?.uppercase()?.takeIf { it in "A".."Z" } ?: "A"
+                // Try to use provided section, or extract from roll number, or default to A
+                val section = student?.section ?: student?.rollNumber?.lastOrNull()?.toString()?.uppercase()?.takeIf { it in "A".."Z" } ?: "A"
                 Text(section, fontWeight = FontWeight.Bold, color = Color(0xFF111827))
             }
         }

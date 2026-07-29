@@ -14,6 +14,8 @@ data class StudentDashboardDto(
     @SerialName("roll_number") val rollNumber: String? = null,
     @SerialName("program") val program: String,
     @SerialName("semester") val semester: Int,
+    @SerialName("section") val section: String? = null,
+    @SerialName("department") val department: String? = null,
     @SerialName("kpi_cards") val kpiCards: StudentKpiDto
 )
 

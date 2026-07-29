@@ -27,11 +27,11 @@ import com.example.mmp_app.feature.auth.ui.AuthViewModel
 import com.example.mmp_app.feature.auth.ui.LoginScreen
 import com.example.mmp_app.feature.auth.ui.OtpVerificationScreen
 import com.example.mmp_app.feature.auth.ui.SplashScreen
+import com.example.mmp_app.feature.parent.ui.ChildMarksScreen
 import com.example.mmp_app.feature.parent.ui.ChildDetailsScreen
 import com.example.mmp_app.feature.parent.ui.ChildrenListScreen
 import com.example.mmp_app.feature.parent.ui.ParentAttendanceScreen
 import com.example.mmp_app.feature.parent.ui.ParentAssignmentsScreen
-import com.example.mmp_app.feature.parent.ui.ParentResultsScreen
 import com.example.mmp_app.feature.student.ui.AssignmentsScreen
 import com.example.mmp_app.feature.student.ui.AttendanceScreen
 import com.example.mmp_app.feature.student.ui.DownloadsScreen
@@ -298,7 +298,7 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
             )
         }
         entry<Routes.ChildResults> { route ->
-            ParentResultsScreen(
+            ChildMarksScreen(
                 childId = route.childId,
                 onBack = { navigator.goBack() },
                 isDarkTheme = isDarkTheme
