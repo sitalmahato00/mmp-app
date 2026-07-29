@@ -39,7 +39,8 @@ class TimetableViewModel @Inject constructor(
                     
                     // If the timetable list is empty or has empty classes, we fetch individual days
                     // This fixes the issue where the main endpoint returns empty class lists
-                    if (data.timetable.isEmpty() || data.timetable.all { it.classes.isEmpty() }) {
+                    val timetableList = data.timetable ?: emptyList()
+                    if (timetableList.isEmpty() || timetableList.all { it.classes.isEmpty() }) {
                         val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
                         days.forEach { dayName ->
                             launch {
@@ -61,7 +62,7 @@ class TimetableViewModel @Inject constructor(
 
     private fun updateDayInTimetable(daySchedule: DaySchedule) {
         val currentData = _timetableData.value ?: return
-        val updatedTimetable = currentData.timetable.toMutableList()
+        val updatedTimetable = (currentData.timetable ?: emptyList()).toMutableList()
         val index = updatedTimetable.indexOfFirst { it.day.equals(daySchedule.day, ignoreCase = true) }
         
         if (index != -1) {

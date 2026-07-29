@@ -521,8 +521,8 @@ fun ModernScheduleCard(cls: TimetableClass, primaryColor: Color, textColor: Colo
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.width(80.dp)) {
-                Text(text = cls.startTime, fontWeight = FontWeight.Bold, color = textColor)
-                Text(text = cls.endTime, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
+                Text(text = cls.startTime ?: "TBA", fontWeight = FontWeight.Bold, color = textColor)
+                Text(text = cls.endTime ?: "TBA", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.5f))
             }
             Box(modifier = Modifier.width(3.dp).height(40.dp).background(typeColor, CircleShape))
             Spacer(modifier = Modifier.width(16.dp))

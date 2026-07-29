@@ -259,7 +259,7 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun loadMarksByExam(examId: String) {
+    fun loadMarksByExam(examId: Int) {
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true

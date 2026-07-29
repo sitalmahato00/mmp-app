@@ -37,15 +37,15 @@ data class SubjectMarks(
     @SerialName("full_marks_practical") val full_marks_practical: Int,
     @SerialName("pass_marks_theory") val pass_marks_theory: Int,
     @SerialName("pass_marks_practical") val pass_marks_practical: Int,
-    @SerialName("internal_theory") val internal_theory: String,
-    @SerialName("external_theory") val external_theory: String,
-    @SerialName("internal_practical") val internal_practical: String,
-    @SerialName("external_practical") val external_practical: String
+    @SerialName("internal_theory") val internal_theory: Int,
+    @SerialName("external_theory") val external_theory: Int,
+    @SerialName("internal_practical") val internal_practical: Int,
+    @SerialName("external_practical") val external_practical: Int
 ) {
-    fun internalTheoryInt() = internal_theory.toIntOrNull() ?: 0
-    fun externalTheoryInt() = external_theory.toIntOrNull() ?: 0
-    fun internalPracticalInt() = internal_practical.toIntOrNull() ?: 0
-    fun externalPracticalInt() = external_practical.toIntOrNull() ?: 0
+    fun internalTheoryInt() = internal_theory
+    fun externalTheoryInt() = external_theory
+    fun internalPracticalInt() = internal_practical
+    fun externalPracticalInt() = external_practical
 }
 
 @Serializable
@@ -64,7 +64,7 @@ data class SubjectDocument(
     @SerialName("category") val category: String?,
     @SerialName("file_url") val file_url: String,
     @SerialName("file_type") val file_type: String?,
-    @SerialName("subject_id") val subject_id: String?,
+    @SerialName("subject_id") val subject_id: Int?,
     @SerialName("uploaded_at") val uploaded_at: String
 )
 

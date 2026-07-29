@@ -102,7 +102,7 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getMarksByExam(examId: String): Flow<Result<ExamDetailDto>> = flow {
+    override fun getMarksByExam(examId: Int): Flow<Result<ExamDetailDto>> = flow {
         try {
             val response = apiService.getMarksByExam(examId)
             val detail = handleApiResponse(response, json)
@@ -125,7 +125,7 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getMarksheet(examId: String?): Flow<Result<MarksheetDto>> = flow {
+    override fun getMarksheet(examId: Int?): Flow<Result<MarksheetDto>> = flow {
         try {
             val response = apiService.getMarksheet(examId)
             emit(Result.success(handleApiResponse(response, json)))

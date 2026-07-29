@@ -66,7 +66,7 @@ fun FeesScreen(
                     )
                 } else {
                     FeeSummaryCard(
-                        totalDue = feesResponse?.totalDue ?: "₹ 0",
+                        totalDue = feesResponse?.totalDue?.toString() ?: "₹ 0",
                         lastDate = feesResponse?.lastDate ?: "N/A"
                     )
                 }
@@ -94,7 +94,7 @@ fun FeesScreen(
                 feesResponse?.data?.let { items ->
                     items(items.size) { index ->
                         val item = items[index]
-                        FeeBreakdownItem(item.title, item.amount, item.isPaid)
+                        FeeBreakdownItem(item.title, item.amount.toString(), item.isPaid)
                     }
                 }
             }

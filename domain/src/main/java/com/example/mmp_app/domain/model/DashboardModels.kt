@@ -53,7 +53,7 @@ data class MarksSummaryDto(
 
 @Serializable
 data class ExamSummaryDto(
-    @SerialName("exam_id") val examId: String,
+    @SerialName("exam_id") val examId: Int,
     @SerialName("exam_name") val examName: String,
     @SerialName("category") val category: String? = null,
     @SerialName("start_date") val startDate: String? = null,
@@ -86,7 +86,7 @@ data class AssignmentDto(
     @SerialName("description") val description: String? = null,
     @SerialName("due_date") val dueDate: String,
     @SerialName("max_marks") val maxMarks: Float? = null,
-    @SerialName("obtained_marks") val obtainedMarks: String? = null,
+    @SerialName("obtained_marks") val obtainedMarks: Float? = null,
     @SerialName("status") val status: String
 )
 
@@ -114,7 +114,7 @@ data class SubmissionStatusDto(
     @SerialName("status") val status: String,
     @SerialName("student_note") val studentNote: String? = null,
     @SerialName("attachment_url") val attachmentUrl: String? = null,
-    @SerialName("marks_obtained") val marksObtained: String? = null,
+    @SerialName("marks_obtained") val marksObtained: Float? = null,
     @SerialName("max_marks") val maxMarks: Float? = null,
     @SerialName("feedback") val feedback: String? = null,
     @SerialName("created_at") val createdAt: String,
@@ -159,7 +159,7 @@ data class SubmitResponse(
 data class FeeDto(
     @SerialName("id") val id: Int,
     @SerialName("title") val title: String,
-    @SerialName("amount") val amount: String,
+    @SerialName("amount") val amount: Double,
     @SerialName("is_paid") val isPaid: Boolean,
     @SerialName("due_date") val dueDate: String? = null
 )
@@ -167,7 +167,7 @@ data class FeeDto(
 @Serializable
 data class FeesResponse(
     @SerialName("success") val success: Boolean,
-    @SerialName("total_due") val totalDue: String,
+    @SerialName("total_due") val totalDue: Double,
     @SerialName("last_date") val lastDate: String,
     @SerialName("data") val data: List<FeeDto>
 )
@@ -259,7 +259,7 @@ data class StudentAttendanceItem(
 
 @Serializable
 data class ExamDetailDto(
-    @SerialName("exam_id") val examId: String? = null,
+    @SerialName("exam_id") val examId: Int? = null,
     @SerialName("exam_name") val examName: String,
     @SerialName("category") val category: String? = null,
     @SerialName("start_date") val startDate: String? = null,

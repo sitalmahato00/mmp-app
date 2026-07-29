@@ -1,7 +1,6 @@
 package com.example.mmp_app.feature.student.ui
 
 import android.content.Context
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.print.PrintAttributes
@@ -22,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material.icons.filled.*
@@ -55,7 +55,6 @@ fun MarksScreen(
     val marksheet by viewModel.marksheet.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val sessionCookie by viewModel.webSessionCookie.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var currentView by remember { mutableStateOf<MarksView>(MarksView.Summary) }
@@ -76,8 +75,6 @@ fun MarksScreen(
             viewModel.loadStudentDashboard()
         }
     }
-    
-    val context = LocalContext.current
     
     if (showOfficialMarksheet && selectedExamForMarksheet != null) {
         OfficialMarksheetDialog(
@@ -138,8 +135,8 @@ fun MarksScreen(
                                 currentView = MarksView.ExamDetail
                             },
                             onViewOfficialMarksheet = { exam ->
-                                selectedExamForMarksheet = exam
                                 showOfficialMarksheet = true
+                                selectedExamForMarksheet = exam
                             },
                             isDarkTheme = isDarkTheme
                         )
@@ -198,7 +195,7 @@ sealed class MarksView {
 @Composable
 fun MarksSummaryView(
     summary: MarksSummaryDto,
-    onExamClick: (String) -> Unit,
+    onExamClick: (Int) -> Unit,
     onViewOfficialMarksheet: (ExamSummaryDto) -> Unit,
     isDarkTheme: Boolean = false
 ) {
@@ -451,7 +448,7 @@ fun EnhancedExamCard(
             ) {
                 Text("View Official Marksheet", fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -509,7 +506,7 @@ fun ExamDetailView(
 ) {
     if (detail == null) return
     val examSummary = ExamSummaryDto(
-        examId = detail.examId ?: "",
+        examId = detail.examId ?: 0,
         examName = detail.examName,
         category = detail.category,
         startDate = detail.startDate,

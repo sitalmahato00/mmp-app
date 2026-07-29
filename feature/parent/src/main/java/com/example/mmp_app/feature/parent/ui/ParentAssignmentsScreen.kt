@@ -34,9 +34,36 @@ fun ParentAssignmentsScreen(
 
     // Mock data for assignments
     val assignments = listOf(
-        ParentAssignmentDto(1, "Database Normalization", "DBMS", "2023-11-15", "Pending", null, null, "Explain 1NF, 2NF and 3NF with examples."),
-        ParentAssignmentDto(2, "Kotlin Coroutines", "Mobile App Dev", "2023-11-10", "Submitted", "18/20", "Good work on the implementation.", "Implement a simple flow with coroutines."),
-        ParentAssignmentDto(3, "Network Security Essay", "Cyber Security", "2023-11-05", "Graded", "15/20", "Could be more detailed.", "Write a 500-word essay on modern network threats.")
+        ParentAssignmentDto(
+            id = 1,
+            title = "Database Normalization",
+            subject = "DBMS",
+            dueDate = "2023-11-15",
+            status = "Pending",
+            marks = null,
+            feedback = null,
+            description = "Explain 1NF, 2NF and 3NF with examples."
+        ),
+        ParentAssignmentDto(
+            id = 2,
+            title = "Kotlin Coroutines",
+            subject = "Mobile App Dev",
+            dueDate = "2023-11-10",
+            status = "Submitted",
+            marks = 18.0,
+            feedback = "Good work on the implementation.",
+            description = "Implement a simple flow with coroutines."
+        ),
+        ParentAssignmentDto(
+            id = 3,
+            title = "Network Security Essay",
+            subject = "Cyber Security",
+            dueDate = "2023-11-05",
+            status = "Graded",
+            marks = 15.0,
+            feedback = "Could be more detailed.",
+            description = "Write a 500-word essay on modern network threats."
+        )
     )
 
     Scaffold(

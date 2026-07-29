@@ -1,6 +1,5 @@
 package com.example.mmp_app.feature.parent.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,21 +7,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.domain.model.ChildDetailDto
 
@@ -32,117 +30,162 @@ fun ChildDetailsScreen(
     childId: Int,
     onBack: () -> Unit,
     onNavigateToAttendance: (Int) -> Unit,
+    onNavigateToMarks: (Int) -> Unit,
     onNavigateToAssignments: (Int) -> Unit,
-    onNavigateToResults: (Int) -> Unit,
-    onNavigateToInfo: (Int) -> Unit,
+    onNavigateToTimetable: (Int) -> Unit,
+    viewModel: ChildDetailViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(childId) {
+        viewModel.initChildId(childId)
+    }
+
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Child Details", fontWeight = FontWeight.Bold) },
+                title = { Text(uiState.childDetail?.name ?: "Child Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
+                    containerColor = backgroundColor,
                     titleContentColor = textColor
                 )
             )
         },
         containerColor = backgroundColor
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Student Profile Card
-            StudentProfileCard(
-                name = "Loading...", 
-                semester = "Semester",
-                rollNo = "Roll No:",
-                avatarUrl = null
-            )
-
-            // Quick Actions Grid (4 white cards with icons)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ActionSquare("Attendance", Icons.Rounded.CalendarMonth, Modifier.weight(1f)) { onNavigateToAttendance(childId) }
-                ActionSquare("Assignment", Icons.Rounded.Assignment, Modifier.weight(1f)) { onNavigateToAssignments(childId) }
-                ActionSquare("Results", Icons.Rounded.Star, Modifier.weight(1f)) { onNavigateToResults(childId) }
-                ActionSquare("Info", Icons.Rounded.Info, Modifier.weight(1f)) { onNavigateToInfo(childId) }
-            }
-
-            // Two Cards for Tasks and Exams
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SmallStatCard("Pending Tasks", "0", Icons.Rounded.Assignment, Color(0xFFFFEBEE), Color(0xFFD32F2F), Modifier.weight(1f))
-                SmallStatCard("Total Exams", "0", Icons.Rounded.Quiz, Color(0xFFE8EAF6), Color(0xFF3F51B5), Modifier.weight(1f))
-            }
-
-            // Assignment Progress Card
-            AssignmentProgressCard(isDarkTheme)
-            
-            Spacer(modifier = Modifier.height(20.dp))
-        }
-    }
-}
-
-@Composable
-fun StudentProfileCard(name: String, semester: String, rollNo: String, avatarUrl: String?) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color(0xFFE0F2FE).copy(alpha = 0.5f), Color(0xFFEEF2FF).copy(alpha = 0.8f))
-                    )
-                )
-                .padding(24.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Student Profile", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
-                    Text(name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-                    Text("• $semester", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF64748B))
-                    Text(rollNo, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF64748B))
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Surface(
-                        modifier = Modifier.size(28.dp),
-                        shape = CircleShape,
-                        color = Color(0xFF2563EB)
-                    ) {
-                        Icon(Icons.Rounded.Check, contentDescription = null, tint = Color.White, modifier = Modifier.padding(6.dp))
-                    }
-                }
-                
-                Surface(
-                    modifier = Modifier.size(86.dp),
-                    shape = CircleShape,
-                    color = Color.White,
-                    shadowElevation = 2.dp
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (uiState.isLoading && uiState.childDetail == null) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (uiState.error != null && uiState.childDetail == null) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    if (avatarUrl != null) {
-                        AsyncImage(model = avatarUrl, contentDescription = null, contentScale = ContentScale.Crop)
-                    } else {
-                        Icon(Icons.Rounded.Person, contentDescription = null, modifier = Modifier.padding(20.dp), tint = Color(0xFF2563EB))
+                    Text(text = uiState.error!!, color = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.loadAllData() }) {
+                        Text("Retry")
                     }
+                }
+            } else if (uiState.childDetail != null) {
+                val child = uiState.childDetail!!
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // TOP INFO CARD
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Large avatar
+                            Surface(
+                                modifier = Modifier.size(100.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                if (child.avatarUrl.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = child.avatarUrl,
+                                        contentDescription = child.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                        Text(
+                                            text = child.name.firstOrNull()?.toString() ?: "",
+                                            style = MaterialTheme.typography.headlineLarge,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            Text(
+                                text = child.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            StatusBadge(status = child.status)
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            // Info rows
+                            InfoRow(icon = Icons.Rounded.School, label = "Program", value = child.program, isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.AccountBalance, label = "Department", value = child.department, isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.Badge, label = "Student No", value = child.studentNo, isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.Numbers, label = "Roll Number", value = child.rollNumber ?: "N/A", isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.Description, label = "Reg. Number", value = child.registrationNumber ?: "N/A", isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.CalendarToday, label = "Semester", value = "${child.semester} | Section: ${child.section}", isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.TrackChanges, label = "Batch", value = child.batch, isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.EventAvailable, label = "Admitted", value = child.admissionDate ?: "N/A", isDarkTheme = isDarkTheme)
+                        }
+                    }
+
+                    // BOTTOM ACTION BUTTONS (2x2 grid)
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ActionCard(
+                                title = "Attendance",
+                                icon = Icons.Rounded.BarChart,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigateToAttendance(child.id) },
+                                isDarkTheme = isDarkTheme
+                            )
+                            ActionCard(
+                                title = "Marks",
+                                icon = Icons.AutoMirrored.Rounded.Assignment,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigateToMarks(child.id) },
+                                isDarkTheme = isDarkTheme
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ActionCard(
+                                title = "Assignments",
+                                icon = Icons.Rounded.Book,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigateToAssignments(child.id) },
+                                isDarkTheme = isDarkTheme
+                            )
+                            ActionCard(
+                                title = "Timetable",
+                                icon = Icons.AutoMirrored.Rounded.EventNote,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onNavigateToTimetable(child.id) },
+                                isDarkTheme = isDarkTheme
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -150,93 +193,88 @@ fun StudentProfileCard(name: String, semester: String, rollNo: String, avatarUrl
 }
 
 @Composable
-fun ActionSquare(title: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun StatusBadge(status: String) {
+    val backgroundColor = if (status.lowercase() == "active") Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
+    val textColor = if (status.lowercase() == "active") Color(0xFF166534) else Color(0xFF64748B)
+
+    Surface(
+        color = backgroundColor,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = status.replaceFirstChar { it.uppercase() },
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = textColor,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun InfoRow(icon: ImageVector, label: String, value: String, isDarkTheme: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = if (isDarkTheme) Color(0xFF6366F1) else Color(0xFF2563EB)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isDarkTheme) Color(0xFF94A3B8) else Color(0xFF64748B),
+            modifier = Modifier.width(100.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = if (isDarkTheme) Color.White else Color(0xFF1E293B)
+        )
+    }
+}
+
+@Composable
+fun ActionCard(
+    title: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    isDarkTheme: Boolean
+) {
     Card(
         modifier = modifier
-            .aspectRatio(1f)
+            .height(100.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFEFF6FF)
-            ) {
-                Icon(icon, contentDescription = title, modifier = Modifier.padding(10.dp), tint = Color(0xFF2563EB))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(title, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-        }
-    }
-}
-
-@Composable
-fun SmallStatCard(title: String, value: String, icon: ImageVector, iconBg: Color, iconTint: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(modifier = Modifier.size(32.dp), shape = RoundedCornerShape(8.dp), color = iconBg) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.padding(6.dp), tint = iconTint)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(title, style = MaterialTheme.typography.labelMedium, color = Color(0xFF64748B))
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
-        }
-    }
-}
-
-@Composable
-fun AssignmentProgressCard(isDarkTheme: Boolean) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            Text("Assignment Progress", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            LinearProgressIndicator(
-                progress = { 0.8f },
-                modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
-                color = Color(0xFF2563EB).copy(alpha = 0.2f),
-                trackColor = Color(0xFFEFF6FF)
+            Icon(
+                icon,
+                contentDescription = title,
+                modifier = Modifier.size(32.dp),
+                tint = if (isDarkTheme) Color(0xFF818CF8) else Color(0xFF6366F1)
             )
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                ProgressItem("0", "Pending", Color(0xFFEF4444))
-                ProgressItem("0", "Submitted", Color(0xFFF59E0B))
-                ProgressItem("0", "Graded", Color(0xFF10B981))
-            }
-        }
-    }
-}
-
-@Composable
-fun ProgressItem(value: String, label: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (isDarkTheme) Color.White else Color(0xFF1E293B)
+            )
         }
     }
 }

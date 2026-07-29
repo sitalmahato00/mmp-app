@@ -67,6 +67,7 @@ fun TimetableScreen(
                 if (timetableData?.hasTimetable == false) {
                     TimetableEmptyPublishedState()
                 } else {
+                    val currentTimetable = timetableData?.timetable ?: emptyList()
                     ScrollableTabRow(
                         selectedTabIndex = selectedTabIndex,
                         containerColor = MaterialTheme.colorScheme.surface,
@@ -96,7 +97,7 @@ fun TimetableScreen(
                         }
                     }
 
-                    val selectedDaySchedule = timetableData?.timetable?.find { it.day.equals(days[selectedTabIndex], ignoreCase = true) }
+                    val selectedDaySchedule = currentTimetable.find { it.day.equals(days[selectedTabIndex], ignoreCase = true) }
                     
                     TimetableDayContent(selectedDaySchedule)
                 }
@@ -203,7 +204,7 @@ fun TimetableClassCard(cls: TimetableClass) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${cls.startTime} – ${cls.endTime}",
+                        text = "${cls.startTime ?: "--:--"} – ${cls.endTime ?: "--:--"}",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

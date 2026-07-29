@@ -112,7 +112,7 @@ class StudentViewModel @Inject constructor(
         }
     }
 
-    fun loadMarksByExam(examId: String) {
+    fun loadMarksByExam(examId: Int) {
         viewModelScope.launch {
             // As per user requirement, we try to use cached data from summary first
             val cachedExam = _marksSummary.value?.exams?.find { it.examId == examId }
@@ -145,7 +145,7 @@ class StudentViewModel @Inject constructor(
         }
     }
 
-    fun downloadMarksheet(examId: String? = null) {
+    fun downloadMarksheet(examId: Int? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             repository.getMarksheet(examId).collect { result ->

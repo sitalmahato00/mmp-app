@@ -49,14 +49,14 @@ interface MmpApiService {
     suspend fun getStudentMarksSummary(): Response<BaseResponse<List<ExamSummaryDto>>>
 
     @GET("v1/student/marks/exam/{examId}")
-    suspend fun getMarksByExam(@Path("examId") examId: String): Response<BaseResponse<ExamDetailDto>>
+    suspend fun getMarksByExam(@Path("examId") examId: Int): Response<BaseResponse<ExamDetailDto>>
 
     @GET("v1/student/marks/subject/{subjectId}")
     suspend fun getMarksBySubject(@Path("subjectId") subjectId: Int): Response<BaseResponse<SubjectMarkDto>>
 
     @GET("v1/student/marks/marksheet")
     suspend fun getMarksheet(
-        @Query("exam_id") examId: String? = null
+        @Query("exam_id") examId: Int? = null
     ): Response<BaseResponse<MarksheetDto>>
 
     @GET("v1/student/assignments")

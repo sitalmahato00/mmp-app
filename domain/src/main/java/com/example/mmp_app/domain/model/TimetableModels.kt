@@ -5,15 +5,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TimetableClass(
-    @SerialName("id") val id: Int,
-    @SerialName("subject") val subject: String?,
-    @SerialName("subject_code") val subjectCode: String?,
-    @SerialName("teacher") val teacher: String?,
-    @SerialName("start_time") val startTime: String,
-    @SerialName("end_time") val endTime: String,
-    @SerialName("room") val room: String?,
-    @SerialName("type") val type: String?,
-    @SerialName("duration") val duration: String?
+    @SerialName("id") val id: Int? = null,
+    @SerialName("subject") val subject: String? = null,
+    @SerialName("subject_code") val subjectCode: String? = null,
+    @SerialName("teacher") val teacher: String? = null,
+    @SerialName("start_time") val startTime: String? = null,
+    @SerialName("end_time") val endTime: String? = null,
+    @SerialName("room") val room: String? = null,
+    @SerialName("type") val type: String? = null,
+    @SerialName("duration") val duration: String? = null
 )
 
 @Serializable
@@ -29,5 +29,5 @@ data class TimetableData(
     @SerialName("section") val section: String? = null,
     @SerialName("effective_from") val effectiveFrom: String? = null,
     @SerialName("academic_session") val academicSession: String? = null,
-    @SerialName("timetable") val timetable: List<DaySchedule> = emptyList()
+    @SerialName("timetable") val timetable: List<DaySchedule>? = emptyList()
 )

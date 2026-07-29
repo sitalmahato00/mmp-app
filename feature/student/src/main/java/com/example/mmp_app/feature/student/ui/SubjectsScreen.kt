@@ -228,8 +228,8 @@ fun OverviewTab(detail: SubjectDetail) {
                     
                     MarksTableRow(
                         label = "Theory",
-                        internal = detail.marks.internal_theory,
-                        external = detail.marks.external_theory,
+                        internal = detail.marks.internal_theory.toString(),
+                        external = detail.marks.external_theory.toString(),
                         total = detail.marks.full_marks_theory.toString()
                     )
                     
@@ -237,8 +237,8 @@ fun OverviewTab(detail: SubjectDetail) {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         MarksTableRow(
                             label = "Practical",
-                            internal = detail.marks.internal_practical,
-                            external = detail.marks.external_practical,
+                            internal = detail.marks.internal_practical.toString(),
+                            external = detail.marks.external_practical.toString(),
                             total = detail.marks.full_marks_practical.toString()
                         )
                     }

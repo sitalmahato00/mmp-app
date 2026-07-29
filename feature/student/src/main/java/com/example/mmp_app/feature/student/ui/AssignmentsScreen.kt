@@ -218,7 +218,7 @@ fun AssignmentItem(assignment: AssignmentDto, onClick: () -> Unit) {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline
                 )
-                if (!assignment.obtainedMarks.isNullOrEmpty()) {
+                if (assignment.obtainedMarks != null) {
                     Text(
                         text = "Marks: ${assignment.obtainedMarks}",
                         style = MaterialTheme.typography.labelSmall,

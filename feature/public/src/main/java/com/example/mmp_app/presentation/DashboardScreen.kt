@@ -39,6 +39,7 @@ import com.example.mmp_app.feature.parent.ui.ParentDashboard
 import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
 import com.example.mmp_app.feature.parent.ui.ParentProfileScreen
 import com.example.mmp_app.feature.parent.ui.ParentResultsScreen
+import com.example.mmp_app.feature.parent.ui.ChildrenListScreen
 import com.example.mmp_app.feature.student.ui.NotificationViewModel
 import com.example.mmp_app.feature.student.ui.TimetableScreen
 import kotlinx.coroutines.launch
@@ -138,7 +139,14 @@ fun DashboardScreen(
         onNavigateToChildAttendance = onNavigateToChildAttendance,
         onNavigateToChildAssignments = onNavigateToChildAssignments,
         onNavigateToChildResults = onNavigateToChildResults,
-        onNavigateToChildrenList = onNavigateToChildrenList,
+        onNavigateToChildrenList = {
+            if (parentData != null && parentData!!.children.size == 1) {
+                val child = parentData!!.children[0]
+                onNavigateToChildDetails(child.id, child.name)
+            } else {
+                onNavigateToChildrenList()
+            }
+        },
         onNavigateToRoutines = onNavigateToRoutines,
         onNavigateToExams = onNavigateToExams,
         onNavigateToResults = onNavigateToResults,
@@ -230,7 +238,14 @@ fun DashboardAdaptiveContent(
                 onNavigateToChildAttendance = onNavigateToChildAttendance,
                 onNavigateToChildAssignments = onNavigateToChildAssignments,
                 onNavigateToChildResults = onNavigateToChildResults,
-                onNavigateToChildrenList = onNavigateToChildrenList,
+                onNavigateToChildrenList = {
+            if (parentData != null && parentData!!.children.size == 1) {
+                val child = parentData!!.children[0]
+                onNavigateToChildDetails(child.id, child.name)
+            } else {
+                onNavigateToChildrenList()
+            }
+        },
                 onNavigateToRoutines = onNavigateToRoutines,
                 onNavigateToExams = onNavigateToExams,
                 onNavigateToResults = onNavigateToResults,
@@ -563,7 +578,14 @@ fun DashboardAdaptiveContent(
                                         onNavigateToChildAttendance = onNavigateToChildAttendance,
                                         onNavigateToChildAssignments = onNavigateToChildAssignments,
                                         onNavigateToChildResults = onNavigateToChildResults,
-                                        onNavigateToChildrenList = onNavigateToChildrenList,
+                                        onNavigateToChildrenList = {
+            if (parentData != null && parentData!!.children.size == 1) {
+                val child = parentData!!.children[0]
+                onNavigateToChildDetails(child.id, child.name)
+            } else {
+                onNavigateToChildrenList()
+            }
+        },
                                         onNavigateToRoutines = onNavigateToRoutines,
                                         onNavigateToExams = onNavigateToExams,
                                         onNavigateToResults = onNavigateToResults,
@@ -611,6 +633,13 @@ fun DashboardAdaptiveContent(
                                         ResultsScreenContent(onNavigateToResults)
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
+                                    }
+                                    4 -> if (userProfile?.role?.lowercase() == "parent") {
+                                        ChildrenListScreen(
+                                            onBack = { selectedItem = 0 },
+                                            onNavigateToChildDetail = { id -> onNavigateToChildDetails(id, "") },
+                                            isDarkTheme = isDarkTheme
+                                        )
                                     }
                                 }
                             }

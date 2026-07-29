@@ -280,7 +280,7 @@ fun ParentDashboard(
                 data.children.forEach { child ->
                     ListItem(
                         headlineContent = { Text(child.name, fontWeight = FontWeight.Bold) },
-                        supportingContent = { Text(child.studentId) },
+                        supportingContent = { Text(child.studentId.toString()) },
                         leadingContent = {
                             Surface(modifier = Modifier.size(40.dp), shape = CircleShape) {
                                 if (child.avatarUrl.isNotEmpty()) {
