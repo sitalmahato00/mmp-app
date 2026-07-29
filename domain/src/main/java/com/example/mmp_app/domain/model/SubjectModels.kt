@@ -60,11 +60,11 @@ data class TeacherBrief(
 data class SubjectDocument(
     @SerialName("id") val id: Int,
     @SerialName("title") val title: String,
-    @SerialName("description") val description: String?,
-    @SerialName("category") val category: String?,
+    @SerialName("description") val description: String? = null,
+    @SerialName("category") val category: String? = null,
     @SerialName("file_url") val file_url: String,
-    @SerialName("file_type") val file_type: String?,
-    @SerialName("subject_id") val subject_id: Int?,
+    @SerialName("file_type") val file_type: String? = null,
+    @SerialName("subject_id") val subject_id: Int? = null,
     @SerialName("uploaded_at") val uploaded_at: String
 )
 
