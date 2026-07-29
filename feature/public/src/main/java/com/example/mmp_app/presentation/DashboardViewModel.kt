@@ -34,6 +34,9 @@ class DashboardViewModel @Inject constructor(
     private val _parentDashboard = MutableStateFlow<ParentDashboardDto?>(null)
     val parentDashboard = _parentDashboard.asStateFlow()
 
+    private val _parentProfile = MutableStateFlow<ParentProfileDto?>(null)
+    val parentProfile = _parentProfile.asStateFlow()
+
     private val _marks = MutableStateFlow<List<MarkDto>>(emptyList())
     val marks = _marks.asStateFlow()
 
@@ -230,7 +233,13 @@ class DashboardViewModel @Inject constructor(
                 }
             }
             
-            joinAll(dashboardJob, noticesJob)
+            val profileJob = launch {
+                parentRepository.getProfile().collect { result ->
+                    result.onSuccess { _parentProfile.value = it }
+                }
+            }
+            
+            joinAll(dashboardJob, noticesJob, profileJob)
             _isLoading.value = false
         }
     }

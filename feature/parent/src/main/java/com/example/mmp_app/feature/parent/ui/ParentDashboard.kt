@@ -51,6 +51,7 @@ fun ParentDashboardScreen(
     onNavigateToAssignments: (Int) -> Unit = {},
     onNavigateToTimetable: (Int) -> Unit = {},
     onNavigateToNotices: () -> Unit = {},
+    onNavigateToChildrenList: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
@@ -77,6 +78,7 @@ fun ParentDashboardScreen(
                 onAssignmentsClick = { id, _ -> onNavigateToAssignments(id) },
                 onTimetableClick = { _, _ -> onNavigateToTimetable(0) },
                 onNoticesClick = onNavigateToNotices,
+                onChildrenListClick = onNavigateToChildrenList,
                 onProfileClick = onNavigateToProfile,
                 onLogoutClick = onLogout
             )
@@ -95,6 +97,7 @@ fun ParentDashboard(
     onAssignmentsClick: (Int, String) -> Unit = { _, _ -> },
     onTimetableClick: (Int, String) -> Unit = { _, _ -> },
     onNoticesClick: () -> Unit = {},
+    onChildrenListClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
@@ -149,26 +152,55 @@ fun ParentDashboard(
                     drawerContainerColor = cardBgColor,
                     drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
                 ) {
+                    Spacer(Modifier.height(24.dp))
+                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                        Surface(
+                            modifier = Modifier.size(64.dp),
+                            shape = CircleShape,
+                            color = primaryColor.copy(alpha = 0.1f)
+                        ) {
+                            if (!parentAvatarUrl.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = parentAvatarUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        data.parentName.firstOrNull()?.toString() ?: "P",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = primaryColor
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            data.parentName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                        Text(
+                            "Parent",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = primaryColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Spacer(Modifier.height(16.dp))
-                    Text(
-                        "☰ MENU",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = primaryColor
-                    )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    NavigationDrawerItem(
-                        label = { Text("Dashboard") },
-                        selected = true,
-                        onClick = { scope.launch { drawerState.close() } },
-                        icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                    )
-                    ParentDrawerMenuItem("My Profile", Icons.Rounded.Person) { scope.launch { drawerState.close() }; onProfileClick() }
+                    Spacer(Modifier.height(8.dp))
+                    ParentDrawerMenuItem("Dashboard", Icons.Rounded.Home) { scope.launch { drawerState.close() } }
+                    ParentDrawerMenuItem("My Children", Icons.Rounded.People) { scope.launch { drawerState.close() }; onChildrenListClick() }
                     ParentDrawerMenuItem("Notices", Icons.Rounded.Notifications) { scope.launch { drawerState.close() }; onNoticesClick() }
+                    ParentDrawerMenuItem("My Profile", Icons.Rounded.Person) { scope.launch { drawerState.close() }; onProfileClick() }
                     ParentDrawerMenuItem("Settings", Icons.Rounded.Settings) { scope.launch { drawerState.close() }; onSettingsClick() }
                     Spacer(Modifier.weight(1f))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     ParentDrawerMenuItem("Logout", Icons.Rounded.Logout) { scope.launch { drawerState.close() }; onLogoutClick() }
                     Spacer(Modifier.height(16.dp))
                 }

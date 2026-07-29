@@ -57,6 +57,10 @@ fun DashboardScreen(
     onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
     onRecordMarks: (Int, String) -> Unit = { _, _ -> },
     onNavigateToChildDetails: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToChildAttendance: (Int) -> Unit = {},
+    onNavigateToChildAssignments: (Int) -> Unit = {},
+    onNavigateToChildResults: (Int) -> Unit = {},
+    onNavigateToChildrenList: () -> Unit = {},
     onNavigateToRoutines: () -> Unit = {},
     onNavigateToExams: () -> Unit = {},
     onNavigateToResults: () -> Unit = {},
@@ -85,6 +89,7 @@ fun DashboardScreen(
     val userProfileState by viewModel.userProfile.collectAsState()
     val teacherData by viewModel.teacherDashboard.collectAsState()
     val parentData by viewModel.parentDashboard.collectAsState()
+    val parentProfile by viewModel.parentProfile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -109,6 +114,7 @@ fun DashboardScreen(
         downloads = downloads,
         teacherData = teacherData,
         parentData = parentData,
+        parentProfile = parentProfile,
         isLoading = isLoading,
         error = error,
         onLogout = onLogout,
@@ -129,6 +135,10 @@ fun DashboardScreen(
         onRecordAttendance = onRecordAttendance,
         onRecordMarks = onRecordMarks,
         onNavigateToChildDetails = onNavigateToChildDetails,
+        onNavigateToChildAttendance = onNavigateToChildAttendance,
+        onNavigateToChildAssignments = onNavigateToChildAssignments,
+        onNavigateToChildResults = onNavigateToChildResults,
+        onNavigateToChildrenList = onNavigateToChildrenList,
         onNavigateToRoutines = onNavigateToRoutines,
         onNavigateToExams = onNavigateToExams,
         onNavigateToResults = onNavigateToResults,
@@ -157,6 +167,7 @@ fun DashboardAdaptiveContent(
     downloads: List<SubjectDocument> = emptyList(),
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
+    parentProfile: ParentProfileDto? = null,
     isLoading: Boolean,
     error: String? = null,
     onLogout: () -> Unit,
@@ -169,6 +180,10 @@ fun DashboardAdaptiveContent(
     onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
     onRecordMarks: (Int, String) -> Unit = { _, _ -> },
     onNavigateToChildDetails: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToChildAttendance: (Int) -> Unit = {},
+    onNavigateToChildAssignments: (Int) -> Unit = {},
+    onNavigateToChildResults: (Int) -> Unit = {},
+    onNavigateToChildrenList: () -> Unit = {},
     onNavigateToRoutines: () -> Unit = {},
     onNavigateToExams: () -> Unit = {},
     onNavigateToResults: () -> Unit = {},
@@ -193,16 +208,43 @@ fun DashboardAdaptiveContent(
             ErrorState(error!!, onRetry)
         } else if (userProfile?.role?.lowercase() == "student" && selectedItem == 0) {
             MainDashboardContent(
-                userProfile, studentData, recentNotices, attendanceSummary, 
-                subjects, assignments, timetable, downloads, teacherData, parentData,
-                onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                onNavigateToFees, onNavigateToNotices, onRecordAttendance,
-                onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
-                onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
-                onNavigateToSettings, onNavigateToNotifications, onLogout, 
-                unreadCount, isDarkTheme, onToggleTheme,
-                showSystemHeader = true 
+                userProfile = userProfile,
+                studentData = studentData,
+                recentNotices = recentNotices,
+                attendanceSummary = attendanceSummary,
+                subjects = subjects,
+                assignments = assignments,
+                timetable = timetable,
+                downloads = downloads,
+                teacherData = teacherData,
+                parentData = parentData,
+                parentProfile = parentProfile,
+                onNavigateToAttendance = onNavigateToAttendance,
+                onNavigateToMarks = onNavigateToMarks,
+                onNavigateToAssignments = onNavigateToAssignments,
+                onNavigateToFees = onNavigateToFees,
+                onNavigateToNotices = onNavigateToNotices,
+                onRecordAttendance = onRecordAttendance,
+                onRecordMarks = onRecordMarks,
+                onNavigateToChildDetails = onNavigateToChildDetails,
+                onNavigateToChildAttendance = onNavigateToChildAttendance,
+                onNavigateToChildAssignments = onNavigateToChildAssignments,
+                onNavigateToChildResults = onNavigateToChildResults,
+                onNavigateToChildrenList = onNavigateToChildrenList,
+                onNavigateToRoutines = onNavigateToRoutines,
+                onNavigateToExams = onNavigateToExams,
+                onNavigateToResults = onNavigateToResults,
+                onNavigateToSubjects = onNavigateToSubjects,
+                onNavigateToTimetable = onNavigateToTimetable,
+                onNavigateToDownloads = onNavigateToDownloads,
+                onNavigateToProfile = onNavigateToProfile,
+                onNavigateToSettings = onNavigateToSettings,
+                onNavigateToNotifications = onNavigateToNotifications,
+                onLogout = onLogout,
+                unreadCount = unreadCount,
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme,
+                showSystemHeader = true
             )
         } else {
             // Use the standard adaptive layout for all screens to ensure nav bar is always present
@@ -217,37 +259,57 @@ fun DashboardAdaptiveContent(
                     ModalDrawerSheet {
                         Spacer(modifier = Modifier.height(16.dp))
                         Column(
-                            modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp)
+                            modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp)
                         ) {
-                            Surface(modifier = Modifier.size(64.dp), shape = CircleShape) {
-                                if (!userProfile?.avatarUrl.isNullOrEmpty()) {
+                            Surface(
+                                modifier = Modifier.size(72.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer
+                            ) {
+                                val avatarUrl = if (userProfile?.role?.lowercase() == "parent") parentProfile?.avatarUrl else userProfile?.avatarUrl
+                                val name = if (userProfile?.role?.lowercase() == "parent") parentProfile?.name ?: userProfile?.name else userProfile?.name
+                                
+                                if (!avatarUrl.isNullOrEmpty()) {
                                     AsyncImage(
-                                        model = userProfile?.avatarUrl,
+                                        model = avatarUrl,
                                         contentDescription = "Profile Picture",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.mmplogo),
-                                        contentDescription = "College Logo",
+                                    Box(
                                         modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val firstLetter = name?.firstOrNull()?.toString() ?: "U"
+                                        Text(
+                                            text = firstLetter,
+                                            style = MaterialTheme.typography.headlineMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            @Suppress("KotlinConstantConditions")
+                            Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = userProfile?.name ?: "Guest User",
+                                text = (if (userProfile?.role?.lowercase() == "parent") parentProfile?.name ?: userProfile?.name else userProfile?.name) ?: "Guest User",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                text = userProfile?.email ?: "",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = userProfile?.role?.replaceFirstChar { it.uppercase() } ?: "User",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         
@@ -258,11 +320,22 @@ fun DashboardAdaptiveContent(
                                 selectedItem = 0
                                 scope.launch { drawerState.close() }
                             },
-                            icon = { Icon(Icons.Rounded.Dashboard, null) },
+                            icon = { Icon(Icons.Rounded.Home, null) },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
 
                         if (userProfile?.role?.lowercase() == "parent") {
+                            NavigationDrawerItem(
+                                label = { Text("My Children") },
+                                selected = selectedItem == 4, // Using 4 for ChildrenList
+                                onClick = {
+                                    selectedItem = 4
+                                    scope.launch { drawerState.close() }
+                                    onNavigateToChildrenList()
+                                },
+                                icon = { Icon(Icons.Rounded.People, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
                             NavigationDrawerItem(
                                 label = { Text("Notices") },
                                 selected = selectedItem == 1,
@@ -280,7 +353,7 @@ fun DashboardAdaptiveContent(
                                     selectedItem = 3
                                     scope.launch { drawerState.close() }
                                 },
-                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                icon = { Icon(Icons.Rounded.Person, null) },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                             NavigationDrawerItem(
@@ -294,6 +367,9 @@ fun DashboardAdaptiveContent(
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                         }
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
                         
                         NavigationDrawerItem(
                             label = { Text("Logout") },
@@ -465,16 +541,43 @@ fun DashboardAdaptiveContent(
                             } else {
                                 when (selectedItem) {
                                     0 -> MainDashboardContent(
-                                        userProfile, studentData, recentNotices, attendanceSummary, 
-                                        subjects, assignments, timetable, downloads, teacherData, parentData,
-                                        onNavigateToAttendance, onNavigateToMarks, onNavigateToAssignments,
-                                        onNavigateToFees, onNavigateToNotices, onRecordAttendance,
-                                        onRecordMarks, onNavigateToChildDetails, onNavigateToRoutines,
-                                        onNavigateToExams, onNavigateToResults, onNavigateToSubjects,
-                                        onNavigateToTimetable, onNavigateToDownloads, onNavigateToProfile,
-                                        onNavigateToSettings, onNavigateToNotifications, onLogout, 
-                                        unreadCount, isDarkTheme, onToggleTheme,
-                                        showSystemHeader = false 
+                                        userProfile = userProfile,
+                                        studentData = studentData,
+                                        recentNotices = recentNotices,
+                                        attendanceSummary = attendanceSummary,
+                                        subjects = subjects,
+                                        assignments = assignments,
+                                        timetable = timetable,
+                                        downloads = downloads,
+                                        teacherData = teacherData,
+                                        parentData = parentData,
+                                        parentProfile = parentProfile,
+                                        onNavigateToAttendance = onNavigateToAttendance,
+                                        onNavigateToMarks = onNavigateToMarks,
+                                        onNavigateToAssignments = onNavigateToAssignments,
+                                        onNavigateToFees = onNavigateToFees,
+                                        onNavigateToNotices = onNavigateToNotices,
+                                        onRecordAttendance = onRecordAttendance,
+                                        onRecordMarks = onRecordMarks,
+                                        onNavigateToChildDetails = onNavigateToChildDetails,
+                                        onNavigateToChildAttendance = onNavigateToChildAttendance,
+                                        onNavigateToChildAssignments = onNavigateToChildAssignments,
+                                        onNavigateToChildResults = onNavigateToChildResults,
+                                        onNavigateToChildrenList = onNavigateToChildrenList,
+                                        onNavigateToRoutines = onNavigateToRoutines,
+                                        onNavigateToExams = onNavigateToExams,
+                                        onNavigateToResults = onNavigateToResults,
+                                        onNavigateToSubjects = onNavigateToSubjects,
+                                        onNavigateToTimetable = onNavigateToTimetable,
+                                        onNavigateToDownloads = onNavigateToDownloads,
+                                        onNavigateToProfile = onNavigateToProfile,
+                                        onNavigateToSettings = onNavigateToSettings,
+                                        onNavigateToNotifications = onNavigateToNotifications,
+                                        onLogout = onLogout,
+                                        unreadCount = unreadCount,
+                                        isDarkTheme = isDarkTheme,
+                                        onToggleTheme = onToggleTheme,
+                                        showSystemHeader = false
                                     )
                                     1 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ParentNoticesScreen(
@@ -546,6 +649,7 @@ fun MainDashboardContent(
     downloads: List<SubjectDocument>,
     teacherData: TeacherDashboardDto?,
     parentData: ParentDashboardDto?,
+    parentProfile: ParentProfileDto?,
     onNavigateToAttendance: () -> Unit,
     onNavigateToMarks: () -> Unit,
     onNavigateToAssignments: () -> Unit,
@@ -554,6 +658,10 @@ fun MainDashboardContent(
     onRecordAttendance: (Int, String) -> Unit,
     onRecordMarks: (Int, String) -> Unit,
     onNavigateToChildDetails: (Int, String) -> Unit,
+    onNavigateToChildAttendance: (Int) -> Unit,
+    onNavigateToChildAssignments: (Int) -> Unit,
+    onNavigateToChildResults: (Int) -> Unit,
+    onNavigateToChildrenList: () -> Unit,
     onNavigateToRoutines: () -> Unit,
     onNavigateToExams: () -> Unit,
     onNavigateToResults: () -> Unit,
@@ -624,13 +732,14 @@ fun MainDashboardContent(
                         )
                     },
                     onChildClick = onNavigateToChildDetails,
-                    onAttendanceClick = onNavigateToChildDetails, // Reusing child details for now or as a proxy
-                    onMarksClick = onNavigateToChildDetails,
-                    onAssignmentsClick = onNavigateToChildDetails,
-                    onTimetableClick = onNavigateToChildDetails,
+                    onAttendanceClick = { id, _ -> onNavigateToChildAttendance(id) },
+                    onMarksClick = { id, _ -> onNavigateToChildResults(id) },
+                    onAssignmentsClick = { id, _ -> onNavigateToChildAssignments(id) },
+                    onTimetableClick = { id, _ -> onNavigateToChildDetails(id, "") },
                     onNoticesClick = onNavigateToNotices,
                     onProfileClick = onNavigateToProfile,
                     onSettingsClick = onNavigateToSettings,
+                    onChildrenListClick = onNavigateToChildrenList,
                     onLogoutClick = onLogout,
                     onToggleTheme = onToggleTheme,
                     isDarkTheme = isDarkTheme,

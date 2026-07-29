@@ -28,6 +28,9 @@ import com.example.mmp_app.feature.auth.ui.LoginScreen
 import com.example.mmp_app.feature.auth.ui.OtpVerificationScreen
 import com.example.mmp_app.feature.auth.ui.SplashScreen
 import com.example.mmp_app.feature.parent.ui.ChildDetailsScreen
+import com.example.mmp_app.feature.parent.ui.ParentAttendanceScreen
+import com.example.mmp_app.feature.parent.ui.ParentAssignmentsScreen
+import com.example.mmp_app.feature.parent.ui.ParentResultsScreen
 import com.example.mmp_app.feature.student.ui.AssignmentsScreen
 import com.example.mmp_app.feature.student.ui.AttendanceScreen
 import com.example.mmp_app.feature.student.ui.DownloadsScreen
@@ -158,6 +161,9 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToChildDetails = { childId, name ->
                     navigator.navigate(Routes.ChildDetails(childId, name))
                 },
+                onNavigateToChildAttendance = { id -> navigator.navigate(Routes.ChildAttendance(id)) },
+                onNavigateToChildAssignments = { id -> navigator.navigate(Routes.ChildAssignments(id)) },
+                onNavigateToChildResults = { id -> navigator.navigate(Routes.ChildResults(id)) },
                 onNavigateToRoutines = { navigator.navigate(Routes.Routines) },
                 onNavigateToExams = { navigator.navigate(Routes.Exams) },
                 onNavigateToResults = { navigator.navigate(Routes.Results) },
@@ -166,7 +172,8 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToDownloads = { navigator.navigate(Routes.Downloads) },
                 onNavigateToProfile = { navigator.navigate(Routes.Profile) },
                 onNavigateToSettings = { navigator.navigate(Routes.Settings) },
-                onNavigateToNotifications = { navigator.navigate(Routes.Notifications) }
+                onNavigateToNotifications = { navigator.navigate(Routes.Notifications) },
+                onNavigateToChildrenList = { navigator.navigate(Routes.ChildrenList) }
             )
         }
         entry<Routes.Attendance> {
@@ -260,8 +267,36 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
         entry<Routes.ChildDetails> { route ->
             ChildDetailsScreen(
                 childId = route.childId,
-                name = route.name,
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                onNavigateToAttendance = { id -> navigator.navigate(Routes.ChildAttendance(id)) },
+                onNavigateToAssignments = { id -> navigator.navigate(Routes.ChildAssignments(id)) },
+                onNavigateToResults = { id -> navigator.navigate(Routes.ChildResults(id)) },
+                onNavigateToInfo = { /* Handle Info */ },
+                isDarkTheme = isDarkTheme
+            )
+        }
+        entry<Routes.ChildrenList> {
+            PlaceholderScreen("My Children", onBack = { navigator.goBack() })
+        }
+        entry<Routes.ChildAttendance> { route ->
+            ParentAttendanceScreen(
+                childId = route.childId,
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme
+            )
+        }
+        entry<Routes.ChildAssignments> { route ->
+            ParentAssignmentsScreen(
+                childId = route.childId,
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme
+            )
+        }
+        entry<Routes.ChildResults> { route ->
+            ParentResultsScreen(
+                childId = route.childId,
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme
             )
         }
     }
