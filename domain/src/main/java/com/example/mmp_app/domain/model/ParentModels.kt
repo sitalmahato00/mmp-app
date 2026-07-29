@@ -68,9 +68,9 @@ data class ParentMarkRecordDto(
     @SerialName("subject_code") val subjectCode: String,
     val exam: String,
     @SerialName("exam_type") val examType: String,
-    @SerialName("obtained_marks") val obtainedMarks: Double,
-    @SerialName("full_marks") val fullMarks: Double,
-    @SerialName("pass_marks") val passMarks: Double,
+    @SerialName("obtained_marks") val obtainedMarks: String?,
+    @SerialName("full_marks") val fullMarks: String?,
+    @SerialName("pass_marks") val passMarks: String?,
     @SerialName("is_pass") val isPass: Boolean,
     @SerialName("is_absent") val isAbsent: Boolean
 )
@@ -90,7 +90,7 @@ data class ParentAssignmentDto(
     val subject: String?,
     @SerialName("due_date") val dueDate: String,
     val status: String,
-    val marks: Double?,
+    val marks: String?,
     val feedback: String?,
     val description: String? = null
 )

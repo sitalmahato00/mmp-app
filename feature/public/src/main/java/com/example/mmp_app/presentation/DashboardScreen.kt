@@ -40,6 +40,9 @@ import com.example.mmp_app.feature.parent.ui.ParentNoticesScreen
 import com.example.mmp_app.feature.parent.ui.ParentProfileScreen
 import com.example.mmp_app.feature.parent.ui.ChildMarksScreen
 import com.example.mmp_app.feature.parent.ui.ChildrenListScreen
+import com.example.mmp_app.feature.student.ui.MarksScreen
+import com.example.mmp_app.feature.student.ui.NoticesScreen
+import com.example.mmp_app.feature.student.ui.StudentProfileScreen
 import com.example.mmp_app.feature.student.ui.NotificationViewModel
 import com.example.mmp_app.feature.student.ui.TimetableScreen
 import kotlinx.coroutines.launch
@@ -256,6 +259,7 @@ fun DashboardAdaptiveContent(
                 onNavigateToSettings = onNavigateToSettings,
                 onNavigateToNotifications = onNavigateToNotifications,
                 onLogout = onLogout,
+                onSelectItem = { selectedItem = it },
                 unreadCount = unreadCount,
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = onToggleTheme,
@@ -342,11 +346,10 @@ fun DashboardAdaptiveContent(
                         if (userProfile?.role?.lowercase() == "parent") {
                             NavigationDrawerItem(
                                 label = { Text("My Children") },
-                                selected = selectedItem == 4, // Using 4 for ChildrenList
+                                selected = selectedItem == 4,
                                 onClick = {
                                     selectedItem = 4
                                     scope.launch { drawerState.close() }
-                                    onNavigateToChildrenList()
                                 },
                                 icon = { Icon(Icons.Rounded.People, null) },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -362,10 +365,20 @@ fun DashboardAdaptiveContent(
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                             NavigationDrawerItem(
-                                label = { Text("Profile") },
+                                label = { Text("Results") },
                                 selected = selectedItem == 3,
                                 onClick = {
                                     selectedItem = 3
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.Star, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Profile") },
+                                selected = selectedItem == 5,
+                                onClick = {
+                                    selectedItem = 5
                                     scope.launch { drawerState.close() }
                                 },
                                 icon = { Icon(Icons.Rounded.Person, null) },
@@ -379,6 +392,62 @@ fun DashboardAdaptiveContent(
                                     onNavigateToSettings()
                                 },
                                 icon = { Icon(Icons.Rounded.Settings, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
+
+                        if (userProfile?.role?.lowercase() == "student") {
+                            NavigationDrawerItem(
+                                label = { Text("Profile") },
+                                selected = selectedItem == 4,
+                                onClick = {
+                                    selectedItem = 4
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.Person, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Academic Results") },
+                                selected = selectedItem == 3,
+                                onClick = {
+                                    selectedItem = 3
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.Star, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Timetable") },
+                                selected = selectedItem == 2,
+                                onClick = {
+                                    selectedItem = 2
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.EventNote, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                        }
+                        
+                        if (userProfile?.role?.lowercase() == "teacher") {
+                            NavigationDrawerItem(
+                                label = { Text("Students") },
+                                selected = selectedItem == 1,
+                                onClick = {
+                                    selectedItem = 1
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.Groups, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
+                            NavigationDrawerItem(
+                                label = { Text("Schedule") },
+                                selected = selectedItem == 2,
+                                onClick = {
+                                    selectedItem = 2
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.CalendarMonth, null) },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                         }
@@ -453,7 +522,7 @@ fun DashboardAdaptiveContent(
                                         ModernNavItem(Icons.Rounded.Notifications, "Notices"),
                                         ModernNavItem(Icons.Rounded.EventNote, "Schedule"),
                                         ModernNavItem(Icons.Rounded.Star, "Results"),
-                                        ModernNavItem(Icons.Rounded.Settings, "Settings")
+                                        ModernNavItem(Icons.Rounded.People, "Children")
                                     ),
                                     primaryColor = if (userProfile?.role?.lowercase() == "student") Color(0xFF2563EB) else Color(0xFF6366F1),
                                     secondaryColor = if (userProfile?.role?.lowercase() == "student") Color(0xFF60A5FA) else Color(0xFFA855F7),
@@ -494,6 +563,18 @@ fun DashboardAdaptiveContent(
                                                 icon = { Icon(Icons.Rounded.EventNote, null) },
                                                 label = { Text("Schedule") }
                                             )
+                                            NavigationBarItem(
+                                                selected = selectedItem == 3,
+                                                onClick = { selectedItem = 3 },
+                                                icon = { Icon(Icons.Rounded.Star, null) },
+                                                label = { Text("Results") }
+                                            )
+                                            NavigationBarItem(
+                                                selected = selectedItem == 4,
+                                                onClick = { selectedItem = 4 },
+                                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                                label = { Text("Profile") }
+                                            )
                                         } else {
                                             NavigationBarItem(
                                                 selected = selectedItem == 1,
@@ -501,13 +582,13 @@ fun DashboardAdaptiveContent(
                                                 icon = { Icon(Icons.Rounded.Groups, null) },
                                                 label = { Text("Users") }
                                             )
+                                            NavigationBarItem(
+                                                selected = selectedItem == 3,
+                                                onClick = { selectedItem = 3 },
+                                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                                label = { Text("Profile") }
+                                            )
                                         }
-                                        NavigationBarItem(
-                                            selected = selectedItem == 3,
-                                            onClick = { selectedItem = 3 },
-                                            icon = { Icon(Icons.Rounded.AccountCircle, null) },
-                                            label = { Text("Profile") }
-                                        )
                                     }
                                 }
                             }
@@ -596,6 +677,7 @@ fun DashboardAdaptiveContent(
                                         onNavigateToSettings = onNavigateToSettings,
                                         onNavigateToNotifications = onNavigateToNotifications,
                                         onLogout = onLogout,
+                                        onSelectItem = { selectedItem = it },
                                         unreadCount = unreadCount,
                                         isDarkTheme = isDarkTheme,
                                         onToggleTheme = onToggleTheme,
@@ -608,21 +690,14 @@ fun DashboardAdaptiveContent(
                                             showSystemHeader = false
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        NoticesScreenContent(onNavigateToNotices)
+                                        NoticesScreen(onBack = { selectedItem = 0 })
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
-                                    2 -> if (userProfile?.role?.lowercase() == "parent") {
-                                        TimetableScreen(
-                                            onMenuClick = { scope.launch { drawerState.open() } },
-                                            showSystemHeader = false
-                                        )
-                                    } else {
-                                        TimetableScreen(
-                                            onMenuClick = { scope.launch { drawerState.open() } },
-                                            showSystemHeader = false
-                                        )
-                                    }
+                                    2 -> TimetableScreen(
+                                        onMenuClick = { scope.launch { drawerState.open() } },
+                                        showSystemHeader = false
+                                    )
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ChildMarksScreen(
                                             childId = 0,
@@ -630,7 +705,7 @@ fun DashboardAdaptiveContent(
                                             isDarkTheme = isDarkTheme
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        ResultsScreenContent(onNavigateToResults)
+                                        MarksScreen(onBack = { selectedItem = 0 })
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
                                     }
@@ -638,6 +713,20 @@ fun DashboardAdaptiveContent(
                                         ChildrenListScreen(
                                             onBack = { selectedItem = 0 },
                                             onNavigateToChildDetail = { id -> onNavigateToChildDetails(id, "") },
+                                            isDarkTheme = isDarkTheme
+                                        )
+                                    } else if (userProfile?.role?.lowercase() == "student") {
+                                        StudentProfileScreen(
+                                            onBack = { selectedItem = 0 },
+                                            onLogout = onLogout,
+                                            onEditProfile = onNavigateToSettings,
+                                            isDarkTheme = isDarkTheme
+                                        )
+                                    }
+                                    5 -> if (userProfile?.role?.lowercase() == "parent") {
+                                        ParentProfileScreen(
+                                            onBack = { selectedItem = 0 },
+                                            onLogout = onLogout,
                                             isDarkTheme = isDarkTheme
                                         )
                                     }
@@ -701,6 +790,7 @@ fun MainDashboardContent(
     onNavigateToSettings: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit,
+    onSelectItem: (Int) -> Unit = {},
     unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
@@ -718,17 +808,17 @@ fun MainDashboardContent(
                     todayClasses = timetable,
                     materialCount = downloads.size,
                     onAttendanceClick = onNavigateToAttendance,
-                    onMarksClick = onNavigateToMarks,
+                    onMarksClick = { onSelectItem(3) },
                     onAssignmentsClick = onNavigateToAssignments,
-                    onNoticesClick = onNavigateToNotices,
+                    onNoticesClick = { onSelectItem(1) },
                     onFeesClick = onNavigateToFees,
                     onRoutineClick = onNavigateToRoutines,
                     onExamsClick = onNavigateToExams,
-                    onResultsClick = onNavigateToResults,
+                    onResultsClick = { onSelectItem(3) },
                     onSubjectsClick = onNavigateToSubjects,
-                    onTimetableClick = onNavigateToTimetable,
+                    onTimetableClick = { onSelectItem(2) },
                     onDownloadsClick = onNavigateToDownloads,
-                    onProfileClick = onNavigateToProfile,
+                    onProfileClick = { onSelectItem(4) },
                     onSettingsClick = onNavigateToSettings,
                     onNotificationsClick = onNavigateToNotifications,
                     onLogoutClick = onLogout,
@@ -762,13 +852,13 @@ fun MainDashboardContent(
                     },
                     onChildClick = onNavigateToChildDetails,
                     onAttendanceClick = { id, _ -> onNavigateToChildAttendance(id) },
-                    onMarksClick = { id, _ -> onNavigateToChildResults(id) },
+                    onMarksClick = { id, _ -> onSelectItem(3) },
                     onAssignmentsClick = { id, _ -> onNavigateToChildAssignments(id) },
-                    onTimetableClick = { id, _ -> onNavigateToChildDetails(id, "") },
-                    onNoticesClick = onNavigateToNotices,
-                    onProfileClick = onNavigateToProfile,
+                    onTimetableClick = { id, _ -> onSelectItem(2) },
+                    onNoticesClick = { onSelectItem(1) },
+                    onProfileClick = { onSelectItem(5) },
                     onSettingsClick = onNavigateToSettings,
-                    onChildrenListClick = onNavigateToChildrenList,
+                    onChildrenListClick = { onSelectItem(4) },
                     onLogoutClick = onLogout,
                     onToggleTheme = onToggleTheme,
                     isDarkTheme = isDarkTheme,
@@ -780,30 +870,6 @@ fun MainDashboardContent(
         else -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Dashboard for ${userProfile?.role ?: "Guest"}")
-            }
-        }
-    }
-}
-
-@Composable
-fun NoticesScreenContent(onNavigateToNotices: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Notices Screen")
-            Button(onClick = onNavigateToNotices) {
-                Text("View Detailed Notices")
-            }
-        }
-    }
-}
-
-@Composable
-fun ResultsScreenContent(onNavigateToResults: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Results Screen")
-            Button(onClick = onNavigateToResults) {
-                Text("View Detailed Results")
             }
         }
     }

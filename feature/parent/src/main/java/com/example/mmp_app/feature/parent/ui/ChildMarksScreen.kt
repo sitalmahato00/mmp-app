@@ -346,8 +346,8 @@ fun SubjectMarkRow(mark: ParentMarkRecordDto, textColor: Color) {
             Text(mark.subjectCode, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = 8.dp)) {
-            Text("${mark.obtainedMarks} / ${mark.fullMarks}", fontWeight = FontWeight.Bold, color = textColor)
-            Text("Pass: ${mark.passMarks}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text("${mark.obtainedMarks ?: "N/A"} / ${mark.fullMarks ?: "N/A"}", fontWeight = FontWeight.Bold, color = textColor)
+            Text("Pass: ${mark.passMarks ?: "N/A"}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         }
         val (chipColor, chipText) = when {
             mark.isAbsent -> Color.Gray to "Absent"
@@ -438,15 +438,15 @@ private fun mapToExamSummary(examName: String, marks: List<ParentMarkRecordDto>)
         MarkDto(
             subject = mark.subject,
             code = mark.subjectCode,
-            score = mark.obtainedMarks.toFloat(),
-            total = mark.fullMarks.toFloat(),
-            passMarks = mark.passMarks.toFloat(),
+            score = mark.obtainedMarks?.toFloatOrNull() ?: 0f,
+            total = mark.fullMarks?.toFloatOrNull() ?: 25f,
+            passMarks = mark.passMarks?.toFloatOrNull() ?: 10f,
             isPassed = mark.isPass,
             isAbsent = mark.isAbsent
         )
     }
-    val totalObtained = marks.sumOf { it.obtainedMarks }.toFloat()
-    val totalFull = marks.sumOf { it.fullMarks }.toFloat()
+    val totalObtained = marks.sumOf { it.obtainedMarks?.toDoubleOrNull() ?: 0.0 }.toFloat()
+    val totalFull = marks.sumOf { it.fullMarks?.toDoubleOrNull() ?: 0.0 }.toFloat()
     val percentage = if (totalFull > 0) (totalObtained / totalFull * 100) else 0f
     
     return ExamSummaryDto(

@@ -10,15 +10,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mmp_app.domain.model.ParentAssignmentDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,45 +29,31 @@ import com.example.mmp_app.domain.model.ParentAssignmentDto
 fun ParentAssignmentsScreen(
     childId: Int,
     onBack: () -> Unit,
+    viewModel: ParentAssignmentsViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false
 ) {
+    LaunchedEffect(childId) {
+        if (childId != 0) {
+            viewModel.setChildId(childId)
+        }
+    }
+
+    val uiState by viewModel.uiState.collectAsState()
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
-    val primaryColor = Color(0xFF6366F1)
+    val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
-    // Mock data for assignments
-    val assignments = listOf(
-        ParentAssignmentDto(
-            id = 1,
-            title = "Database Normalization",
-            subject = "DBMS",
-            dueDate = "2023-11-15",
-            status = "Pending",
-            marks = null,
-            feedback = null,
-            description = "Explain 1NF, 2NF and 3NF with examples."
-        ),
-        ParentAssignmentDto(
-            id = 2,
-            title = "Kotlin Coroutines",
-            subject = "Mobile App Dev",
-            dueDate = "2023-11-10",
-            status = "Submitted",
-            marks = 18.0,
-            feedback = "Good work on the implementation.",
-            description = "Implement a simple flow with coroutines."
-        ),
-        ParentAssignmentDto(
-            id = 3,
-            title = "Network Security Essay",
-            subject = "Cyber Security",
-            dueDate = "2023-11-05",
-            status = "Graded",
-            marks = 15.0,
-            feedback = "Could be more detailed.",
-            description = "Write a 500-word essay on modern network threats."
-        )
-    )
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("All", "Pending", "Submitted", "Graded")
+
+    val filteredAssignments = when (selectedTabIndex) {
+        1 -> uiState.assignments.filter { it.status.lowercase() == "pending" }
+        2 -> uiState.assignments.filter { it.status.lowercase() == "submitted" }
+        3 -> uiState.assignments.filter { it.status.lowercase() == "graded" }
+        else -> uiState.assignments
+    }
+
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Scaffold(
         topBar = {
@@ -76,7 +65,7 @@ fun ParentAssignmentsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                    containerColor = cardBgColor,
                     titleContentColor = textColor
                 )
             )
@@ -84,39 +73,48 @@ fun ParentAssignmentsScreen(
         containerColor = backgroundColor
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            AssignmentFilterTabs(isDarkTheme)
-            
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ScrollableTabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = cardBgColor,
+                contentColor = Color(0xFF6366F1),
+                edgePadding = 16.dp,
+                divider = {}
             ) {
-                items(assignments) { assignment ->
-                    ParentAssignmentCard(assignment, isDarkTheme)
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title) }
+                    )
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun AssignmentFilterTabs(isDarkTheme: Boolean) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("All", "Pending", "Submitted", "Graded")
-    
-    ScrollableTabRow(
-        selectedTabIndex = selectedTab,
-        containerColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
-        contentColor = Color(0xFF6366F1),
-        edgePadding = 16.dp,
-        divider = {}
-    ) {
-        tabs.forEachIndexed { index, title ->
-            Tab(
-                selected = selectedTab == index,
-                onClick = { selectedTab = index },
-                text = { Text(title) }
-            )
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refresh() },
+                state = pullToRefreshState,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (uiState.isLoading && uiState.assignments.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF6366F1))
+                    }
+                } else if (uiState.error != null && uiState.assignments.isEmpty()) {
+                    AssignmentErrorState(message = uiState.error!!, onRetry = { viewModel.loadAssignments() })
+                } else if (filteredAssignments.isEmpty()) {
+                    EmptyAssignmentsState(tabs[selectedTabIndex])
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(filteredAssignments) { assignment ->
+                            ParentAssignmentCard(assignment, isDarkTheme)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -130,10 +128,13 @@ fun ParentAssignmentCard(assignment: ParentAssignmentDto, isDarkTheme: Boolean) 
         else -> Color.Gray
     }
 
+    val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
+    val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White),
+        colors = CardDefaults.cardColors(containerColor = cardBgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -146,7 +147,8 @@ fun ParentAssignmentCard(assignment: ParentAssignmentDto, isDarkTheme: Boolean) 
                     Text(
                         text = assignment.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
                     )
                     Text(
                         text = assignment.subject ?: "General",
@@ -190,7 +192,7 @@ fun ParentAssignmentCard(assignment: ParentAssignmentDto, isDarkTheme: Boolean) 
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Teacher's Feedback:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Gray)
-                        Text(assignment.feedback!!, style = MaterialTheme.typography.bodySmall)
+                        Text(assignment.feedback!!, style = MaterialTheme.typography.bodySmall, color = textColor)
                     }
                 }
             }
@@ -211,5 +213,46 @@ fun StatusBadge(status: String, color: Color) {
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+@Composable
+fun EmptyAssignmentsState(filter: String) {
+    Box(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.Rounded.Task,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = Color.LightGray
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = if (filter == "All") "No assignments found" else "No $filter assignments found",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun AssignmentErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Rounded.Warning, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text("Retry")
+        }
     }
 }
