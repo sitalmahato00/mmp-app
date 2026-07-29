@@ -124,7 +124,7 @@ fun ChildCard(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
-                if (child.avatarUrl.isNotEmpty()) {
+                if (child.avatarUrl?.isNotEmpty() == true) {
                     AsyncImage(
                         model = child.avatarUrl,
                         contentDescription = child.name,
@@ -166,12 +166,12 @@ fun ChildCard(
                     color = subTextColor
                 )
                 Text(
-                    text = "Program: ${child.program}",
+                    text = "Program: ${child.program ?: "N/A"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = subTextColor
                 )
                 Text(
-                    text = "Semester ${child.semester} • Section ${child.section}",
+                    text = "Semester ${child.semester} • Section ${child.section ?: "N/A"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = subTextColor
                 )
@@ -181,16 +181,17 @@ fun ChildCard(
 }
 
 @Composable
-fun ChildStatusBadge(status: String) {
-    val backgroundColor = if (status.lowercase() == "active") Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
-    val textColor = if (status.lowercase() == "active") Color(0xFF166534) else Color(0xFF64748B)
+fun ChildStatusBadge(status: String?) {
+    val currentStatus = status ?: "Unknown"
+    val backgroundColor = if (currentStatus.lowercase() == "active") Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
+    val textColor = if (currentStatus.lowercase() == "active") Color(0xFF166534) else Color(0xFF64748B)
 
     Surface(
         color = backgroundColor,
         shape = RoundedCornerShape(8.dp)
     ) {
         Text(
-            text = status.replaceFirstChar { it.uppercase() },
+            text = currentStatus.replaceFirstChar { it.uppercase() },
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             color = textColor,

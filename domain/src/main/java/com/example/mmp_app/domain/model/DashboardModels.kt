@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class StudentDashboardDto(
     @SerialName("student_name") val studentName: String,
-    @SerialName("student_id") val studentId: Int,
+    @SerialName("student_id") val studentId: String,
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("email") val email: String? = null,
     @SerialName("phone") val phone: String? = null,
@@ -255,7 +255,7 @@ data class SubjectDto(
 
 @Serializable
 data class StudentAttendanceItem(
-    @SerialName("student_id") val studentId: Int,
+    @SerialName("student_id") val studentId: String,
     @SerialName("status") val status: String
 )
 
@@ -305,7 +305,7 @@ data class MarkRecordRequest(
 
 @Serializable
 data class StudentMarkItem(
-    @SerialName("student_id") val studentId: Int,
+    @SerialName("student_id") val studentId: String,
     @SerialName("score") val score: Float,
     @SerialName("total") val total: Float
 )

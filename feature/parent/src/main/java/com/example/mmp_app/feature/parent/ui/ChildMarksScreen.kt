@@ -430,15 +430,15 @@ private fun mapToStudentDashboard(child: ChildDetailDto?): StudentDashboardDto? 
     if (child == null) return null
     return StudentDashboardDto(
         studentName = child.name,
-        studentId = child.id,
+        studentId = child.id.toString(),
         avatarUrl = child.avatarUrl,
         email = child.email,
         phone = child.phone,
         rollNumber = child.rollNumber ?: "N/A",
-        program = child.program,
+        program = child.program ?: "N/A",
         semester = child.semester,
-        section = child.section,
-        department = child.department,
+        section = child.section ?: "N/A",
+        department = child.department ?: "N/A",
         kpiCards = StudentKpiDto(0f, 0f, 0, 0) // Mocked as not needed for marksheet
     )
 }

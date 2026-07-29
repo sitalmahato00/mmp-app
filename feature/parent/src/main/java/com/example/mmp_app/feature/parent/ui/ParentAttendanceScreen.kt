@@ -190,7 +190,7 @@ fun ChildSelector(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(modifier = Modifier.size(24.dp), shape = CircleShape) {
-                                if (child.avatarUrl.isNotEmpty()) {
+                                if (child.avatarUrl?.isNotEmpty() == true) {
                                     AsyncImage(model = child.avatarUrl, contentDescription = null, contentScale = ContentScale.Crop)
                                 } else {
                                     Icon(Icons.Rounded.Person, null, modifier = Modifier.padding(4.dp))

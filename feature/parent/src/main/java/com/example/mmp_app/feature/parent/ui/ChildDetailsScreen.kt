@@ -103,7 +103,7 @@ fun ChildDetailsScreen(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primaryContainer
                             ) {
-                                if (child.avatarUrl.isNotEmpty()) {
+                                if (child.avatarUrl?.isNotEmpty() == true) {
                                     AsyncImage(
                                         model = child.avatarUrl,
                                         contentDescription = child.name,
@@ -138,13 +138,13 @@ fun ChildDetailsScreen(
                             Spacer(modifier = Modifier.height(24.dp))
                             
                             // Info rows
-                            InfoRow(icon = Icons.Rounded.School, label = "Program", value = child.program, isDarkTheme = isDarkTheme)
-                            InfoRow(icon = Icons.Rounded.AccountBalance, label = "Department", value = child.department, isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.School, label = "Program", value = child.program ?: "N/A", isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.AccountBalance, label = "Department", value = child.department ?: "N/A", isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.Badge, label = "Student No", value = child.studentNo, isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.Numbers, label = "Roll Number", value = child.rollNumber ?: "N/A", isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.Description, label = "Reg. Number", value = child.registrationNumber ?: "N/A", isDarkTheme = isDarkTheme)
-                            InfoRow(icon = Icons.Rounded.CalendarToday, label = "Semester", value = "${child.semester} | Section: ${child.section}", isDarkTheme = isDarkTheme)
-                            InfoRow(icon = Icons.Rounded.TrackChanges, label = "Batch", value = child.batch, isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.CalendarToday, label = "Semester", value = "${child.semester} | Section: ${child.section ?: "N/A"}", isDarkTheme = isDarkTheme)
+                            InfoRow(icon = Icons.Rounded.TrackChanges, label = "Batch", value = child.batch ?: "N/A", isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.EventAvailable, label = "Admitted", value = child.admissionDate ?: "N/A", isDarkTheme = isDarkTheme)
                         }
                     }
@@ -193,16 +193,17 @@ fun ChildDetailsScreen(
 }
 
 @Composable
-fun StatusBadge(status: String) {
-    val backgroundColor = if (status.lowercase() == "active") Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
-    val textColor = if (status.lowercase() == "active") Color(0xFF166534) else Color(0xFF64748B)
+fun StatusBadge(status: String?) {
+    val currentStatus = status ?: "Unknown"
+    val backgroundColor = if (currentStatus.lowercase() == "active") Color(0xFFDCFCE7) else Color(0xFFF1F5F9)
+    val textColor = if (currentStatus.lowercase() == "active") Color(0xFF166534) else Color(0xFF64748B)
 
     Surface(
         color = backgroundColor,
         shape = RoundedCornerShape(8.dp)
     ) {
         Text(
-            text = status.replaceFirstChar { it.uppercase() },
+            text = currentStatus.replaceFirstChar { it.uppercase() },
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             color = textColor,

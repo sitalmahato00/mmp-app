@@ -62,7 +62,7 @@ fun TeacherMarksScreen(
                                 date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
                                 marks = markStates.mapNotNull { (id, score) ->
                                     score.toFloatOrNull()?.let {
-                                        StudentMarkItem(id, it, totalMarks.toFloatOrNull() ?: 100f)
+                                        StudentMarkItem(id.toString(), it, totalMarks.toFloatOrNull() ?: 100f)
                                     }
                                 }
                             )

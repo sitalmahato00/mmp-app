@@ -509,8 +509,17 @@ fun DashboardAdaptiveContent(
                         if (navSuiteType == NavigationSuiteType.NavigationBar) {
                             if (userProfile?.role?.lowercase() == "parent") {
                                 ModernBottomNavBar(
-                                    selectedItem = if (selectedItem == 0) -1 else selectedItem - 1,
-                                    onItemSelected = { selectedItem = it + 1 },
+                                    selectedItem = when(selectedItem) {
+                                        0 -> 0 // Dashboard
+                                        1 -> 1 // Notices
+                                        2 -> 2 // Schedule
+                                        3 -> 3 // Results
+                                        4 -> 4 // Children
+                                        else -> -1
+                                    },
+                                    onItemSelected = { index ->
+                                        selectedItem = index
+                                    },
                                     items = listOf(
                                         ModernNavItem(Icons.Rounded.Notifications, "Notices"),
                                         ModernNavItem(Icons.AutoMirrored.Rounded.EventNote, "Schedule"),

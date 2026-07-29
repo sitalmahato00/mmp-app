@@ -283,7 +283,7 @@ fun ParentDashboard(
                         supportingContent = { Text(child.studentId.toString()) },
                         leadingContent = {
                             Surface(modifier = Modifier.size(40.dp), shape = CircleShape) {
-                                if (child.avatarUrl.isNotEmpty()) {
+                                if (child.avatarUrl?.isNotEmpty() == true) {
                                     AsyncImage(model = child.avatarUrl, contentDescription = null, contentScale = ContentScale.Crop)
                                 } else {
                                     Icon(Icons.Rounded.Person, null, modifier = Modifier.padding(8.dp))
@@ -505,7 +505,7 @@ fun ChildCard(child: ChildSummaryDto, onClick: () -> Unit, modifier: Modifier = 
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    if (child.avatarUrl.isNotEmpty()) {
+                    if (child.avatarUrl?.isNotEmpty() == true) {
                         AsyncImage(
                             model = child.avatarUrl,
                             contentDescription = null,
@@ -529,12 +529,12 @@ fun ChildCard(child: ChildSummaryDto, onClick: () -> Unit, modifier: Modifier = 
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${child.studentId} · Semester ${child.semester} · Section ${child.section}",
+                        text = "${child.studentId} · Semester ${child.semester} · Section ${child.section ?: "N/A"}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = child.program,
+                        text = child.program ?: "N/A",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
@@ -555,13 +555,13 @@ fun ChildCard(child: ChildSummaryDto, onClick: () -> Unit, modifier: Modifier = 
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    AttendanceStatusBadge(child.attendanceStatus)
+                    AttendanceStatusBadge(child.attendanceStatus ?: "Unknown")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { (child.attendancePercent / 100).toFloat() },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                    color = getStatusColor(child.attendanceStatus),
+                    color = getStatusColor(child.attendanceStatus ?: "Unknown"),
                     trackColor = Color.LightGray.copy(alpha = 0.3f)
                 )
             }
@@ -746,12 +746,13 @@ fun NoticeRow(notice: ParentNoticeDto, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun AttendanceStatusBadge(status: String) {
-    val (color, text) = when (status.lowercase()) {
+fun AttendanceStatusBadge(status: String?) {
+    val currentStatus = status ?: "Unknown"
+    val (color, text) = when (currentStatus.lowercase()) {
         "good" -> Color(0xFF10B981) to "Good"
         "medium" -> Color(0xFFF59E0B) to "Average"
         "low" -> Color(0xFFEF4444) to "Low"
-        else -> Color.Gray to status.uppercase()
+        else -> Color.Gray to currentStatus.uppercase()
     }
     Surface(
         color = color.copy(alpha = 0.1f),

@@ -14,13 +14,13 @@ data class ParentDashboardDto(
 data class ChildSummaryDto(
     val id: Int,
     val name: String,
-    @SerialName("student_id") val studentId: Int,
-    val program: String,
+    @SerialName("student_id") val studentId: String,
+    val program: String? = null,
     val semester: Int,
-    val section: String,
-    @SerialName("avatar_url") val avatarUrl: String,
+    val section: String?,
+    @SerialName("avatar_url") val avatarUrl: String?,
     @SerialName("attendance_percent") val attendancePercent: Double,
-    @SerialName("attendance_status") val attendanceStatus: String
+    @SerialName("attendance_status") val attendanceStatus: String? = null
 )
 
 @Serializable
@@ -29,15 +29,15 @@ data class ChildDetailDto(
     val name: String,
     val email: String,
     val phone: String?,
-    @SerialName("avatar_url") val avatarUrl: String,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("student_no") val studentNo: String,
     @SerialName("roll_number") val rollNumber: String?,
-    val program: String,
-    val department: String,
+    val program: String? = null,
+    val department: String? = null,
     val semester: Int,
-    val section: String,
-    val status: String,
-    val batch: String,
+    val section: String? = null,
+    val status: String? = null,
+    val batch: String? = null,
     @SerialName("registration_number") val registrationNumber: String? = null,
     @SerialName("admission_date") val admissionDate: String? = null
 )
@@ -97,12 +97,12 @@ data class ParentAssignmentDto(
 
 @Serializable
 data class ParentTimetableDto(
-    @SerialName("has_timetable") val hasTimetable: Boolean,
-    val semester: Int,
-    val section: String,
-    @SerialName("effective_from") val effectiveFrom: String?,
+    @SerialName("has_timetable") val hasTimetable: Boolean = false,
+    val semester: Int? = null,
+    val section: String? = null,
+    @SerialName("effective_from") val effectiveFrom: String? = null,
     @SerialName("academic_session") val academicSession: String? = null,
-    val timetable: List<ParentDayTimetableDto>
+    val timetable: List<ParentDayTimetableDto> = emptyList()
 )
 
 @Serializable
@@ -119,7 +119,7 @@ data class ParentTimetableClassDto(
     val teacher: String,
     @SerialName("start_time") val startTime: String,
     @SerialName("end_time") val endTime: String,
-    val room: String,
+    val room: String? = null,
     val type: String,
     val group: String? = null,
     val duration: Int? = null
