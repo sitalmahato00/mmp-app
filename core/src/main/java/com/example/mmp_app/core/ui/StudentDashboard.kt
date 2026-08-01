@@ -66,7 +66,8 @@ fun StudentDashboard(
     onIdCardClick: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
     unreadCount: Int = 0,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    showSystemHeader: Boolean = true
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -78,253 +79,346 @@ fun StudentDashboard(
     val accentColor = if (isDarkTheme) Color(0xFF1E293B) else Color(0xFFDBEAFE)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                drawerContainerColor = cardBgColor,
-                drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
-            ) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "☰ MENU",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryColor
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                NavigationDrawerItem(
-                    label = { Text("Dashboard") },
-                    selected = true,
-                    onClick = { scope.launch { drawerState.close() } },
-                    icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-                DrawerMenuItem("My Profile", Icons.Rounded.Person) { scope.launch { drawerState.close() }; onProfileClick() }
-                DrawerMenuItem("Subjects", Icons.Rounded.Book) { scope.launch { drawerState.close() }; onSubjectsClick() }
-                DrawerMenuItem("Attendance", Icons.Rounded.CalendarToday) { scope.launch { drawerState.close() }; onAttendanceClick() }
-                DrawerMenuItem("Marks & Results", Icons.Rounded.Star) { scope.launch { drawerState.close() }; onResultsClick() }
-                DrawerMenuItem("Assignments", Icons.AutoMirrored.Rounded.Assignment) { scope.launch { drawerState.close() }; onAssignmentsClick() }
-                DrawerMenuItem("Timetable", Icons.Rounded.Schedule) { scope.launch { drawerState.close() }; onTimetableClick() }
-                DrawerMenuItem("Downloads", Icons.Rounded.CloudDownload) { scope.launch { drawerState.close() }; onDownloadsClick() }
-                DrawerMenuItem("Notices", Icons.Rounded.Notifications) { scope.launch { drawerState.close() }; onNoticesClick() }
-                DrawerMenuItem("Notifications", Icons.Rounded.NotificationsActive) { scope.launch { drawerState.close() }; onNotificationsClick() }
-                DrawerMenuItem("Settings", Icons.Rounded.Settings) { scope.launch { drawerState.close() }; onSettingsClick() }
-                Spacer(Modifier.weight(1f))
-                DrawerMenuItem("Logout", Icons.Rounded.Logout) { scope.launch { drawerState.close() }; onLogoutClick() }
-                Spacer(Modifier.height(16.dp))
+    val dashboardContent = @Composable { paddingValues: PaddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // 1. Premium Profile Card
+            item {
+                ProfileGradientCard(data, subjects.size, primaryColor, textColor, isDarkTheme)
             }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                modifier = Modifier.size(36.dp),
-                                shape = CircleShape,
-                                color = Color.White,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.mmplogo),
-                                    contentDescription = "College Logo",
-                                    modifier = Modifier.padding(4.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                            }
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                "MMP College",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = textColor
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Rounded.Menu, contentDescription = "Menu", tint = primaryColor)
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onToggleTheme) {
-                            Icon(
-                                if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                                contentDescription = "Theme Toggle",
-                                tint = textColor.copy(alpha = 0.7f)
-                            )
-                        }
-                        IconButton(onClick = onNotificationsClick) {
-                            BadgedBox(badge = {
-                                if (unreadCount > 0) {
-                                    Badge { Text(unreadCount.toString()) }
-                                }
-                            }) {
-                                Icon(Icons.Rounded.NotificationsNone, contentDescription = "Notifications", tint = textColor.copy(alpha = 0.7f))
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = cardBgColor,
-                        titleContentColor = textColor
-                    ),
-                    modifier = Modifier.shadow(2.dp)
-                )
-            },
-            bottomBar = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 24.dp),
-                    contentAlignment = Alignment.BottomCenter
+
+            // Quick Action Cards
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(72.dp)
-                            .shadow(12.dp, RoundedCornerShape(36.dp)),
-                        shape = RoundedCornerShape(36.dp),
-                        color = cardBgColor
-                    ) {
+                    QuickActionCard("Attendance", Icons.Rounded.CalendarToday, primaryColor, cardBgColor, Modifier.weight(1f), onAttendanceClick)
+                    QuickActionCard("Assignments", Icons.AutoMirrored.Rounded.Assignment, primaryColor, cardBgColor, Modifier.weight(1f), onAssignmentsClick)
+                    QuickActionCard("Results", Icons.Rounded.Star, primaryColor, cardBgColor, Modifier.weight(1f), onResultsClick)
+                    QuickActionCard("Subjects", Icons.Rounded.Book, primaryColor, cardBgColor, Modifier.weight(1f), onSubjectsClick)
+                }
+            }
+
+            // 2. Academic Overview
+            item {
+                val summary = attendanceSummary ?: AttendanceSummaryDto(20, 16, 2, 0, 80f, "Good")
+                AcademicOverviewCard(summary, primaryColor, secondaryColor, textColor, accentColor, cardBgColor)
+            }
+            
+            // 3. Stats Summary Cards (Reduced size, re-added downloads and unread notices)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        StatsSummaryCard("Unread Notices", recentNotices.size.toString(), Icons.Rounded.NotificationsActive, primaryColor, cardBgColor, Modifier.weight(1f), onNoticesClick)
+                        StatsSummaryCard("Downloads", materialCount.toString(), Icons.Rounded.CloudDownload, Color(0xFF0EA5E9), cardBgColor, Modifier.weight(1f), onDownloadsClick)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        StatsSummaryCard("Subjects", subjects.size.toString(), Icons.Rounded.Book, primaryColor, cardBgColor, Modifier.weight(1f), onSubjectsClick)
+                        StatsSummaryCard("Pending Tasks", assignments.count { it.status.lowercase() == "pending" }.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), cardBgColor, Modifier.weight(1f), onAssignmentsClick)
+                    }
+                }
+            }
+
+            // 4. Enrolled Subjects (Restored section)
+            if (subjects.isNotEmpty()) {
+                item {
+                    Column {
                         Row(
-                            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            CapsuleNavItem(Icons.Rounded.AssignmentInd, "ID Card", onIdCardClick, textColor)
-                            CapsuleNavItem(Icons.Rounded.Download, "Downloads", onDownloadsClick, textColor)
-                            
-                            Spacer(modifier = Modifier.width(72.dp)) // Center space
-                            
-                            CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick, textColor)
-                            CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick, textColor)
+                            Text(text = "My Subjects", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
+                            Text(text = "View All", style = MaterialTheme.typography.labelLarge, color = primaryColor, modifier = Modifier.clickable { onSubjectsClick() })
                         }
-                    }
-                    
-                    // Floating Center Button
-                    Surface(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .offset(y = (-20).dp)
-                            .shadow(8.dp, CircleShape)
-                            .clickable(onClick = { /* Home/Dashboard Action */ }),
-                        shape = CircleShape,
-                        color = Color.Transparent
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Rounded.GridView, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(subjects) { subject ->
+                                SubjectMiniCard(subject, primaryColor, textColor, cardBgColor)
+                            }
                         }
                     }
                 }
-            },
-            containerColor = backgroundColor
-        ) { paddingValues ->
-            LazyColumn(
+            }
+
+            // 5. Today's Schedule
+            if (todayClasses.isNotEmpty()) {
+                item {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "Today's Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
+                            Text(text = "View All", style = MaterialTheme.typography.labelLarge, color = primaryColor, modifier = Modifier.clickable { onTimetableClick() })
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        todayClasses.take(3).forEach { cls ->
+                            ModernScheduleCard(cls, primaryColor, textColor, cardBgColor)
+                        }
+                    }
+                }
+            }
+
+            // 6. Assignment Progress
+            item {
+                AssignmentProgressCard(assignments, primaryColor, secondaryColor, textColor, accentColor, cardBgColor)
+            }
+
+            // 7. Recent Activity (Notices)
+            item {
+                ActivityFeedSection(recentNotices, primaryColor, textColor)
+            }
+
+            item { Spacer(modifier = Modifier.height(110.dp)) }
+        }
+    }
+
+    if (showSystemHeader) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                StudentDrawerContent(
+                    primaryColor = primaryColor,
+                    cardBgColor = cardBgColor,
+                    onCloseDrawer = { scope.launch { drawerState.close() } },
+                    onProfileClick = onProfileClick,
+                    onSubjectsClick = onSubjectsClick,
+                    onAttendanceClick = onAttendanceClick,
+                    onResultsClick = onResultsClick,
+                    onAssignmentsClick = onAssignmentsClick,
+                    onTimetableClick = onTimetableClick,
+                    onDownloadsClick = onDownloadsClick,
+                    onNoticesClick = onNoticesClick,
+                    onNotificationsClick = onNotificationsClick,
+                    onSettingsClick = onSettingsClick,
+                    onLogoutClick = onLogoutClick
+                )
+            }
+        ) {
+            Scaffold(
+                topBar = {
+                    StudentTopBar(
+                        textColor = textColor,
+                        cardBgColor = cardBgColor,
+                        primaryColor = primaryColor,
+                        isDarkTheme = isDarkTheme,
+                        unreadCount = unreadCount,
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onToggleTheme = onToggleTheme,
+                        onNotificationsClick = onNotificationsClick
+                    )
+                },
+                bottomBar = {
+                    StudentBottomNavBar(
+                        primaryColor = primaryColor,
+                        secondaryColor = secondaryColor,
+                        cardBgColor = cardBgColor,
+                        textColor = textColor,
+                        onIdCardClick = onIdCardClick,
+                        onDownloadsClick = onDownloadsClick,
+                        onNoticesClick = onNoticesClick,
+                        onProfileClick = onProfileClick,
+                        onHomeClick = { /* Already at home */ }
+                    )
+                },
+                containerColor = backgroundColor
+            ) { paddingValues ->
+                dashboardContent(paddingValues)
+            }
+        }
+    } else {
+        dashboardContent(PaddingValues(0.dp))
+    }
+}
+
+@Composable
+fun StudentDrawerContent(
+    primaryColor: Color,
+    cardBgColor: Color,
+    onCloseDrawer: () -> Unit,
+    onProfileClick: () -> Unit,
+    onSubjectsClick: () -> Unit,
+    onAttendanceClick: () -> Unit,
+    onResultsClick: () -> Unit,
+    onAssignmentsClick: () -> Unit,
+    onTimetableClick: () -> Unit,
+    onDownloadsClick: () -> Unit,
+    onNoticesClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    ModalDrawerSheet(
+        drawerContainerColor = cardBgColor,
+        drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
+    ) {
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "☰ MENU",
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = primaryColor
+        )
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        NavigationDrawerItem(
+            label = { Text("Dashboard") },
+            selected = true,
+            onClick = onCloseDrawer,
+            icon = { Icon(Icons.Rounded.Home, contentDescription = null) },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        DrawerMenuItem("My Profile", Icons.Rounded.Person) { onCloseDrawer(); onProfileClick() }
+        DrawerMenuItem("Subjects", Icons.Rounded.Book) { onCloseDrawer(); onSubjectsClick() }
+        DrawerMenuItem("Attendance", Icons.Rounded.CalendarToday) { onCloseDrawer(); onAttendanceClick() }
+        DrawerMenuItem("Marks & Results", Icons.Rounded.Star) { onCloseDrawer(); onResultsClick() }
+        DrawerMenuItem("Assignments", Icons.AutoMirrored.Rounded.Assignment) { onCloseDrawer(); onAssignmentsClick() }
+        DrawerMenuItem("Timetable", Icons.Rounded.Schedule) { onCloseDrawer(); onTimetableClick() }
+        DrawerMenuItem("Downloads", Icons.Rounded.CloudDownload) { onCloseDrawer(); onDownloadsClick() }
+        DrawerMenuItem("Notices", Icons.Rounded.Notifications) { onCloseDrawer(); onNoticesClick() }
+        DrawerMenuItem("Notifications", Icons.Rounded.NotificationsActive) { onCloseDrawer(); onNotificationsClick() }
+        DrawerMenuItem("Settings", Icons.Rounded.Settings) { onCloseDrawer(); onSettingsClick() }
+        Spacer(Modifier.weight(1f))
+        DrawerMenuItem("Logout", Icons.Rounded.Logout) { onCloseDrawer(); onLogoutClick() }
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StudentTopBar(
+    textColor: Color,
+    cardBgColor: Color,
+    primaryColor: Color,
+    isDarkTheme: Boolean,
+    unreadCount: Int,
+    onMenuClick: () -> Unit,
+    onToggleTheme: () -> Unit,
+    onNotificationsClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    modifier = Modifier.size(36.dp),
+                    shape = CircleShape,
+                    color = Color.White,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.mmplogo),
+                        contentDescription = "College Logo",
+                        modifier = Modifier.padding(4.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "MMP College",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Rounded.Menu, contentDescription = "Menu", tint = primaryColor)
+            }
+        },
+        actions = {
+            IconButton(onClick = onToggleTheme) {
+                Icon(
+                    if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                    contentDescription = "Theme Toggle",
+                    tint = textColor.copy(alpha = 0.7f)
+                )
+            }
+            IconButton(onClick = onNotificationsClick) {
+                BadgedBox(badge = {
+                    if (unreadCount > 0) {
+                        Badge { Text(unreadCount.toString()) }
+                    }
+                }) {
+                    Icon(Icons.Rounded.NotificationsNone, contentDescription = "Notifications", tint = textColor.copy(alpha = 0.7f))
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = cardBgColor,
+            titleContentColor = textColor
+        ),
+        modifier = Modifier.shadow(2.dp)
+    )
+}
+
+@Composable
+fun StudentBottomNavBar(
+    primaryColor: Color,
+    secondaryColor: Color,
+    cardBgColor: Color,
+    textColor: Color,
+    onIdCardClick: () -> Unit,
+    onDownloadsClick: () -> Unit,
+    onNoticesClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    selectedItemIndex: Int = 0 // 0: Home, others based on indices
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 24.dp),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+                .shadow(12.dp, RoundedCornerShape(36.dp)),
+            shape = RoundedCornerShape(36.dp),
+            color = cardBgColor
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CapsuleNavItem(Icons.Rounded.AssignmentInd, "ID Card", onIdCardClick, textColor, selectedItemIndex == -1, activeColor = primaryColor)
+                CapsuleNavItem(Icons.Rounded.Download, "Downloads", onDownloadsClick, textColor, selectedItemIndex == 10, activeColor = primaryColor) // Arbitrary index for downloads
+                
+                Spacer(modifier = Modifier.width(72.dp)) // Center space
+                
+                CapsuleNavItem(Icons.Rounded.Notifications, "Notices", onNoticesClick, textColor, selectedItemIndex == 1, activeColor = primaryColor)
+                CapsuleNavItem(Icons.Rounded.Person, "Profile", onProfileClick, textColor, selectedItemIndex == 4, activeColor = primaryColor)
+            }
+        }
+        
+        // Floating Center Button
+        Surface(
+            modifier = Modifier
+                .size(72.dp)
+                .offset(y = (-20).dp)
+                .shadow(8.dp, CircleShape)
+                .clickable(onClick = onHomeClick),
+            shape = CircleShape,
+            color = Color.Transparent
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                    .background(Brush.verticalGradient(listOf(primaryColor, secondaryColor))),
+                contentAlignment = Alignment.Center
             ) {
-                // 1. Premium Profile Card
-                item {
-                    ProfileGradientCard(data, subjects.size, primaryColor, textColor, isDarkTheme)
-                }
-
-                // Quick Action Cards
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        QuickActionCard("Attendance", Icons.Rounded.CalendarToday, primaryColor, cardBgColor, Modifier.weight(1f), onAttendanceClick)
-                        QuickActionCard("Assignments", Icons.AutoMirrored.Rounded.Assignment, primaryColor, cardBgColor, Modifier.weight(1f), onAssignmentsClick)
-                        QuickActionCard("Results", Icons.Rounded.Star, primaryColor, cardBgColor, Modifier.weight(1f), onResultsClick)
-                        QuickActionCard("Subjects", Icons.Rounded.Book, primaryColor, cardBgColor, Modifier.weight(1f), onSubjectsClick)
-                    }
-                }
-
-                // 2. Academic Overview
-                item {
-                    val summary = attendanceSummary ?: AttendanceSummaryDto(20, 16, 2, 0, 80f, "Good")
-                    AcademicOverviewCard(summary, primaryColor, secondaryColor, textColor, accentColor, cardBgColor)
-                }
-                
-                // 3. Stats Summary Cards (Reduced size, re-added downloads and unread notices)
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            StatsSummaryCard("Unread Notices", recentNotices.size.toString(), Icons.Rounded.NotificationsActive, primaryColor, cardBgColor, Modifier.weight(1f), onNoticesClick)
-                            StatsSummaryCard("Downloads", materialCount.toString(), Icons.Rounded.CloudDownload, Color(0xFF0EA5E9), cardBgColor, Modifier.weight(1f), onDownloadsClick)
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            StatsSummaryCard("Subjects", subjects.size.toString(), Icons.Rounded.Book, primaryColor, cardBgColor, Modifier.weight(1f), onSubjectsClick)
-                            StatsSummaryCard("Pending Tasks", assignments.count { it.status.lowercase() == "pending" }.toString(), Icons.AutoMirrored.Rounded.Assignment, Color(0xFFEF4444), cardBgColor, Modifier.weight(1f), onAssignmentsClick)
-                        }
-                    }
-                }
-
-                // 4. Enrolled Subjects (Restored section)
-                if (subjects.isNotEmpty()) {
-                    item {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(text = "My Subjects", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
-                                Text(text = "View All", style = MaterialTheme.typography.labelLarge, color = primaryColor, modifier = Modifier.clickable { onSubjectsClick() })
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                items(subjects) { subject ->
-                                    SubjectMiniCard(subject, primaryColor, textColor, cardBgColor)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 5. Today's Schedule
-                if (todayClasses.isNotEmpty()) {
-                    item {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(text = "Today's Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = textColor)
-                                Text(text = "View All", style = MaterialTheme.typography.labelLarge, color = primaryColor, modifier = Modifier.clickable { onTimetableClick() })
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            todayClasses.take(3).forEach { cls ->
-                                ModernScheduleCard(cls, primaryColor, textColor, cardBgColor)
-                            }
-                        }
-                    }
-                }
-
-                // 6. Assignment Progress
-                item {
-                    AssignmentProgressCard(assignments, primaryColor, secondaryColor, textColor, accentColor, cardBgColor)
-                }
-
-                // 7. Recent Activity (Notices)
-                item {
-                    ActivityFeedSection(recentNotices, primaryColor, textColor)
-                }
-
-                item { Spacer(modifier = Modifier.height(110.dp)) }
+                Icon(Icons.Rounded.GridView, contentDescription = "Dashboard", tint = Color.White, modifier = Modifier.size(32.dp))
             }
         }
     }
@@ -625,10 +719,3 @@ fun ActivityItem(notice: NoticeDto, primaryColor: Color, textColor: Color, isLas
     }
 }
 
-@Composable
-fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit, textColor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(4.dp)) {
-        Icon(icon, contentDescription = label, tint = textColor.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.6f), fontSize = 10.sp)
-    }
-}

@@ -14,7 +14,7 @@ data class ParentDashboardDto(
 data class ChildSummaryDto(
     val id: Int,
     val name: String,
-    @SerialName("student_id") val studentId: String,
+    @SerialName("student_id") val studentId: Int,
     val program: String? = null,
     val semester: Int,
     val section: String?,

@@ -33,6 +33,9 @@ import com.example.mmp_app.core.ui.ModernBottomNavBar
 import com.example.mmp_app.core.ui.ModernNavItem
 import com.example.mmp_app.core.ui.theme.MMPAppTheme
 import com.example.mmp_app.core.ui.StudentDashboard
+import com.example.mmp_app.core.ui.StudentTopBar
+import com.example.mmp_app.core.ui.StudentBottomNavBar
+import com.example.mmp_app.core.ui.StudentDrawerContent
 
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.domain.model.ParentNoticeDto
@@ -239,203 +242,200 @@ fun DashboardAdaptiveContent(
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    ModalDrawerSheet {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Column(
-                            modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp)
-                        ) {
-                            Surface(
-                                modifier = Modifier.size(72.dp),
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer
+                    if (userProfile?.role?.lowercase() == "student") {
+                        StudentDrawerContent(
+                            primaryColor = Color(0xFF2563EB),
+                            cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                            onCloseDrawer = { scope.launch { drawerState.close() } },
+                            onProfileClick = { selectedItem = 4 },
+                            onSubjectsClick = { onNavigateToSubjects() },
+                            onAttendanceClick = { onNavigateToAttendance() },
+                            onResultsClick = { selectedItem = 3 },
+                            onAssignmentsClick = { onNavigateToAssignments() },
+                            onTimetableClick = { selectedItem = 2 },
+                            onDownloadsClick = { onNavigateToDownloads() },
+                            onNoticesClick = { selectedItem = 1 },
+                            onNotificationsClick = { onNavigateToNotifications() },
+                            onSettingsClick = { onNavigateToSettings() },
+                            onLogoutClick = onLogout
+                        )
+                    } else {
+                        ModalDrawerSheet {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Column(
+                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 24.dp)
                             ) {
-                                val avatarUrl = if (userProfile?.role?.lowercase() == "parent") parentProfile?.avatarUrl else userProfile?.avatarUrl
-                                val name = if (userProfile?.role?.lowercase() == "parent") parentProfile?.name ?: userProfile?.name else userProfile?.name
-                                
-                                if (!avatarUrl.isNullOrEmpty()) {
-                                    AsyncImage(
-                                        model = avatarUrl,
-                                        contentDescription = "Profile Picture",
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        val firstLetter = name?.firstOrNull()?.toString() ?: "U"
-                                        Text(
-                                            text = firstLetter,
-                                            style = MaterialTheme.typography.headlineMedium,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.Bold
+                                Surface(
+                                    modifier = Modifier.size(72.dp),
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    val avatarUrl = if (userProfile?.role?.lowercase() == "parent") parentProfile?.avatarUrl else userProfile?.avatarUrl
+                                    val name = if (userProfile?.role?.lowercase() == "parent") parentProfile?.name ?: userProfile?.name else userProfile?.name
+                                    
+                                    if (!avatarUrl.isNullOrEmpty()) {
+                                        AsyncImage(
+                                            model = avatarUrl,
+                                            contentDescription = "Profile Picture",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
                                         )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            val firstLetter = name?.firstOrNull()?.toString() ?: "U"
+                                            Text(
+                                                text = firstLetter,
+                                                style = MaterialTheme.typography.headlineMedium,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = (if (userProfile?.role?.lowercase() == "parent") parentProfile?.name ?: userProfile?.name else userProfile?.name) ?: "Guest User",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
+                                Spacer(modifier = Modifier.height(16.dp))
                                 Text(
-                                    text = userProfile?.role?.replaceFirstChar { it.uppercase() } ?: "User",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    text = (if (userProfile?.role?.lowercase() == "parent") parentProfile?.name ?: userProfile?.name else userProfile?.name) ?: "Guest User",
+                                    style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                ) {
+                                    Text(
+                                        text = userProfile?.role?.replaceFirstChar { it.uppercase() } ?: "User",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
-                        }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        
-                        NavigationDrawerItem(
-                            label = { Text("Dashboard") },
-                            selected = selectedItem == 0,
-                            onClick = { 
-                                selectedItem = 0
-                                scope.launch { drawerState.close() }
-                            },
-                            icon = { Icon(Icons.Rounded.Home, null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                        )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            
+                            NavigationDrawerItem(
+                                label = { Text("Dashboard") },
+                                selected = selectedItem == 0,
+                                onClick = { 
+                                    selectedItem = 0
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = { Icon(Icons.Rounded.Home, null) },
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            )
 
-                        if (userProfile?.role?.lowercase() == "parent") {
+                            if (userProfile?.role?.lowercase() == "parent") {
+                                NavigationDrawerItem(
+                                    label = { Text("My Children") },
+                                    selected = selectedItem == 4,
+                                    onClick = {
+                                        selectedItem = 4
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = { Icon(Icons.Rounded.People, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                                NavigationDrawerItem(
+                                    label = { Text("Notices") },
+                                    selected = selectedItem == 1,
+                                    onClick = {
+                                        selectedItem = 1
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = { Icon(Icons.Rounded.Notifications, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                                NavigationDrawerItem(
+                                    label = { Text("Results") },
+                                    selected = selectedItem == 3,
+                                    onClick = {
+                                        selectedItem = 3
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = { Icon(Icons.Rounded.Star, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                                NavigationDrawerItem(
+                                    label = { Text("Profile") },
+                                    selected = selectedItem == 5,
+                                    onClick = {
+                                        selectedItem = 5
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = { Icon(Icons.Rounded.Person, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                                NavigationDrawerItem(
+                                    label = { Text("Settings") },
+                                    selected = false,
+                                    onClick = {
+                                        scope.launch { drawerState.close() }
+                                        onNavigateToSettings()
+                                    },
+                                    icon = { Icon(Icons.Rounded.Settings, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                            }
+                            
+                            if (userProfile?.role?.lowercase() == "teacher") {
+                                NavigationDrawerItem(
+                                    label = { Text("Students") },
+                                    selected = selectedItem == 1,
+                                    onClick = {
+                                        selectedItem = 1
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = { Icon(Icons.Rounded.Groups, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                                NavigationDrawerItem(
+                                    label = { Text("Schedule") },
+                                    selected = selectedItem == 2,
+                                    onClick = {
+                                        selectedItem = 2
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = { Icon(Icons.Rounded.CalendarMonth, null) },
+                                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.weight(1f))
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
+                            
                             NavigationDrawerItem(
-                                label = { Text("My Children") },
-                                selected = selectedItem == 4,
-                                onClick = {
-                                    selectedItem = 4
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.People, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Notices") },
-                                selected = selectedItem == 1,
-                                onClick = {
-                                    selectedItem = 1
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.Notifications, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Results") },
-                                selected = selectedItem == 3,
-                                onClick = {
-                                    selectedItem = 3
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.Star, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Profile") },
-                                selected = selectedItem == 5,
-                                onClick = {
-                                    selectedItem = 5
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.Person, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Settings") },
+                                label = { Text("Logout") },
                                 selected = false,
-                                onClick = {
+                                onClick = { 
                                     scope.launch { drawerState.close() }
-                                    onNavigateToSettings()
+                                    onLogout()
                                 },
-                                icon = { Icon(Icons.Rounded.Settings, null) },
+                                icon = { Icon(Icons.AutoMirrored.Rounded.Logout, null) },
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                             )
                         }
-
-                        if (userProfile?.role?.lowercase() == "student") {
-                            NavigationDrawerItem(
-                                label = { Text("Profile") },
-                                selected = selectedItem == 4,
-                                onClick = {
-                                    selectedItem = 4
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.Person, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Academic Results") },
-                                selected = selectedItem == 3,
-                                onClick = {
-                                    selectedItem = 3
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.Star, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Timetable") },
-                                selected = selectedItem == 2,
-                                onClick = {
-                                    selectedItem = 2
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.AutoMirrored.Rounded.EventNote, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                        }
-                        
-                        if (userProfile?.role?.lowercase() == "teacher") {
-                            NavigationDrawerItem(
-                                label = { Text("Students") },
-                                selected = selectedItem == 1,
-                                onClick = {
-                                    selectedItem = 1
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.Groups, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                            NavigationDrawerItem(
-                                label = { Text("Schedule") },
-                                selected = selectedItem == 2,
-                                onClick = {
-                                    selectedItem = 2
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = { Icon(Icons.Rounded.CalendarMonth, null) },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.weight(1f))
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp))
-                        
-                        NavigationDrawerItem(
-                            label = { Text("Logout") },
-                            selected = false,
-                            onClick = { 
-                                scope.launch { drawerState.close() }
-                                onLogout()
-                            },
-                            icon = { Icon(Icons.AutoMirrored.Rounded.Logout, null) },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                        )
                     }
                 }
             ) {
                 Scaffold(
-                    containerColor = MaterialTheme.colorScheme.background,
+                    containerColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC),
                     topBar = {
-                        if (isTopLevelDestination) {
+                        if (userProfile?.role?.lowercase() == "student") {
+                            StudentTopBar(
+                                textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B),
+                                cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                                primaryColor = Color(0xFF2563EB),
+                                isDarkTheme = isDarkTheme,
+                                unreadCount = unreadCount,
+                                onMenuClick = { scope.launch { drawerState.open() } },
+                                onToggleTheme = onToggleTheme,
+                                onNotificationsClick = onNavigateToNotifications
+                            )
+                        } else if (isTopLevelDestination) {
                             CenterAlignedTopAppBar(
                                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                     containerColor = MaterialTheme.colorScheme.background,
@@ -507,7 +507,20 @@ fun DashboardAdaptiveContent(
                     },
                     bottomBar = {
                         if (navSuiteType == NavigationSuiteType.NavigationBar) {
-                            if (userProfile?.role?.lowercase() == "parent") {
+                            if (userProfile?.role?.lowercase() == "student") {
+                                StudentBottomNavBar(
+                                    primaryColor = Color(0xFF2563EB),
+                                    secondaryColor = Color(0xFF60A5FA),
+                                    cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                                    textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B),
+                                    onIdCardClick = { /* TODO: Route or Dialog */ },
+                                    onDownloadsClick = onNavigateToDownloads,
+                                    onNoticesClick = { selectedItem = 1 },
+                                    onProfileClick = { selectedItem = 4 },
+                                    onHomeClick = { selectedItem = 0 },
+                                    selectedItemIndex = selectedItem
+                                )
+                            } else if (userProfile?.role?.lowercase() == "parent") {
                                 ModernBottomNavBar(
                                     selectedItem = when(selectedItem) {
                                         0 -> 0 // Dashboard
@@ -552,45 +565,18 @@ fun DashboardAdaptiveContent(
                                             icon = { Icon(Icons.Rounded.Dashboard, null) },
                                             label = { Text("Home") }
                                         )
-                                        if (userProfile?.role?.lowercase() == "student") {
-                                            NavigationBarItem(
-                                                selected = selectedItem == 1,
-                                                onClick = { selectedItem = 1 },
-                                                icon = { Icon(Icons.Rounded.Notifications, null) },
-                                                label = { Text("Notices") }
-                                            )
-                                            NavigationBarItem(
-                                                selected = selectedItem == 2,
-                                                onClick = { selectedItem = 2 },
-                                                icon = { Icon(Icons.AutoMirrored.Rounded.EventNote, null) },
-                                                label = { Text("Schedule") }
-                                            )
-                                            NavigationBarItem(
-                                                selected = selectedItem == 3,
-                                                onClick = { selectedItem = 3 },
-                                                icon = { Icon(Icons.Rounded.Star, null) },
-                                                label = { Text("Results") }
-                                            )
-                                            NavigationBarItem(
-                                                selected = selectedItem == 4,
-                                                onClick = { selectedItem = 4 },
-                                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
-                                                label = { Text("Profile") }
-                                            )
-                                        } else {
-                                            NavigationBarItem(
-                                                selected = selectedItem == 1,
-                                                onClick = { selectedItem = 1 },
-                                                icon = { Icon(Icons.Rounded.Groups, null) },
-                                                label = { Text("Users") }
-                                            )
-                                            NavigationBarItem(
-                                                selected = selectedItem == 3,
-                                                onClick = { selectedItem = 3 },
-                                                icon = { Icon(Icons.Rounded.AccountCircle, null) },
-                                                label = { Text("Profile") }
-                                            )
-                                        }
+                                        NavigationBarItem(
+                                            selected = selectedItem == 1,
+                                            onClick = { selectedItem = 1 },
+                                            icon = { Icon(Icons.Rounded.Groups, null) },
+                                            label = { Text("Users") }
+                                        )
+                                        NavigationBarItem(
+                                            selected = selectedItem == 3,
+                                            onClick = { selectedItem = 3 },
+                                            icon = { Icon(Icons.Rounded.AccountCircle, null) },
+                                            label = { Text("Profile") }
+                                        )
                                     }
                                 }
                             }
@@ -840,7 +826,8 @@ fun MainDashboardContent(
                     onLogoutClick = onLogout,
                     unreadCount = unreadCount,
                     isDarkTheme = isDarkTheme,
-                    onToggleTheme = onToggleTheme
+                    onToggleTheme = onToggleTheme,
+                    showSystemHeader = showSystemHeader
                 )
             }
         }

@@ -66,7 +66,7 @@ fun TeacherAttendanceScreen(
                                 classId = classId,
                                 date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
                                 attendance = attendanceStates.map { (id, status) ->
-                                    StudentAttendanceItem(id.toString(), status)
+                                    StudentAttendanceItem(id, status)
                                 }
                             )
                             viewModel.recordAttendance(request, onSuccess = onBack)

@@ -135,7 +135,14 @@ data class ModernNavItem(
 )
 
 @Composable
-fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit, textColor: Color, selected: Boolean = false) {
+fun CapsuleNavItem(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    textColor: Color,
+    selected: Boolean = false,
+    activeColor: Color = Color(0xFF6366F1)
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -146,13 +153,13 @@ fun CapsuleNavItem(icon: ImageVector, label: String, onClick: () -> Unit, textCo
         Icon(
             icon,
             contentDescription = label,
-            tint = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
+            tint = if (selected) activeColor else textColor.copy(alpha = 0.6f),
             modifier = Modifier.size(24.dp)
         )
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) Color(0xFF6366F1) else textColor.copy(alpha = 0.6f),
+            color = if (selected) activeColor else textColor.copy(alpha = 0.6f),
             fontSize = 10.sp
         )
     }

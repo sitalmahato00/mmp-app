@@ -430,7 +430,7 @@ private fun mapToStudentDashboard(child: ChildDetailDto?): StudentDashboardDto? 
     if (child == null) return null
     return StudentDashboardDto(
         studentName = child.name,
-        studentId = child.id.toString(),
+        studentId = child.id,
         avatarUrl = child.avatarUrl,
         email = child.email,
         phone = child.phone,
