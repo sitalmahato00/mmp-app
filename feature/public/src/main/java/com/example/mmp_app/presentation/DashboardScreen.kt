@@ -226,11 +226,19 @@ fun DashboardAdaptiveContent(
             }
         }
 
-        if (isLoading && studentData == null && teacherData == null && parentData == null) {
+        val role = userProfile?.role?.lowercase()
+        val isDataLoaded = when (role) {
+            "student" -> studentData != null
+            "teacher" -> teacherData != null
+            "parent" -> parentData != null
+            else -> false
+        }
+
+        if (isLoading && !isDataLoaded) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else if (error != null && studentData == null && teacherData == null && parentData == null) {
+        } else if (error != null && !isDataLoaded) {
             ErrorState(error!!, onRetry)
         } else {
             // Use the standard adaptive layout for all screens to ensure nav bar is always present
@@ -618,12 +626,7 @@ fun DashboardAdaptiveContent(
                         }
                         
                         Box(modifier = Modifier.fillMaxSize()) {
-                            if (isLoading && studentData == null && teacherData == null && parentData == null) {
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            } else if (error != null && studentData == null && teacherData == null && parentData == null) {
-                                ErrorState(error!!, onRetry)
-                            } else {
-                                when (selectedItem) {
+                            when (selectedItem) {
                                     0 -> MainDashboardContent(
                                         userProfile = userProfile,
                                         studentData = studentData,
@@ -740,7 +743,8 @@ fun DashboardAdaptiveContent(
             }
         }
     }
-}
+
+
 
 @Composable
 fun ErrorState(error: String, onRetry: () -> Unit) {
@@ -868,6 +872,10 @@ fun MainDashboardContent(
                     showSystemHeader = showSystemHeader,
                     parentAvatarUrl = userProfile?.avatarUrl
                 )
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
             }
         }
         else -> {

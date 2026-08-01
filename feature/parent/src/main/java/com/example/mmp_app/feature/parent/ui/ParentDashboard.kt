@@ -315,6 +315,12 @@ fun ParentDashboardContent(
     onNoticesClick: () -> Unit,
     parentAvatarUrl: String? = null
 ) {
+    if (data.children.isEmpty() && recentNotices.isEmpty() && data.parentName.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No dashboard data available")
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(paddingValues),
         contentPadding = PaddingValues(bottom = 110.dp)
