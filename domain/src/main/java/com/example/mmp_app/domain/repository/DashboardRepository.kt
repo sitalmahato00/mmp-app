@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 interface DashboardRepository {
     fun getStudentDashboard(): Flow<Result<StudentDashboardDto>>
     fun getTeacherDashboard(): Flow<Result<TeacherDashboardDto>>
+    fun getTeacherProfile(): Flow<Result<TeacherProfileDto>>
+    fun getTeacherTodaySchedule(): Flow<Result<TodayScheduleDto>>
+    fun getTeacherClasses(): Flow<Result<List<TeacherSubjectDto>>>
     fun getParentDashboard(): Flow<Result<ParentDashboardDto>>
     fun getStudentMarks(): Flow<Result<List<MarkDto>>>
     fun getStudentMarksSummary(): Flow<Result<MarksSummaryDto>>

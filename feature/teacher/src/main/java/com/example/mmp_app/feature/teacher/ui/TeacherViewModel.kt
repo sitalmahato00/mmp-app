@@ -18,6 +18,12 @@ class TeacherViewModel @Inject constructor(
     private val _teacherDashboard = MutableStateFlow<TeacherDashboardDto?>(null)
     val teacherDashboard = _teacherDashboard.asStateFlow()
 
+    private val _teacherSchedule = MutableStateFlow<TodayScheduleDto?>(null)
+    val teacherSchedule = _teacherSchedule.asStateFlow()
+
+    private val _teacherClasses = MutableStateFlow<List<TeacherSubjectDto>>(emptyList())
+    val teacherClasses = _teacherClasses.asStateFlow()
+
     private val _classStudents = MutableStateFlow<List<UserDto>>(emptyList())
     val classStudents = _classStudents.asStateFlow()
 
@@ -31,9 +37,29 @@ class TeacherViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             repository.getTeacherDashboard().collect { result ->
-                _isLoading.value = false
                 result.onSuccess { _teacherDashboard.value = it }.onFailure { _error.value = it.message }
             }
+            _isLoading.value = false
+        }
+    }
+
+    fun loadTodaySchedule() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getTeacherTodaySchedule().collect { result ->
+                result.onSuccess { _teacherSchedule.value = it }.onFailure { _error.value = it.message }
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun loadTeacherClasses() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getTeacherClasses().collect { result ->
+                result.onSuccess { _teacherClasses.value = it }.onFailure { _error.value = it.message }
+            }
+            _isLoading.value = false
         }
     }
 

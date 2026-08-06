@@ -101,6 +101,18 @@ interface MmpApiService {
     @GET("v1/teacher/dashboard")
     suspend fun getTeacherDashboard(): Response<BaseResponse<TeacherDashboardDto>>
 
+    @GET("v1/teacher/profile")
+    suspend fun getTeacherProfile(): Response<BaseResponse<TeacherProfileDto>>
+
+    @GET("v1/teacher/today-schedule")
+    suspend fun getTeacherTodaySchedule(): Response<BaseResponse<TodayScheduleDto>>
+
+    @GET("v1/teacher/classes")
+    suspend fun getTeacherClasses(): Response<BaseResponse<List<TeacherSubjectDto>>>
+
+    @GET("v1/teacher/assignments")
+    suspend fun getTeacherAssignments(): Response<BaseResponse<List<AssignmentDto>>>
+
     @POST("v1/teacher/attendance/bulk-mark")
     suspend fun recordAttendance(@Body body: AttendanceRecordRequest): Response<BaseResponse<Unit>>
 

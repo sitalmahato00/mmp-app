@@ -43,6 +43,33 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getTeacherProfile(): Flow<Result<TeacherProfileDto>> = flow {
+        try {
+            val response = apiService.getTeacherProfile()
+            emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getTeacherTodaySchedule(): Flow<Result<TodayScheduleDto>> = flow {
+        try {
+            val response = apiService.getTeacherTodaySchedule()
+            emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
+    override fun getTeacherClasses(): Flow<Result<List<TeacherSubjectDto>>> = flow {
+        try {
+            val response = apiService.getTeacherClasses()
+            emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            emit(Result.failure(e))
+        }
+    }
+
     override fun getParentDashboard(): Flow<Result<ParentDashboardDto>> = flow {
         try {
             val response = apiService.getParentDashboard()

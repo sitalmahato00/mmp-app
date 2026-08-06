@@ -31,6 +31,15 @@ class DashboardViewModel @Inject constructor(
     private val _teacherDashboard = MutableStateFlow<TeacherDashboardDto?>(null)
     val teacherDashboard = _teacherDashboard.asStateFlow()
 
+    private val _teacherProfile = MutableStateFlow<TeacherProfileDto?>(null)
+    val teacherProfile = _teacherProfile.asStateFlow()
+
+    private val _teacherSchedule = MutableStateFlow<TodayScheduleDto?>(null)
+    val teacherSchedule = _teacherSchedule.asStateFlow()
+
+    private val _teacherClasses = MutableStateFlow<List<TeacherSubjectDto>>(emptyList())
+    val teacherClasses = _teacherClasses.asStateFlow()
+
     private val _parentDashboard = MutableStateFlow<ParentDashboardDto?>(null)
     val parentDashboard = _parentDashboard.asStateFlow()
 
@@ -194,14 +203,33 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
-            repository.getTeacherDashboard().collect { result ->
-                _isLoading.value = false
-                result.onSuccess {
-                    _teacherDashboard.value = it
-                }.onFailure {
-                    _error.value = it.message
+            
+            val jobs = listOf(
+                launch {
+                    repository.getTeacherDashboard().collect { result ->
+                        result.onSuccess { _teacherDashboard.value = it }
+                            .onFailure { _error.value = it.message }
+                    }
+                },
+                launch {
+                    repository.getTeacherProfile().collect { result ->
+                        result.onSuccess { _teacherProfile.value = it }
+                    }
+                },
+                launch {
+                    repository.getTeacherTodaySchedule().collect { result ->
+                        result.onSuccess { _teacherSchedule.value = it }
+                    }
+                },
+                launch {
+                    repository.getTeacherClasses().collect { result ->
+                        result.onSuccess { _teacherClasses.value = it }
+                    }
                 }
-            }
+            )
+            
+            jobs.joinAll()
+            _isLoading.value = false
         }
     }
 

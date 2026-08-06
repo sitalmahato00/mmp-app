@@ -98,6 +98,9 @@ fun DashboardScreen(
     val downloads = viewModel.downloads.collectAsState().value
     val userProfileState by viewModel.userProfile.collectAsState()
     val teacherData by viewModel.teacherDashboard.collectAsState()
+    val teacherProfile by viewModel.teacherProfile.collectAsState()
+    val teacherSchedule by viewModel.teacherSchedule.collectAsState()
+    val teacherClasses by viewModel.teacherClasses.collectAsState()
     val parentData by viewModel.parentDashboard.collectAsState()
     val parentProfile by viewModel.parentProfile.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -123,6 +126,9 @@ fun DashboardScreen(
         timetable = timetable,
         downloads = downloads,
         teacherData = teacherData,
+        teacherProfile = teacherProfile,
+        teacherSchedule = teacherSchedule,
+        teacherClasses = teacherClasses,
         parentData = parentData,
         parentProfile = parentProfile,
         isLoading = isLoading,
@@ -183,6 +189,9 @@ fun DashboardAdaptiveContent(
     timetable: List<TimetableClass> = emptyList(),
     downloads: List<SubjectDocument> = emptyList(),
     teacherData: TeacherDashboardDto?,
+    teacherProfile: TeacherProfileDto? = null,
+    teacherSchedule: TodayScheduleDto? = null,
+    teacherClasses: List<TeacherSubjectDto> = emptyList(),
     parentData: ParentDashboardDto?,
     parentProfile: ParentProfileDto? = null,
     isLoading: Boolean,
@@ -266,6 +275,29 @@ fun DashboardAdaptiveContent(
                             onNotificationsClick = { onNavigateToNotifications() },
                             onSettingsClick = { onNavigateToSettings() },
                             onLogoutClick = onLogout
+                        )
+                    } else if (userProfile?.role?.lowercase() == "teacher") {
+                        com.example.mmp_app.feature.teacher.ui.TeacherDrawerContent(
+                            profile = teacherProfile,
+                            primaryColor = Color(0xFF1565C0),
+                            cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                            onCloseDrawer = { scope.launch { drawerState.close() } },
+                            onDashboardClick = { 
+                                selectedItem = 0
+                                scope.launch { drawerState.close() }
+                            },
+                            onScheduleClick = { selectedItem = 1 },
+                            onClassesClick = { selectedItem = 5 },
+                            onAttendanceClick = { selectedItem = 5 },
+                            onMarksClick = { selectedItem = 5 },
+                            onAssignmentsClick = { selectedItem = 2 },
+                            onStudentsClick = { /* TODO */ },
+                            onTimetableClick = { /* TODO */ },
+                            onReportsClick = { /* TODO */ },
+                            onNotificationsClick = { onNavigateToNotifications() },
+                            onProfileClick = { selectedItem = 4 },
+                            onLogoutClick = onLogout,
+                            unreadCount = unreadCount
                         )
                     } else {
                         ModalDrawerSheet {
@@ -487,14 +519,26 @@ fun DashboardAdaptiveContent(
                         } else {
                             TopAppBar(
                                 title = { 
-                                    Text(
-                                        text = when(selectedItem) {
-                                            5 -> "My Profile"
-                                            2 -> if (userProfile?.role?.lowercase() == "teacher") "Schedule" else "Timetable"
+                                    val title = when(userProfile?.role?.lowercase()) {
+                                        "teacher" -> when(selectedItem) {
+                                            2 -> "Assignments"
+                                            4 -> "My Profile"
+                                            5 -> "My Classes"
                                             else -> "Details"
-                                        },
-                                        fontWeight = FontWeight.Bold 
-                                    ) 
+                                        }
+                                        "student" -> when(selectedItem) {
+                                            5 -> "My Profile"
+                                            2 -> "Timetable"
+                                            else -> "Details"
+                                        }
+                                        "parent" -> when(selectedItem) {
+                                            5 -> "My Profile"
+                                            2 -> "Timetable"
+                                            else -> "Details"
+                                        }
+                                        else -> "Details"
+                                    }
+                                    Text(text = title, fontWeight = FontWeight.Bold)
                                 },
                                 navigationIcon = {
                                     IconButton(onClick = { selectedItem = 0 }) {
@@ -551,6 +595,19 @@ fun DashboardAdaptiveContent(
                                     secondaryColor = if (userProfile?.role?.lowercase() == "student") Color(0xFF60A5FA) else Color(0xFFA855F7),
                                     cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
                                     textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
+                                )
+                            } else if (userProfile?.role?.lowercase() == "teacher") {
+                                com.example.mmp_app.feature.teacher.ui.TeacherBottomNavBar(
+                                    primaryColor = Color(0xFF1565C0),
+                                    secondaryColor = Color(0xFF42A5F5),
+                                    cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                                    textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B),
+                                    onScheduleClick = { selectedItem = 1 },
+                                    onAssignmentsClick = { selectedItem = 2 },
+                                    onHomeClick = { selectedItem = 0 },
+                                    onNoticesClick = { selectedItem = 3 },
+                                    onProfileClick = { selectedItem = 4 },
+                                    selectedItemIndex = selectedItem
                                 )
                             } else {
                                 Surface(
@@ -637,6 +694,9 @@ fun DashboardAdaptiveContent(
                                         timetable = timetable,
                                         downloads = downloads,
                                         teacherData = teacherData,
+                                        teacherProfile = teacherProfile,
+                                        teacherSchedule = teacherSchedule,
+                                        teacherClasses = teacherClasses,
                                         parentData = parentData,
                                         parentProfile = parentProfile,
                                         onNavigateToAttendance = onNavigateToAttendance,
@@ -682,6 +742,13 @@ fun DashboardAdaptiveContent(
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
                                         NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
+                                    } else if (userProfile?.role?.lowercase() == "teacher") {
+                                        com.example.mmp_app.feature.teacher.ui.TodayScheduleScreen(
+                                            onBack = { selectedItem = 0 },
+                                            onNavigateToTimetable = { /* TODO */ },
+                                            onNavigateToClasses = { selectedItem = 5 },
+                                            showSystemHeader = false
+                                        )
                                     } else {
                                         UsersScreenContent(userProfile)
                                     }
@@ -690,6 +757,11 @@ fun DashboardAdaptiveContent(
                                             childId = 0,
                                             onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
+                                        )
+                                    } else if (userProfile?.role?.lowercase() == "teacher") {
+                                        com.example.mmp_app.feature.teacher.ui.TeacherAssignmentsScreen(
+                                            onBack = { selectedItem = 0 },
                                             showSystemHeader = false
                                         )
                                     } else {
@@ -708,6 +780,8 @@ fun DashboardAdaptiveContent(
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
                                         MarksScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
+                                    } else if (userProfile?.role?.lowercase() == "teacher") {
+                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
                                     }
@@ -726,12 +800,27 @@ fun DashboardAdaptiveContent(
                                             isDarkTheme = isDarkTheme,
                                             showSystemHeader = false
                                         )
+                                    } else if (userProfile?.role?.lowercase() == "teacher") {
+                                        com.example.mmp_app.feature.teacher.ui.TeacherProfileScreen(
+                                            onLogout = onLogout,
+                                            onEditProfile = onNavigateToSettings,
+                                            onBack = { selectedItem = 0 },
+                                            teacherData = teacherData,
+                                            isDarkTheme = isDarkTheme
+                                        )
                                     }
                                     5 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ParentProfileScreen(
                                             onBack = { selectedItem = 0 },
                                             onLogout = onLogout,
                                             isDarkTheme = isDarkTheme,
+                                            showSystemHeader = false
+                                        )
+                                    } else if (userProfile?.role?.lowercase() == "teacher") {
+                                        com.example.mmp_app.feature.teacher.ui.TeacherClassesScreen(
+                                            onBack = { selectedItem = 0 },
+                                            onNavigateToAttendance = onRecordAttendance,
+                                            onNavigateToMarks = onRecordMarks,
                                             showSystemHeader = false
                                         )
                                     }
@@ -772,6 +861,9 @@ fun MainDashboardContent(
     timetable: List<TimetableClass>,
     downloads: List<SubjectDocument>,
     teacherData: TeacherDashboardDto?,
+    teacherProfile: TeacherProfileDto? = null,
+    teacherSchedule: TodayScheduleDto? = null,
+    teacherClasses: List<TeacherSubjectDto> = emptyList(),
     parentData: ParentDashboardDto?,
     parentProfile: ParentProfileDto?,
     onNavigateToAttendance: () -> Unit,
@@ -839,8 +931,24 @@ fun MainDashboardContent(
             if (teacherData != null) {
                 TeacherDashboard(
                     data = teacherData,
+                    profile = teacherProfile,
+                    schedule = teacherSchedule,
+                    classes = teacherClasses,
                     onRecordAttendance = onRecordAttendance,
-                    onRecordMarks = onRecordMarks
+                    onRecordMarks = onRecordMarks,
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme,
+                    onNotificationsClick = onNavigateToNotifications,
+                    unreadCount = unreadCount,
+                    onNavigateToSchedule = { onSelectItem(1) },
+                    onNavigateToAttendance = { onSelectItem(5) },
+                    onNavigateToMarks = { onSelectItem(5) },
+                    onNavigateToAssignments = { onSelectItem(2) },
+                    onNavigateToNotices = { onSelectItem(3) },
+                    onNavigateToProfile = { onSelectItem(4) },
+                    onNavigateToClasses = { onSelectItem(5) },
+                    onLogoutClick = onLogout,
+                    showSystemHeader = showSystemHeader
                 )
             }
         }

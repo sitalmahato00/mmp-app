@@ -229,6 +229,49 @@ data class TeacherDashboardDto(
 )
 
 @Serializable
+data class TeacherProfileDto(
+    @SerialName("name") val name: String,
+    @SerialName("email") val email: String,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("employee_id") val employeeId: String? = null,
+    @SerialName("designation") val designation: String,
+    @SerialName("department") val department: String,
+    @SerialName("qualification") val qualification: String? = null,
+    @SerialName("specialization") val specialization: String? = null,
+    @SerialName("employment_type") val employmentType: String,
+    @SerialName("join_date") val joinDate: String? = null
+)
+
+@Serializable
+data class TodayScheduleDto(
+    @SerialName("today") val today: String,
+    @SerialName("day") val day: String,
+    @SerialName("classes") val classes: List<ClassSlotDto>
+)
+
+@Serializable
+data class ClassSlotDto(
+    @SerialName("id") val id: Int,
+    @SerialName("subject") val subject: String? = null,
+    @SerialName("subject_code") val subjectCode: String? = null,
+    @SerialName("program") val program: String? = null,
+    @SerialName("semester") val semester: Int? = null,
+    @SerialName("section") val section: String? = null,
+    @SerialName("start_time") val startTime: String,
+    @SerialName("end_time") val endTime: String,
+    @SerialName("room") val room: String? = null,
+    @SerialName("type") val type: String? = null
+)
+
+@Serializable
+data class TeacherSubjectDto(
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("code") val code: String
+)
+
+@Serializable
 data class ClassDto(
     @SerialName("id") val id: Int,
     @SerialName("subject") val subject: String,
