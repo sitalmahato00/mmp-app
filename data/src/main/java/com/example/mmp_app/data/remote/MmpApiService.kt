@@ -110,6 +110,12 @@ interface MmpApiService {
     @GET("v1/teacher/classes")
     suspend fun getTeacherClasses(): Response<BaseResponse<List<TeacherSubjectDto>>>
 
+    @GET("v1/teacher/students/{subjectId}")
+    suspend fun getTeacherStudentsBySubject(@Path("subjectId") subjectId: Int): Response<BaseResponse<TeacherStudentsResponseDto>>
+
+    @GET("v1/teacher/marks/components/{subjectId}")
+    suspend fun getMarkComponents(@Path("subjectId") subjectId: Int): Response<BaseResponse<MarkComponentsDto>>
+
     @GET("v1/teacher/assignments")
     suspend fun getTeacherAssignments(): Response<BaseResponse<List<AssignmentDto>>>
 

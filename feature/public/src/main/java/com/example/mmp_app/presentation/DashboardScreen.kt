@@ -291,7 +291,10 @@ fun DashboardAdaptiveContent(
                             onAttendanceClick = { selectedItem = 5 },
                             onMarksClick = { selectedItem = 5 },
                             onAssignmentsClick = { selectedItem = 2 },
-                            onStudentsClick = { /* TODO */ },
+                            onStudentsClick = { 
+                                selectedItem = 6
+                                scope.launch { drawerState.close() }
+                            },
                             onTimetableClick = { /* TODO */ },
                             onReportsClick = { /* TODO */ },
                             onNotificationsClick = { onNavigateToNotifications() },
@@ -711,13 +714,13 @@ fun DashboardAdaptiveContent(
                                         onNavigateToChildAssignments = onNavigateToChildAssignments,
                                         onNavigateToChildResults = onNavigateToChildResults,
                                         onNavigateToChildrenList = {
-            if (parentData != null && parentData!!.children.size == 1) {
-                val child = parentData!!.children[0]
-                onNavigateToChildDetails(child.id, child.name)
-            } else {
-                onNavigateToChildrenList()
-            }
-        },
+                                            if (parentData != null && parentData!!.children.size == 1) {
+                                                val child = parentData!!.children[0]
+                                                onNavigateToChildDetails(child.id, child.name)
+                                            } else {
+                                                onNavigateToChildrenList()
+                                            }
+                                        },
                                         onNavigateToRoutines = onNavigateToRoutines,
                                         onNavigateToExams = onNavigateToExams,
                                         onNavigateToResults = onNavigateToResults,
@@ -822,6 +825,11 @@ fun DashboardAdaptiveContent(
                                             onNavigateToAttendance = onRecordAttendance,
                                             onNavigateToMarks = onRecordMarks,
                                             showSystemHeader = false
+                                        )
+                                    }
+                                    6 -> if (userProfile?.role?.lowercase() == "teacher") {
+                                        com.example.mmp_app.feature.teacher.ui.StudentsScreen(
+                                            onBack = { selectedItem = 0 }
                                         )
                                     }
                                 }

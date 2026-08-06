@@ -9,6 +9,8 @@ interface DashboardRepository {
     fun getTeacherProfile(): Flow<Result<TeacherProfileDto>>
     fun getTeacherTodaySchedule(): Flow<Result<TodayScheduleDto>>
     fun getTeacherClasses(): Flow<Result<List<TeacherSubjectDto>>>
+    fun getTeacherStudentsBySubject(subjectId: Int): Flow<Result<TeacherStudentsResponseDto>>
+    fun getMarkComponents(subjectId: Int): Flow<Result<MarkComponentsDto>>
     fun getParentDashboard(): Flow<Result<ParentDashboardDto>>
     fun getStudentMarks(): Flow<Result<List<MarkDto>>>
     fun getStudentMarksSummary(): Flow<Result<MarksSummaryDto>>

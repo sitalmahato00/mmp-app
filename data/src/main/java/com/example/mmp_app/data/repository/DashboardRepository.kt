@@ -30,7 +30,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val dashboard = handleApiResponse(response, json)
             emit(Result.success(dashboard))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -39,7 +39,8 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getTeacherDashboard()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -48,7 +49,8 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getTeacherProfile()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -57,7 +59,8 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getTeacherTodaySchedule()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -66,7 +69,28 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getTeacherClasses()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+        }
+    }
+
+    override fun getTeacherStudentsBySubject(subjectId: Int): Flow<Result<TeacherStudentsResponseDto>> = flow {
+        try {
+            val response = apiService.getTeacherStudentsBySubject(subjectId)
+            emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+        }
+    }
+
+    override fun getMarkComponents(subjectId: Int): Flow<Result<MarkComponentsDto>> = flow {
+        try {
+            val response = apiService.getMarkComponents(subjectId)
+            emit(Result.success(handleApiResponse(response, json)))
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -75,7 +99,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getParentDashboard()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -85,7 +109,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val marks = examList.flatMap { it.subjects }
             emit(Result.success(marks))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -125,7 +149,7 @@ class DashboardRepositoryImpl @Inject constructor(
                 exams = processedExams
             )))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -139,7 +163,7 @@ class DashboardRepositoryImpl @Inject constructor(
             }
             emit(Result.success(detail.copy(marks = updatedMarks)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -148,7 +172,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getMarksBySubject(subjectId)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -157,7 +181,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getMarksheet(examId)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -181,7 +205,7 @@ class DashboardRepositoryImpl @Inject constructor(
                     AssignmentDto(it.id, it.title, it.subject, null, it.dueDate, null, null, it.status)
                 }))
             } else {
-                emit(Result.failure(e))
+                if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
             }
         }
     }
@@ -192,7 +216,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val result = handleRawResponse(response)
             emit(Result.success(result.data))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -226,7 +250,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val result = handleRawResponse(response)
             emit(Result.success(result.data))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -235,7 +259,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getStudentAttendanceDetail()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -244,7 +268,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getStudentAttendanceSummary()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -253,7 +277,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getAttendanceBySubject(subjectId)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -262,7 +286,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getStudentSubjects()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -271,7 +295,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getTimetable()
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -280,7 +304,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getTimetableByDay(day)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -304,7 +328,7 @@ class DashboardRepositoryImpl @Inject constructor(
                     NoticeDto(it.id, it.title, it.content, it.type, it.attachmentCount, it.publishedAt)
                 }))
             } else {
-                emit(Result.failure(e))
+                if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
             }
         }
     }
@@ -315,7 +339,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val result = handleRawResponse(response)
             emit(Result.success(result.data))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -325,7 +349,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val result = handleRawResponse(response)
             emit(Result.success(result.data))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -338,7 +362,7 @@ class DashboardRepositoryImpl @Inject constructor(
                 emit(Result.failure(Exception("Failed to fetch downloads")))
             }
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -351,7 +375,7 @@ class DashboardRepositoryImpl @Inject constructor(
                 emit(Result.failure(Exception("Failed to fetch download file URL")))
             }
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -388,7 +412,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getChildDashboard(childId)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
@@ -397,7 +421,7 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getStudentFees()
             emit(Result.success(handleRawResponse(response)))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 }

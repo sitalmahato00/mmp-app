@@ -24,6 +24,12 @@ class TeacherViewModel @Inject constructor(
     private val _teacherClasses = MutableStateFlow<List<TeacherSubjectDto>>(emptyList())
     val teacherClasses = _teacherClasses.asStateFlow()
 
+    private val _markComponents = MutableStateFlow<Map<Int, List<String>>>(emptyMap())
+    val markComponents = _markComponents.asStateFlow()
+
+    private val _subjectStudents = MutableStateFlow<Map<Int, List<StudentItemDto>>>(emptyMap())
+    val subjectStudents = _subjectStudents.asStateFlow()
+
     private val _classStudents = MutableStateFlow<List<UserDto>>(emptyList())
     val classStudents = _classStudents.asStateFlow()
 
@@ -57,9 +63,39 @@ class TeacherViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             repository.getTeacherClasses().collect { result ->
-                result.onSuccess { _teacherClasses.value = it }.onFailure { _error.value = it.message }
+                result.onSuccess { 
+                    _teacherClasses.value = it
+                    it.forEach { subject ->
+                        loadMarkComponents(subject.id)
+                        loadSubjectStudents(subject.id)
+                    }
+                }.onFailure { _error.value = it.message }
             }
             _isLoading.value = false
+        }
+    }
+
+    private fun loadMarkComponents(subjectId: Int) {
+        viewModelScope.launch {
+            repository.getMarkComponents(subjectId).collect { result ->
+                result.onSuccess {
+                    val currentMap = _markComponents.value.toMutableMap()
+                    currentMap[subjectId] = it.components
+                    _markComponents.value = currentMap
+                }
+            }
+        }
+    }
+
+    private fun loadSubjectStudents(subjectId: Int) {
+        viewModelScope.launch {
+            repository.getTeacherStudentsBySubject(subjectId).collect { result ->
+                result.onSuccess {
+                    val currentMap = _subjectStudents.value.toMutableMap()
+                    currentMap[subjectId] = it.students
+                    _subjectStudents.value = currentMap
+                }
+            }
         }
     }
 

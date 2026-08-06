@@ -265,6 +265,32 @@ data class ClassSlotDto(
 )
 
 @Serializable
+data class MarkComponentsDto(
+    @SerialName("components") val components: List<String>
+)
+
+@Serializable
+data class StudentItemDto(
+    @SerialName("id") val id: Int,
+    @SerialName("name") val name: String,
+    @SerialName("email") val email: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("student_no") val studentNo: String? = null,
+    @SerialName("roll_number") val rollNumber: String? = null,
+    @SerialName("section") val section: String? = null
+)
+
+@Serializable
+data class TeacherStudentsResponseDto(
+    @SerialName("subject") val subject: String,
+    @SerialName("code") val code: String,
+    @SerialName("program_id") val programId: Int,
+    @SerialName("semester") val semester: Int,
+    @SerialName("total") val total: Int,
+    @SerialName("students") val students: List<StudentItemDto>
+)
+
+@Serializable
 data class TeacherSubjectDto(
     @SerialName("id") val id: Int,
     @SerialName("name") val name: String,
