@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +27,9 @@ import com.example.mmp_app.domain.model.AssignmentDto
 fun TeacherAssignmentsScreen(
     onBack: () -> Unit,
     onNavigateToCreate: () -> Unit = {},
-    showSystemHeader: Boolean = true
+    showSystemHeader: Boolean = true,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val viewModel: TeacherViewModel = hiltViewModel()
     
@@ -59,6 +63,9 @@ fun TeacherAssignmentsScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                         IconButton(onClick = { /* Refresh */ }) {
                             Icon(Icons.Rounded.Refresh, contentDescription = "Refresh")
                         }

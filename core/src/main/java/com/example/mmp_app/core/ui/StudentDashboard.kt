@@ -376,6 +376,7 @@ fun StudentBottomNavBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 24.dp),
         contentAlignment = Alignment.BottomCenter
     ) {

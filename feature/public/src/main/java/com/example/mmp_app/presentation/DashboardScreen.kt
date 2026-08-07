@@ -226,14 +226,7 @@ fun DashboardAdaptiveContent(
     MMPAppTheme(darkTheme = isDarkTheme) {
         var selectedItem by remember { mutableIntStateOf(0) }
 
-        val isTopLevelDestination = remember(selectedItem, userProfile?.role) {
-            when (userProfile?.role?.lowercase()) {
-                "student" -> selectedItem in 0..4
-                "parent" -> selectedItem in 0..4
-                "teacher" -> selectedItem in listOf(0, 1, 3)
-                else -> selectedItem == 0
-            }
-        }
+        val isTopLevelDestination = selectedItem == 0
 
         val role = userProfile?.role?.lowercase()
         val isDataLoaded = when (role) {
@@ -466,6 +459,7 @@ fun DashboardAdaptiveContent(
             ) {
                 Scaffold(
                     containerColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC),
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         if (userProfile?.role?.lowercase() == "student") {
                             StudentTopBar(
@@ -520,44 +514,7 @@ fun DashboardAdaptiveContent(
                                 }
                             )
                         } else {
-                            TopAppBar(
-                                title = { 
-                                    val title = when(userProfile?.role?.lowercase()) {
-                                        "teacher" -> when(selectedItem) {
-                                            2 -> "Assignments"
-                                            4 -> "My Profile"
-                                            5 -> "My Classes"
-                                            else -> "Details"
-                                        }
-                                        "student" -> when(selectedItem) {
-                                            5 -> "My Profile"
-                                            2 -> "Timetable"
-                                            else -> "Details"
-                                        }
-                                        "parent" -> when(selectedItem) {
-                                            5 -> "My Profile"
-                                            2 -> "Timetable"
-                                            else -> "Details"
-                                        }
-                                        else -> "Details"
-                                    }
-                                    Text(text = title, fontWeight = FontWeight.Bold)
-                                },
-                                navigationIcon = {
-                                    IconButton(onClick = { selectedItem = 0 }) {
-                                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
-                                    }
-                                },
-                                actions = {
-                                    IconButton(onClick = onToggleTheme) {
-                                        Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
-                                    }
-                                },
-                                colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = MaterialTheme.colorScheme.background,
-                                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                                )
-                            )
+                            null
                         }
                     },
                     bottomBar = {
@@ -741,16 +698,18 @@ fun DashboardAdaptiveContent(
                                         ParentNoticesScreen(
                                             onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
+                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = true)
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
                                         com.example.mmp_app.feature.teacher.ui.TodayScheduleScreen(
                                             onBack = { selectedItem = 0 },
                                             onNavigateToTimetable = { /* TODO */ },
                                             onNavigateToClasses = { selectedItem = 5 },
-                                            showSystemHeader = false
+                                            showSystemHeader = true,
+                                            isDarkTheme = isDarkTheme,
+                                            onToggleTheme = onToggleTheme
                                         )
                                     } else {
                                         UsersScreenContent(userProfile)
@@ -760,18 +719,20 @@ fun DashboardAdaptiveContent(
                                             childId = 0,
                                             onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
                                         com.example.mmp_app.feature.teacher.ui.TeacherAssignmentsScreen(
                                             onBack = { selectedItem = 0 },
-                                            showSystemHeader = false
+                                            showSystemHeader = true,
+                                            isDarkTheme = isDarkTheme,
+                                            onToggleTheme = onToggleTheme
                                         )
                                     } else {
                                         TimetableScreen(
                                             onBack = { selectedItem = 0 },
                                             onMenuClick = { scope.launch { drawerState.open() } },
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     }
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
@@ -779,12 +740,12 @@ fun DashboardAdaptiveContent(
                                             childId = 0,
                                             onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        MarksScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
+                                        MarksScreen(onBack = { selectedItem = 0 }, showSystemHeader = true)
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
-                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = false)
+                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = true)
                                     } else {
                                         ProfileScreenContent(userProfile, onLogout, onNavigateToSettings)
                                     }
@@ -793,7 +754,7 @@ fun DashboardAdaptiveContent(
                                             onBack = { selectedItem = 0 },
                                             onNavigateToChildDetail = { id -> onNavigateToChildDetails(id, "") },
                                             isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
                                         StudentProfileScreen(
@@ -801,7 +762,7 @@ fun DashboardAdaptiveContent(
                                             onLogout = onLogout,
                                             onEditProfile = onNavigateToSettings,
                                             isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
                                         com.example.mmp_app.feature.teacher.ui.TeacherProfileScreen(
@@ -809,7 +770,8 @@ fun DashboardAdaptiveContent(
                                             onEditProfile = onNavigateToSettings,
                                             onBack = { selectedItem = 0 },
                                             teacherData = teacherData,
-                                            isDarkTheme = isDarkTheme
+                                            isDarkTheme = isDarkTheme,
+                                            onToggleTheme = onToggleTheme
                                         )
                                     }
                                     5 -> if (userProfile?.role?.lowercase() == "parent") {
@@ -817,19 +779,23 @@ fun DashboardAdaptiveContent(
                                             onBack = { selectedItem = 0 },
                                             onLogout = onLogout,
                                             isDarkTheme = isDarkTheme,
-                                            showSystemHeader = false
+                                            showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
                                         com.example.mmp_app.feature.teacher.ui.TeacherClassesScreen(
                                             onBack = { selectedItem = 0 },
                                             onNavigateToAttendance = onRecordAttendance,
                                             onNavigateToMarks = onRecordMarks,
-                                            showSystemHeader = false
+                                            showSystemHeader = true,
+                                            isDarkTheme = isDarkTheme,
+                                            onToggleTheme = onToggleTheme
                                         )
                                     }
                                     6 -> if (userProfile?.role?.lowercase() == "teacher") {
                                         com.example.mmp_app.feature.teacher.ui.StudentsScreen(
-                                            onBack = { selectedItem = 0 }
+                                            onBack = { selectedItem = 0 },
+                                            isDarkTheme = isDarkTheme,
+                                            onToggleTheme = onToggleTheme
                                         )
                                     }
                                 }

@@ -33,7 +33,9 @@ fun TodayScheduleScreen(
     onBack: () -> Unit,
     onNavigateToTimetable: () -> Unit = {},
     onNavigateToClasses: () -> Unit = {},
-    showSystemHeader: Boolean = true
+    showSystemHeader: Boolean = true,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val viewModel: TeacherViewModel = hiltViewModel()
     val schedule by viewModel.teacherSchedule.collectAsState()
@@ -98,6 +100,9 @@ fun TodayScheduleScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                         IconButton(onClick = { viewModel.loadTodaySchedule() }) {
                             Icon(Icons.Rounded.Refresh, contentDescription = "Refresh")
                         }

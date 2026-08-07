@@ -31,7 +31,9 @@ fun TeacherClassesScreen(
     onBack: () -> Unit,
     onNavigateToAttendance: (Int, String) -> Unit,
     onNavigateToMarks: (Int, String) -> Unit,
-    showSystemHeader: Boolean = true
+    showSystemHeader: Boolean = true,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val viewModel: TeacherViewModel = hiltViewModel()
     val classes by viewModel.teacherClasses.collectAsState()
@@ -142,6 +144,9 @@ fun TeacherClassesScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                         IconButton(onClick = { viewModel.loadTeacherClasses() }) {
                             Icon(Icons.Rounded.Refresh, contentDescription = "Refresh")
                         }

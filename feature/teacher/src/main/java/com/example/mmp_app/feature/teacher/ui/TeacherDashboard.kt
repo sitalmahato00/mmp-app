@@ -616,6 +616,7 @@ fun TeacherBottomNavBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(horizontal = 16.dp, vertical = 24.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
@@ -774,15 +775,8 @@ fun TeacherDrawerContent(
                     listOf("Pending" to {}, "Submit Marks" to onMarksClick)
                 )
             }
-            item {
-                TeacherExpandableDrawerItem(
-                    "Assignments",
-                    Icons.AutoMirrored.Rounded.Assignment,
-                    listOf("All" to onAssignmentsClick, "Create New" to {})
-                )
-            }
+            item { TeacherDrawerItem("Assignments", Icons.AutoMirrored.Rounded.Assignment, false, { onCloseDrawer(); onAssignmentsClick() }) }
             item { TeacherDrawerItem("Students", Icons.Rounded.Groups, false, { onCloseDrawer(); onStudentsClick() }) }
-            item { TeacherDrawerItem("Timetable", Icons.Rounded.Schedule, false, { onCloseDrawer(); onTimetableClick() }) }
             item {
                 TeacherExpandableDrawerItem(
                     "Reports",

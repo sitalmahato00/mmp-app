@@ -34,7 +34,9 @@ import com.example.mmp_app.domain.model.StudentItemDto
 @Composable
 fun StudentsScreen(
     viewModel: StudentsViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val subjects by viewModel.subjects.collectAsState()
@@ -57,6 +59,9 @@ fun StudentsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onToggleTheme) {
+                        Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                    }
                     IconButton(onClick = { viewModel.load() }) {
                         Icon(Icons.Rounded.Refresh, "Refresh")
                     }

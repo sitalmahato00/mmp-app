@@ -32,7 +32,8 @@ fun TeacherProfileScreen(
     onEditProfile: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     teacherData: TeacherDashboardDto? = null,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -59,6 +60,9 @@ fun TeacherProfileScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onToggleTheme) {
+                        Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                    }
                     IconButton(onClick = onEditProfile) {
                         Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
                     }
