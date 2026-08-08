@@ -23,9 +23,21 @@ class TeacherAssignmentsViewModel @Inject constructor(
     private val _submissionsState = MutableStateFlow<UiState<SubmissionsDataDto>>(UiState.Loading)
     val submissionsState = _submissionsState.asStateFlow()
 
+    // Track which submission's grade form is expanded
+    private val _expandedGradeForms = MutableStateFlow<Set<Int>>(emptySet())
+    val expandedGradeForms = _expandedGradeForms.asStateFlow()
+
     init {
         loadAssignments()
         loadSubjects()
+    }
+
+    fun toggleGradeForm(submissionId: Int) {
+        _expandedGradeForms.value = if (_expandedGradeForms.value.contains(submissionId)) {
+            _expandedGradeForms.value - submissionId
+        } else {
+            _expandedGradeForms.value + submissionId
+        }
     }
 
     fun loadAssignments() {
@@ -100,6 +112,24 @@ class TeacherAssignmentsViewModel @Inject constructor(
             val request = GradeRequest(marks, feedback)
             val result = repository.gradeAssignmentSubmission(submissionId, request)
             result.onSuccess {
+                // Update local state if we have a successful submission list
+                val currentState = _submissionsState.value
+                if (currentState is UiState.Success) {
+                    val updatedSubmissions = currentState.data.submissions.map {
+                        if (it.id == submissionId) {
+                            it.copy(
+                                status = "graded",
+                                marksObtained = marks,
+                                teacherFeedback = feedback
+                            )
+                        } else it
+                    }
+                    _submissionsState.value = UiState.Success(
+                        currentState.data.copy(submissions = updatedSubmissions)
+                    )
+                }
+                // Collapse the form
+                _expandedGradeForms.value = _expandedGradeForms.value - submissionId
                 onSuccess()
             }.onFailure {
                 onError(it.message ?: "Failed to grade submission")

@@ -40,9 +40,36 @@ fun TeacherAssignmentsScreen(
     val state by viewModel.assignmentsState.collectAsState()
     
     var selectedFilter by remember { mutableStateOf("ALL") }
+    var assignmentToDelete by remember { mutableStateOf<AssignmentItemDto?>(null) }
 
     val primaryColor = Color(0xFF1565C0)
     val backgroundColor = Color(0xFFF5F7FA)
+
+    if (assignmentToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { assignmentToDelete = null },
+            title = { Text("Delete Assignment") },
+            text = { Text("Are you sure you want to delete '${assignmentToDelete?.title}'? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        assignmentToDelete?.let {
+                            viewModel.deleteAssignment(it.id, {}, {})
+                        }
+                        assignmentToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { assignmentToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     val content = @Composable { padding: PaddingValues ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
@@ -95,7 +122,7 @@ fun TeacherAssignmentsScreen(
                                         assignment = assignment,
                                         onViewSubmissions = { onViewSubmissions(assignment.id) },
                                         onDelete = {
-                                            viewModel.deleteAssignment(assignment.id, {}, {})
+                                            assignmentToDelete = assignment
                                         }
                                     )
                                 }

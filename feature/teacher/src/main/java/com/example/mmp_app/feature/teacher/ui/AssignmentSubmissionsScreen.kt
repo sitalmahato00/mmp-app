@@ -1,8 +1,10 @@
 package com.example.mmp_app.feature.teacher.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
@@ -25,12 +28,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.domain.model.SubmissionItemDto
 import com.example.mmp_app.domain.model.SubmissionsDataDto
+import com.example.mmp_app.domain.model.AssignmentBriefDto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +48,7 @@ fun AssignmentSubmissionsScreen(
 ) {
     val viewModel: TeacherAssignmentsViewModel = hiltViewModel()
     val state by viewModel.submissionsState.collectAsState()
+    val expandedForms by viewModel.expandedGradeForms.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(assignmentId) {
@@ -50,7 +56,7 @@ fun AssignmentSubmissionsScreen(
     }
 
     val primaryColor = Color(0xFF1565C0)
-    val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8F9FF)
+    val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF5F7FA)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
 
@@ -82,7 +88,11 @@ fun AssignmentSubmissionsScreen(
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (val currentState = state) {
                 is UiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = primaryColor)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        repeat(3) {
+                            Box(modifier = Modifier.fillMaxWidth().height(150.dp).padding(bottom = 12.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(12.dp)))
+                        }
+                    }
                 }
                 is UiState.Error -> {
                     Column(
@@ -97,43 +107,55 @@ fun AssignmentSubmissionsScreen(
                 }
                 is UiState.Success -> {
                     val data = currentState.data
+                    val gradedCount = data.submissions.count { it.status.lowercase() == "graded" }
+                    val pendingCount = data.submissions.size - gradedCount
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            AssignmentInfoCard(data.assignment, primaryColor, cardBgColor, textColor)
-                        }
-                        
-                        item {
-                            Text(
-                                text = "${data.submissions.size} / ${data.total} submitted",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Gray
+                            AssignmentHeaderCard(
+                                assignment = data.assignment,
+                                submitted = data.submissions.size,
+                                graded = gradedCount,
+                                pending = pendingCount,
+                                isDarkTheme = isDarkTheme,
+                                cardBgColor = cardBgColor,
+                                textColor = textColor
                             )
                         }
 
                         if (data.submissions.isEmpty()) {
                             item {
-                                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                    Text("No submissions yet", color = Color.Gray)
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(Icons.Rounded.Inbox, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
+                                    Text("No submissions yet", fontWeight = FontWeight.Bold, color = Color.Gray)
+                                    Text("Students haven't submitted this assignment yet", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                                 }
                             }
                         } else {
-                            items(data.submissions) { submission ->
+                            items(data.submissions, key = { it.id }) { submission ->
                                 SubmissionCard(
                                     submission = submission,
-                                    maxMarks = data.assignment.maxMarks ?: 100.0,
-                                    primaryColor = primaryColor,
-                                    cardBgColor = cardBgColor,
-                                    textColor = textColor,
+                                    maxMarks = data.assignment.maxMarks,
+                                    isExpanded = expandedForms.contains(submission.id),
+                                    onToggleExpand = { viewModel.toggleGradeForm(submission.id) },
+                                    onGrade = { marks, feedback, onDone, onError ->
+                                        viewModel.gradeSubmission(submission.id, marks, feedback, { onDone() }, onError)
+                                    },
                                     isDarkTheme = isDarkTheme,
-                                    onGradeSuccess = { viewModel.loadSubmissions(assignmentId) }
+                                    cardBgColor = cardBgColor,
+                                    textColor = textColor
                                 )
                             }
                         }
+                        
+                        item { Spacer(modifier = Modifier.height(32.dp)) }
                     }
                 }
             }
@@ -142,9 +164,12 @@ fun AssignmentSubmissionsScreen(
 }
 
 @Composable
-fun AssignmentInfoCard(
-    assignment: com.example.mmp_app.domain.model.AssignmentBriefDto, 
-    primaryColor: Color,
+fun AssignmentHeaderCard(
+    assignment: AssignmentBriefDto,
+    submitted: Int,
+    graded: Int,
+    pending: Int,
+    isDarkTheme: Boolean,
     cardBgColor: Color,
     textColor: Color
 ) {
@@ -158,19 +183,30 @@ fun AssignmentInfoCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = assignment.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor)
             Spacer(modifier = Modifier.height(8.dp))
-            Row {
-                Text(text = "Due: ${assignment.dueDate}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(text = "Max Marks: ${assignment.maxMarks ?: "–"}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = "Due: ${formatDate(assignment.dueDate)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.width(12.dp))
+                Icon(Icons.Rounded.Score, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = "Max Marks: ${assignment.maxMarks ?: "No max marks"}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = "$submitted submitted • $graded graded • $pending pending",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isDarkTheme) Color(0xFF818CF8) else Color(0xFF1565C0)
+                )
             }
             
             if (assignment.attachmentUrl != null) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(assignment.attachmentUrl))
-                        context.startActivity(intent)
-                    },
+                    onClick = { openUrl(context, assignment.attachmentUrl!!) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -186,228 +222,338 @@ fun AssignmentInfoCard(
 @Composable
 fun SubmissionCard(
     submission: SubmissionItemDto,
-    maxMarks: Double,
-    primaryColor: Color,
-    cardBgColor: Color,
-    textColor: Color,
+    maxMarks: Double?,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onGrade: (Double, String, () -> Unit, (String) -> Unit) -> Unit,
     isDarkTheme: Boolean,
-    onGradeSuccess: () -> Unit
+    cardBgColor: Color,
+    textColor: Color
 ) {
     val context = LocalContext.current
-    var showGradeDialog by remember { mutableStateOf(false) }
-
-    val statusColor = when (submission.status.lowercase()) {
-        "graded" -> Color(0xFF2E7D32)
-        "late" -> Color(0xFFE65100)
-        else -> Color(0xFF1565C0)
-    }
+    val status = submission.status.lowercase()
+    val isGraded = status == "graded"
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardBgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Student Header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(44.dp),
                     shape = CircleShape,
                     color = Color.LightGray.copy(alpha = 0.3f)
                 ) {
-                    AsyncImage(
-                        model = submission.avatarUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        contentScale = ContentScale.Crop,
-                        error = rememberVectorPainter(Icons.Rounded.Person)
-                    )
+                    if (!submission.avatarUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = submission.avatarUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center) {
+                            val initial = submission.studentName?.firstOrNull()?.uppercase() ?: "?"
+                            Text(text = initial.toString(), fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = submission.studentName ?: "Unknown", fontWeight = FontWeight.Bold, color = textColor)
+                    Text(text = submission.studentName ?: "Unknown Student", fontWeight = FontWeight.Bold, color = textColor)
                     Text(text = submission.studentNo ?: "–", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
-                Surface(
-                    color = statusColor.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text(
-                        text = submission.status.replaceFirstChar { it.uppercase() },
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = statusColor,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                Column(horizontalAlignment = Alignment.End) {
+                    StatusChip(status)
+                    Text(text = formatDateShort(submission.submittedAt), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                 }
             }
 
-            Text(
-                text = "Submitted: ${submission.submittedAt}",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            val studentNote = submission.studentNote
-            if (!studentNote.isNullOrBlank()) {
+            // Student Note
+            if (!submission.studentNote.isNullOrBlank()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = if (isDarkTheme) Color.White.copy(alpha = 0.05f) else Color(0xFFF1F5F9),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.ChatBubbleOutline, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Student's Note", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = submission.studentNote!!, style = MaterialTheme.typography.bodySmall, color = textColor)
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "\"$studentNote\"",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontStyle = FontStyle.Italic,
-                    color = textColor.copy(alpha = 0.7f)
-                )
             }
 
-            val attachmentUrl = submission.attachmentUrl
-            if (attachmentUrl != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                val isImage = attachmentUrl.let { it.endsWith(".jpg") || it.endsWith(".jpeg") || it.endsWith(".png") || it.endsWith(".gif") }
-                if (isImage) {
+            // Submitted File
+            Text("Submitted File", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Gray)
+            Spacer(modifier = Modifier.height(4.dp))
+            if (submission.attachmentUrl != null) {
+                val type = getAttachmentType(submission.attachmentUrl)
+                if (type == AttachmentType.IMAGE) {
                     AsyncImage(
-                        model = attachmentUrl,
+                        model = submission.attachmentUrl,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(150.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(attachmentUrl))
-                                context.startActivity(intent)
-                            },
+                            .clickable { openUrl(context, submission.attachmentUrl!!) },
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    Row(
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(if (isDarkTheme) Color.White.copy(alpha = 0.05f) else Color(0xFFF1F5F9), RoundedCornerShape(8.dp))
-                            .clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(attachmentUrl))
-                                context.startActivity(intent)
-                            }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Rounded.Description, null, tint = primaryColor)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(text = "View Document", modifier = Modifier.weight(1f), color = textColor)
-                        Icon(Icons.Rounded.OpenInNew, null, modifier = Modifier.size(16.dp), tint = Color.Gray)
-                    }
-                }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Marks: ${submission.marksObtained ?: "–"} / $maxMarks",
-                    fontWeight = FontWeight.Bold,
-                    color = if (submission.marksObtained != null) Color(0xFF2E7D32) else textColor
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                if (submission.status.lowercase() != "graded") {
-                    Button(
-                        onClick = { showGradeDialog = true },
+                            .clickable { openUrl(context, submission.attachmentUrl!!) },
+                        color = if (isDarkTheme) Color.White.copy(alpha = 0.05f) else Color(0xFFF8FAFC),
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                        modifier = Modifier.height(36.dp)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f))
                     ) {
-                        Text("Grade", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Rounded.Description, null, tint = Color.Gray)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = submission.attachmentUrl!!.substringAfterLast('/'),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = textColor
+                            )
+                            IconButton(onClick = { openUrl(context, submission.attachmentUrl!!) }) {
+                                Icon(Icons.Rounded.PlayArrow, null, modifier = Modifier.size(20.dp), tint = Color(0xFF1565C0))
+                            }
+                        }
                     }
                 }
+            } else {
+                Text("No file attached", style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = Color.Gray)
             }
 
-            if (!submission.teacherFeedback.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Feedback: ${submission.teacherFeedback}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Grade Section
+            if (isGraded && !isExpanded) {
+                Surface(
+                    color = if (isDarkTheme) Color(0xFF064E3B) else Color(0xFFE8F5E9),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.CheckCircle, null, tint = Color(0xFF2E7D32), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("Graded", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                text = "Marks: ${submission.marksObtained} / ${maxMarks ?: "–"}",
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2E7D32)
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        TextButton(onClick = onToggleExpand) {
+                            Icon(Icons.Rounded.Edit, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Edit Grade", fontSize = 12.sp)
+                        }
+                    }
+                }
+                
+                if (!submission.teacherFeedback.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        color = if (isDarkTheme) Color(0xFF78350F).copy(alpha = 0.3f) else Color(0xFFFFF8E1),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Feedback, null, modifier = Modifier.size(14.dp), tint = Color(0xFFF57C00))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Your Feedback", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFF57C00))
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = submission.teacherFeedback!!, style = MaterialTheme.typography.bodySmall, color = textColor)
+                        }
+                    }
+                }
+            } else {
+                GradeForm(
+                    initialMarks = submission.marksObtained?.toString() ?: "",
+                    initialFeedback = submission.teacherFeedback ?: "",
+                    maxMarks = maxMarks,
+                    isEdit = isGraded,
+                    onSave = { marks, feedback, onDone, onError ->
+                        onGrade(marks, feedback, onDone, onError)
+                    },
+                    onCancel = if (isGraded) onToggleExpand else null,
+                    cardBgColor = cardBgColor,
+                    textColor = textColor
                 )
             }
         }
-    }
-
-    if (showGradeDialog) {
-        GradeDialog(
-            submissionId = submission.id,
-            maxMarks = maxMarks,
-            onDismiss = { showGradeDialog = false },
-            onSuccess = {
-                showGradeDialog = false
-                onGradeSuccess()
-            }
-        )
     }
 }
 
 @Composable
-fun GradeDialog(
-    submissionId: Int,
-    maxMarks: Double,
-    onDismiss: () -> Unit,
-    onSuccess: () -> Unit
+fun GradeForm(
+    initialMarks: String,
+    initialFeedback: String,
+    maxMarks: Double?,
+    isEdit: Boolean,
+    onSave: (Double, String, () -> Unit, (String) -> Unit) -> Unit,
+    onCancel: (() -> Unit)?,
+    cardBgColor: Color,
+    textColor: Color
 ) {
-    val viewModel: TeacherAssignmentsViewModel = hiltViewModel()
-    var marks by remember { mutableStateOf("") }
-    var feedback by remember { mutableStateOf("") }
-    var isSubmitting by remember { mutableStateOf(false) }
+    var marksInput by remember { mutableStateOf(initialMarks) }
+    var feedbackInput by remember { mutableStateOf(initialFeedback) }
+    var isSaving by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Grade Submission") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = marks,
-                    onValueChange = { if (it.isEmpty() || (it.toDoubleOrNull() ?: 0.0) <= maxMarks) marks = it },
-                    label = { Text("Marks Obtained (Max $maxMarks)") },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = feedback,
-                    onValueChange = { feedback = it },
-                    label = { Text("Feedback (Optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2
-                )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = if (isEdit) "Update Grade" else "Grade This Submission",
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = marksInput,
+                onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) marksInput = it },
+                label = { Text("Marks Obtained") },
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                suffix = { Text("/ ${maxMarks ?: "–"}") },
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        OutlinedTextField(
+            value = feedbackInput,
+            onValueChange = { feedbackInput = it },
+            label = { Text("Feedback (optional)") },
+            modifier = Modifier.fillMaxWidth().height(100.dp),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+            if (onCancel != null) {
+                TextButton(onClick = onCancel, enabled = !isSaving) {
+                    Text("Cancel")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
             }
-        },
-        confirmButton = {
             Button(
                 onClick = {
-                    val marksVal = marks.toDoubleOrNull()
-                    if (marksVal == null) {
-                        Toast.makeText(context, "Please enter valid marks", Toast.LENGTH_SHORT).show()
+                    val marksVal = marksInput.toDoubleOrNull()
+                    if (marksVal == null || marksVal < 0) {
+                        Toast.makeText(context, "Invalid marks", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    isSubmitting = true
-                    viewModel.gradeSubmission(
-                        submissionId = submissionId,
-                        marks = marksVal,
-                        feedback = feedback,
-                        onSuccess = {
-                            isSubmitting = false
-                            onSuccess()
-                        },
-                        onError = {
-                            isSubmitting = false
-                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    if (maxMarks != null && marksVal > maxMarks) {
+                        Toast.makeText(context, "Marks cannot exceed $maxMarks", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    
+                    isSaving = true
+                    onSave(marksVal, feedbackInput, {
+                        isSaving = false
+                        Toast.makeText(context, "Grade saved successfully", Toast.LENGTH_SHORT).show()
+                    }, { error ->
+                        isSaving = false
+                        Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                    })
                 },
-                enabled = !isSubmitting
+                enabled = !isSaving && marksInput.isNotEmpty(),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
-                else Text("Save Grade")
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text("Save Grade")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
-    )
+    }
+}
+
+@Composable
+fun StatusChip(status: String) {
+    val (color, label) = when (status.lowercase()) {
+        "submitted" -> Color(0xFF1565C0) to "Submitted"
+        "graded" -> Color(0xFF2E7D32) to "Graded ✓"
+        "late" -> Color(0xFFE65100) to "Late"
+        else -> Color.Gray to status.replaceFirstChar { it.uppercase() }
+    }
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            color = color,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+fun getAttachmentType(url: String?): AttachmentType {
+    if (url == null) return AttachmentType.NONE
+    val ext = url.substringAfterLast('.').lowercase()
+    return when (ext) {
+        "jpg", "jpeg", "png", "gif", "webp" -> AttachmentType.IMAGE
+        else -> AttachmentType.DOCUMENT
+    }
+}
+
+enum class AttachmentType { NONE, IMAGE, DOCUMENT }
+
+fun openUrl(context: Context, url: String) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "Could not open URL", Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun formatDate(isoDate: String): String {
+    return try {
+        val datePart = isoDate.substringBefore('T')
+        datePart
+    } catch (e: Exception) { isoDate }
+}
+
+fun formatDateShort(isoDate: String): String {
+    return try {
+        val timePart = isoDate.substringAfter('T').take(5)
+        val datePart = isoDate.substringBefore('T').drop(5) // MM-DD
+        "$datePart $timePart"
+    } catch (e: Exception) { isoDate }
 }
