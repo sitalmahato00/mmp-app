@@ -33,5 +33,6 @@ sealed interface Routes : NavKey, Parcelable {
     @Serializable @Parcelize data class ChildTimetable(val childId: Int) : Routes
     @Serializable @Parcelize data object ChildrenList : Routes
     @Serializable @Parcelize data object CreateAssignment : Routes
+    @Serializable @Parcelize data class EditAssignment(val assignmentId: Int) : Routes
     @Serializable @Parcelize data class AssignmentSubmissions(val assignmentId: Int) : Routes
 }

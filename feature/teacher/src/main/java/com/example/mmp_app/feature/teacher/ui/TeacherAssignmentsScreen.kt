@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mmp_app.domain.model.AssignmentItemDto
-import com.example.mmp_app.domain.model.AssignmentListResponse
 import com.example.mmp_app.domain.model.AssignmentMetaDto
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,6 +30,7 @@ import com.example.mmp_app.domain.model.AssignmentMetaDto
 fun TeacherAssignmentsScreen(
     onBack: () -> Unit,
     onNavigateToCreate: () -> Unit = {},
+    onNavigateToEdit: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
     showSystemHeader: Boolean = true,
     isDarkTheme: Boolean = false,
@@ -43,7 +43,9 @@ fun TeacherAssignmentsScreen(
     var assignmentToDelete by remember { mutableStateOf<AssignmentItemDto?>(null) }
 
     val primaryColor = Color(0xFF1565C0)
-    val backgroundColor = Color(0xFFF5F7FA)
+    val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF5F7FA)
+    val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
+    val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
 
     if (assignmentToDelete != null) {
         AlertDialog(
@@ -105,11 +107,11 @@ fun TeacherAssignmentsScreen(
                         }
 
                         // Filter Tabs
-                        FilterTabs(selectedFilter) { selectedFilter = it }
+                        FilterTabs(selectedFilter, primaryColor) { selectedFilter = it }
 
                         if (filteredList.isEmpty()) {
                             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text("No assignments yet. Tap + to create one.")
+                                Text("No assignments yet. Tap + to create one.", color = textColor.copy(alpha = 0.6f))
                             }
                         } else {
                             LazyColumn(
@@ -120,10 +122,15 @@ fun TeacherAssignmentsScreen(
                                 items(filteredList) { assignment ->
                                     AssignmentCard(
                                         assignment = assignment,
+                                        onEdit = { onNavigateToEdit(assignment.id) },
                                         onViewSubmissions = { onViewSubmissions(assignment.id) },
                                         onDelete = {
                                             assignmentToDelete = assignment
-                                        }
+                                        },
+                                        isDarkTheme = isDarkTheme,
+                                        cardBgColor = cardBgColor,
+                                        textColor = textColor,
+                                        primaryColor = primaryColor
                                     )
                                 }
                             }
@@ -152,7 +159,10 @@ fun TeacherAssignmentsScreen(
                             Icon(Icons.Rounded.Refresh, contentDescription = "Refresh")
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
                 )
             },
             floatingActionButton = {
@@ -208,23 +218,23 @@ fun SummaryChip(label: String, color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FilterTabs(selected: String, onSelect: (String) -> Unit) {
+fun FilterTabs(selected: String, primaryColor: Color, onSelect: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        FilterTab("ALL", selected == "ALL") { onSelect("ALL") }
-        FilterTab("UPCOMING", selected == "UPCOMING") { onSelect("UPCOMING") }
-        FilterTab("OVERDUE", selected == "OVERDUE") { onSelect("OVERDUE") }
+        FilterTab("ALL", selected == "ALL", primaryColor) { onSelect("ALL") }
+        FilterTab("UPCOMING", selected == "UPCOMING", primaryColor) { onSelect("UPCOMING") }
+        FilterTab("OVERDUE", selected == "OVERDUE", primaryColor) { onSelect("OVERDUE") }
     }
 }
 
 @Composable
-fun FilterTab(label: String, isSelected: Boolean, onClick: () -> Unit) {
+fun FilterTab(label: String, isSelected: Boolean, primaryColor: Color, onClick: () -> Unit) {
     val contentColor = if (isSelected) Color.White else Color.Gray
-    val bgColor = if (isSelected) Color(0xFF1565C0) else Color.Transparent
+    val bgColor = if (isSelected) primaryColor else Color.Transparent
 
     Surface(
         modifier = Modifier
@@ -243,12 +253,17 @@ fun FilterTab(label: String, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 fun AssignmentCard(
     assignment: AssignmentItemDto,
+    onEdit: () -> Unit,
     onViewSubmissions: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isDarkTheme: Boolean,
+    cardBgColor: Color,
+    textColor: Color,
+    primaryColor: Color
 ) {
     val context = LocalContext.current
     val dueDateColor = if (assignment.isOverdue) Color(0xFFC62828) else Color(0xFF2E7D32)
-    val cardBg = if (assignment.isOverdue) Color(0xFFFFEBEE) else Color.White
+    val cardBg = if (assignment.isOverdue) (if (isDarkTheme) Color(0xFF451A1A) else Color(0xFFFFEBEE)) else cardBgColor
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -259,13 +274,13 @@ fun AssignmentCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    color = Color(0xFF1565C0).copy(alpha = 0.1f),
+                    color = primaryColor.copy(alpha = 0.1f),
                     shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
                         text = assignment.subjectCode ?: "N/A",
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = Color(0xFF1565C0),
+                        color = primaryColor,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -274,12 +289,15 @@ fun AssignmentCard(
                 var showMenu by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Rounded.MoreVert, null)
+                        Icon(Icons.Rounded.MoreVert, null, tint = textColor.copy(alpha = 0.6f))
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                         DropdownMenuItem(
                             text = { Text("Edit") },
-                            onClick = { /* TODO */ },
+                            onClick = { 
+                                showMenu = false
+                                onEdit() 
+                            },
                             leadingIcon = { Icon(Icons.Rounded.Edit, null) }
                         )
                         DropdownMenuItem(
@@ -303,17 +321,17 @@ fun AssignmentCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = assignment.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+            Text(text = assignment.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = textColor, maxLines = 2)
             val description = assignment.description
             if (!description.isNullOrBlank()) {
-                Text(text = description, color = Color.Gray, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                Text(text = description, color = textColor.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.CalendarToday, null, modifier = Modifier.size(16.dp), tint = dueDateColor)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Due: ${assignment.dueDate}", color = dueDateColor, style = MaterialTheme.typography.labelMedium)
+                Text(text = "Due: ${formatAssignmentDate(assignment.dueDate)}", color = dueDateColor, style = MaterialTheme.typography.labelMedium)
                 
                 Spacer(modifier = Modifier.weight(1f))
                 
@@ -330,10 +348,27 @@ fun AssignmentCard(
                         },
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Rounded.AttachFile, null, tint = Color(0xFF1565C0))
+                        Icon(Icons.Rounded.AttachFile, null, tint = primaryColor)
                     }
                 }
             }
         }
     }
+}
+
+fun formatAssignmentDate(isoDate: String): String {
+    return try {
+        val datePart = isoDate.substringBefore('T')
+        val parts = datePart.split("-")
+        if (parts.size == 3) {
+            val year = parts[0]
+            val month = when(parts[1]) {
+                "01" -> "Jan"; "02" -> "Feb"; "03" -> "Mar"; "04" -> "Apr"; "05" -> "May"; "06" -> "Jun"
+                "07" -> "Jul"; "08" -> "Aug"; "09" -> "Sep"; "10" -> "Oct"; "11" -> "Nov"; "12" -> "Dec"
+                else -> parts[1]
+            }
+            val day = parts[2]
+            "$month $day, $year"
+        } else datePart
+    } catch (e: Exception) { isoDate }
 }

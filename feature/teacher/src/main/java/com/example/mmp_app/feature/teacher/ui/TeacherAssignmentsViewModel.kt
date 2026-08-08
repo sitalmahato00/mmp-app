@@ -82,6 +82,23 @@ class TeacherAssignmentsViewModel @Inject constructor(
         }
     }
 
+    fun updateAssignment(
+        id: Int,
+        request: UpdateAssignmentRequest,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repository.updateTeacherAssignment(id, request)
+            result.onSuccess {
+                loadAssignments()
+                onSuccess()
+            }.onFailure {
+                onError(it.message ?: "Failed to update assignment")
+            }
+        }
+    }
+
     fun deleteAssignment(id: Int, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             val result = repository.deleteTeacherAssignment(id)

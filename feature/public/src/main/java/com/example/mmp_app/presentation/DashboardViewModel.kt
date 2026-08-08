@@ -91,6 +91,11 @@ class DashboardViewModel @Inject constructor(
     private val _childDashboard = MutableStateFlow<StudentDashboardDto?>(null)
     val childDashboard = _childDashboard.asStateFlow()
 
+
+
+    private val _selectedChildId = MutableStateFlow<Int>(0)
+    val selectedChildId = _selectedChildId.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -253,7 +258,12 @@ class DashboardViewModel @Inject constructor(
             
             val dashboardJob = launch {
                 repository.getParentDashboard().collect { result ->
-                    result.onSuccess { _parentDashboard.value = it }
+                    result.onSuccess { 
+                        _parentDashboard.value = it 
+                        if (_selectedChildId.value == 0 && it.children.isNotEmpty()) {
+                            _selectedChildId.value = it.children.first().id
+                        }
+                    }
                         .onFailure { _error.value = it.message }
                 }
             }
@@ -283,6 +293,10 @@ class DashboardViewModel @Inject constructor(
             joinAll(dashboardJob, noticesJob, profileJob)
             _isLoading.value = false
         }
+    }
+
+    fun selectChild(id: Int) {
+        _selectedChildId.value = id
     }
 
     fun loadStudentMarks() {

@@ -476,7 +476,8 @@ fun ProfileGradientCard(data: StudentDashboardDto, subjectCount: Int, primaryCol
                     Text(text = "Good Morning 👋", style = MaterialTheme.typography.bodyMedium, color = subTextColor)
                     Text(text = data.studentName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = contentTextColor, maxLines = 1)
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = "${data.program} • Semester ${data.semester}", style = MaterialTheme.typography.bodySmall, color = subTextColor)
+                    val semester = data.currentSemester ?: data.semester
+                    Text(text = "${data.program} • Semester $semester", style = MaterialTheme.typography.bodySmall, color = subTextColor)
                 }
                 Surface(modifier = Modifier.size(60.dp), shape = CircleShape, color = if (isDarkTheme) Color(0xFF334155) else Color.White, shadowElevation = 4.dp) {
                     if (!data.avatarUrl.isNullOrEmpty()) {

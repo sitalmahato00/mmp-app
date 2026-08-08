@@ -35,6 +35,7 @@ data class ChildDetailDto(
     val program: String? = null,
     val department: String? = null,
     val semester: Int,
+    @SerialName("current_semester") val currentSemester: Int? = null,
     val section: String? = null,
     val status: String? = null,
     val batch: String? = null,

@@ -9,7 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -46,9 +46,12 @@ class ChildDetailViewModel @Inject constructor(
     }
 
     fun initChildId(id: Int) {
-        if (childId == 0) {
+        if (id == 0) return
+        if (childId != id) {
             childId = id
-            _uiState.update { it.copy(childId = id) }
+            _uiState.update { it.copy(childId = id, childDetail = null) }
+            loadAllData()
+        } else if (_uiState.value.childDetail == null && !_uiState.value.isLoading) {
             loadAllData()
         }
     }
@@ -60,13 +63,13 @@ class ChildDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
             
             try {
-                val detailJob = async { repository.getChildDetail(childId).collectLatest { res -> res.onSuccess { d -> _uiState.update { it.copy(childDetail = d) } } } }
-                val attSummaryJob = async { repository.getChildAttendanceSummary(childId).collectLatest { res -> res.onSuccess { s -> _uiState.update { it.copy(attendanceSummary = s) } } } }
-                val attRecordsJob = async { repository.getChildAttendance(childId).collectLatest { res -> res.onSuccess { r -> _uiState.update { it.copy(attendanceRecords = r) } } } }
-                val marksSummaryJob = async { repository.getChildMarksSummary(childId).collectLatest { res -> res.onSuccess { s -> _uiState.update { it.copy(marksSummary = s) } } } }
-                val marksListJob = async { repository.getChildMarks(childId).collectLatest { res -> res.onSuccess { l -> _uiState.update { it.copy(marksList = l) } } } }
-                val assignmentsJob = async { repository.getChildAssignments(childId).collectLatest { res -> res.onSuccess { a -> _uiState.update { it.copy(assignments = a) } } } }
-                val timetableJob = async { repository.getChildTimetable(childId).collectLatest { res -> res.onSuccess { t -> _uiState.update { it.copy(timetable = t) } } } }
+                val detailJob = async { repository.getChildDetail(childId).first().onSuccess { d -> _uiState.update { it.copy(childDetail = d) } } }
+                val attSummaryJob = async { repository.getChildAttendanceSummary(childId).first().onSuccess { s -> _uiState.update { it.copy(attendanceSummary = s) } } }
+                val attRecordsJob = async { repository.getChildAttendance(childId).first().onSuccess { r -> _uiState.update { it.copy(attendanceRecords = r) } } }
+                val marksSummaryJob = async { repository.getChildMarksSummary(childId).first().onSuccess { s -> _uiState.update { it.copy(marksSummary = s) } } }
+                val marksListJob = async { repository.getChildMarks(childId).first().onSuccess { l -> _uiState.update { it.copy(marksList = l) } } }
+                val assignmentsJob = async { repository.getChildAssignments(childId).first().onSuccess { a -> _uiState.update { it.copy(assignments = a) } } }
+                val timetableJob = async { repository.getChildTimetable(childId).first().onSuccess { t -> _uiState.update { it.copy(timetable = t) } } }
 
                 detailJob.await()
                 attSummaryJob.await()
@@ -76,7 +79,9 @@ class ChildDetailViewModel @Inject constructor(
                 assignmentsJob.await()
                 timetableJob.await()
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                if (e !is kotlinx.coroutines.CancellationException) {
+                    _uiState.update { it.copy(error = e.message) }
+                }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }

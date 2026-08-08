@@ -81,6 +81,7 @@ fun DashboardScreen(
     onNavigateToNotifications: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
     onNavigateToCreateAssignment: () -> Unit = {},
+    onNavigateToEditAssignment: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
 ) {
     val viewModel: DashboardViewModel = hiltViewModel()
@@ -104,6 +105,7 @@ fun DashboardScreen(
     val teacherClasses by viewModel.teacherClasses.collectAsState()
     val parentData by viewModel.parentDashboard.collectAsState()
     val parentProfile by viewModel.parentProfile.collectAsState()
+    val selectedChildId by viewModel.selectedChildId.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
@@ -172,9 +174,12 @@ fun DashboardScreen(
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToNotifications = onNavigateToNotifications,
         unreadCount = notificationState.unreadCount,
+        selectedChildId = selectedChildId,
+        onSelectChild = { viewModel.selectChild(it) },
         isDarkTheme = isDarkTheme,
         onToggleTheme = { themeViewModel.toggleTheme() },
         onNavigateToCreateAssignment = onNavigateToCreateAssignment,
+        onNavigateToEditAssignment = onNavigateToEditAssignment,
         onViewSubmissions = onViewSubmissions
     )
 }
@@ -221,9 +226,12 @@ fun DashboardAdaptiveContent(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     unreadCount: Int = 0,
+    selectedChildId: Int = 0,
+    onSelectChild: (Int) -> Unit = {},
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
     onNavigateToCreateAssignment: () -> Unit = {},
+    onNavigateToEditAssignment: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
 ) {
     MMPAppTheme(darkTheme = isDarkTheme) {
@@ -694,9 +702,12 @@ fun DashboardAdaptiveContent(
                                         onNavigateToSettings = onNavigateToSettings,
                                         onNavigateToNotifications = onNavigateToNotifications,
                                         onNavigateToCreateAssignment = onNavigateToCreateAssignment,
+                                        onNavigateToEditAssignment = onNavigateToEditAssignment,
                                         onViewSubmissions = onViewSubmissions,
                                         onLogout = onLogout,
                                         onSelectItem = { selectedItem = it },
+                                        selectedChildId = selectedChildId,
+                                        onSelectChild = onSelectChild,
                                         unreadCount = unreadCount,
                                         isDarkTheme = isDarkTheme,
                                         onToggleTheme = onToggleTheme,
@@ -727,7 +738,7 @@ fun DashboardAdaptiveContent(
                                     }
                                     2 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ChildTimetableScreen(
-                                            childId = 0,
+                                            childId = selectedChildId,
                                             onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
                                             showSystemHeader = true
@@ -739,6 +750,7 @@ fun DashboardAdaptiveContent(
                                             isDarkTheme = isDarkTheme,
                                             onToggleTheme = onToggleTheme,
                                             onNavigateToCreate = onNavigateToCreateAssignment,
+                                            onNavigateToEdit = onNavigateToEditAssignment,
                                             onViewSubmissions = onViewSubmissions
                                         )
                                     } else {
@@ -750,7 +762,7 @@ fun DashboardAdaptiveContent(
                                     }
                                     3 -> if (userProfile?.role?.lowercase() == "parent") {
                                         ChildMarksScreen(
-                                            childId = 0,
+                                            childId = selectedChildId,
                                             onBack = { selectedItem = 0 },
                                             isDarkTheme = isDarkTheme,
                                             showSystemHeader = true
@@ -875,11 +887,14 @@ fun MainDashboardContent(
     onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit,
     onSelectItem: (Int) -> Unit = {},
+    selectedChildId: Int = 0,
+    onSelectChild: (Int) -> Unit = {},
     unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
     showSystemHeader: Boolean = true,
     onNavigateToCreateAssignment: () -> Unit = {},
+    onNavigateToEditAssignment: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
 ) {
     when (userProfile?.role?.lowercase()) {
@@ -935,6 +950,7 @@ fun MainDashboardContent(
                     onNavigateToProfile = { onSelectItem(4) },
                     onNavigateToClasses = { onSelectItem(5) },
                     onNavigateToCreateAssignment = onNavigateToCreateAssignment,
+                    onNavigateToEditAssignment = onNavigateToEditAssignment,
                     onViewSubmissions = onViewSubmissions,
                     onLogoutClick = onLogout,
                     showSystemHeader = showSystemHeader
@@ -955,10 +971,22 @@ fun MainDashboardContent(
                         )
                     },
                     onChildClick = onNavigateToChildDetails,
-                    onAttendanceClick = { id, _ -> onNavigateToChildAttendance(id) },
-                    onMarksClick = { id, _ -> onSelectItem(3) },
-                    onAssignmentsClick = { id, _ -> onNavigateToChildAssignments(id) },
-                    onTimetableClick = { id, _ -> onSelectItem(2) },
+                    onAttendanceClick = { id, _ -> 
+                        onSelectChild(id)
+                        onNavigateToChildAttendance(id) 
+                    },
+                    onMarksClick = { id, _ -> 
+                        onSelectChild(id)
+                        onSelectItem(3) 
+                    },
+                    onAssignmentsClick = { id, _ -> 
+                        onSelectChild(id)
+                        onNavigateToChildAssignments(id) 
+                    },
+                    onTimetableClick = { id, _ -> 
+                        onSelectChild(id)
+                        onSelectItem(2) 
+                    },
                     onNoticesClick = { onSelectItem(1) },
                     onProfileClick = { onSelectItem(5) },
                     onSettingsClick = onNavigateToSettings,

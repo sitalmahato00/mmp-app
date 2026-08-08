@@ -71,10 +71,11 @@ fun StudentProfileScreen(
                 item {
                     val avatarUrl = settingsState.user?.avatarUrl ?: data.avatarUrl
                     val displayName = settingsState.name.ifBlank { data.studentName }
+                    val semester = data.currentSemester ?: data.semester
                     ProfileHeaderCard(
                         name = displayName,
                         program = data.program,
-                        semester = data.semester,
+                        semester = semester,
                         avatarUrl = avatarUrl,
                         primaryColor = primaryColor,
                         secondaryColor = secondaryColor,
@@ -111,8 +112,9 @@ fun StudentProfileScreen(
                         InfoRow("Student ID", data.studentId.toString(), Icons.Rounded.Fingerprint, textColor)
                         InfoRow("Roll Number", data.rollNumber ?: "N/A", Icons.Rounded.FormatListNumbered, textColor)
                         InfoRow("Program", data.program, Icons.Rounded.Book, textColor)
-                        InfoRow("Semester", "Semester ${data.semester}", Icons.Rounded.Timeline, textColor)
-                        InfoRow("Department", "Computer Science", Icons.Rounded.Business, textColor)
+                        val semesterDisplay = data.currentSemester ?: data.semester
+                        InfoRow("Semester", "Semester $semesterDisplay", Icons.Rounded.Timeline, textColor)
+                        InfoRow("Department", data.department ?: "Computer Science", Icons.Rounded.Business, textColor)
                     }
                 }
 

@@ -130,7 +130,8 @@ fun ChildDetailsScreen(
                             InfoRow(icon = Icons.Rounded.Badge, label = "Student No", value = child.studentNo, isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.Numbers, label = "Roll Number", value = child.rollNumber ?: "N/A", isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.Description, label = "Reg. Number", value = child.registrationNumber ?: "N/A", isDarkTheme = isDarkTheme)
-                            InfoRow(icon = Icons.Rounded.CalendarToday, label = "Semester", value = "${child.semester} | Section: ${child.section ?: "N/A"}", isDarkTheme = isDarkTheme)
+                            val semesterDisplay = child.currentSemester ?: child.semester
+                            InfoRow(icon = Icons.Rounded.CalendarToday, label = "Semester", value = "$semesterDisplay | Section: ${child.section ?: "N/A"}", isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.TrackChanges, label = "Batch", value = child.batch ?: "N/A", isDarkTheme = isDarkTheme)
                             InfoRow(icon = Icons.Rounded.EventAvailable, label = "Admitted", value = child.admissionDate ?: "N/A", isDarkTheme = isDarkTheme)
                         }

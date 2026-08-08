@@ -46,6 +46,7 @@ import com.example.mmp_app.feature.student.ui.SubjectsScreen
 import com.example.mmp_app.feature.student.ui.TimetableScreen
 import com.example.mmp_app.feature.teacher.ui.AssignmentSubmissionsScreen
 import com.example.mmp_app.feature.teacher.ui.CreateAssignmentScreen
+import com.example.mmp_app.feature.teacher.ui.EditAssignmentScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherAttendanceScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherMarksScreen
 import com.example.mmp_app.presentation.*
@@ -375,6 +376,15 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
             AssignmentSubmissionsScreen(
                 assignmentId = route.assignmentId,
                 onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
+        }
+        entry<Routes.EditAssignment> { route ->
+            EditAssignmentScreen(
+                assignmentId = route.assignmentId,
+                onBack = { navigator.goBack() },
+                onSuccess = { navigator.goBack() },
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = { themeViewModel.toggleTheme() }
             )

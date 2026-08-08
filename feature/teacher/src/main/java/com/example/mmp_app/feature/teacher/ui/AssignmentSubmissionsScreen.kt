@@ -186,7 +186,7 @@ fun AssignmentHeaderCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.CalendarToday, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Due: ${formatDate(assignment.dueDate)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                Text(text = "Due: ${formatAssignmentDate(assignment.dueDate)}", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.width(12.dp))
                 Icon(Icons.Rounded.Score, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
                 Spacer(modifier = Modifier.width(4.dp))

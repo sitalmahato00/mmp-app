@@ -13,6 +13,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 
 @Singleton
 class ParentRepositoryImpl @Inject constructor(
@@ -29,120 +30,146 @@ class ParentRepositoryImpl @Inject constructor(
     }
 
     override fun getDashboard(): Flow<Result<ParentDashboardDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getDashboard()
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildren(): Flow<Result<List<ChildDetailDto>>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildren()
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildDetail(childId: Int): Flow<Result<ChildDetailDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildDetail(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildAttendance(childId: Int): Flow<Result<List<ParentAttendanceRecordDto>>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildAttendance(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildAttendanceSummary(childId: Int): Flow<Result<ParentAttendanceSummaryDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildAttendanceSummary(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildMarks(childId: Int): Flow<Result<List<ParentMarkRecordDto>>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildMarks(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildMarksSummary(childId: Int): Flow<Result<ParentMarksSummaryDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildMarksSummary(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildAssignments(childId: Int): Flow<Result<List<ParentAssignmentDto>>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildAssignments(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildAssignmentDetail(childId: Int, assignmentId: Int): Flow<Result<ParentAssignmentDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildAssignmentDetail(childId, assignmentId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getChildTimetable(childId: Int): Flow<Result<ParentTimetableDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getChildTimetable(childId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getNotices(): Flow<Result<List<ParentNoticeDto>>> = flow {
-        try {
+        val result = try {
             val response = apiService.getNotices()
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getNoticeDetail(noticeId: Int): Flow<Result<ParentNoticeDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getNoticeDetail(noticeId)
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override fun getProfile(): Flow<Result<ParentProfileDto>> = flow {
-        try {
+        val result = try {
             val response = apiService.getProfile()
-            emit(Result.success(handleApiResponse(response, json)))
+            Result.success(handleApiResponse(response, json))
         } catch (e: Exception) {
-            emit(Result.failure(e))
+            if (e is CancellationException) throw e
+            Result.failure(e)
         }
+        emit(result)
     }
 
     override suspend fun updateProfile(request: UpdateParentProfileRequest): Result<ParentProfileDto> {
