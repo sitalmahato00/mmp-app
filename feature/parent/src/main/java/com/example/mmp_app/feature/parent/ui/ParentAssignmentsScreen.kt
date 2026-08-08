@@ -8,7 +8,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.CalendarToday
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Task
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -30,7 +35,9 @@ fun ParentAssignmentsScreen(
     childId: Int,
     onBack: () -> Unit,
     viewModel: ParentAssignmentsViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     LaunchedEffect(childId) {
         if (childId != 0) {
@@ -57,20 +64,28 @@ fun ParentAssignmentsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Assignments", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardBgColor,
-                    titleContentColor = textColor
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = { Text("Assignments", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
                 )
-            )
+            }
         },
-        containerColor = backgroundColor
+        containerColor = backgroundColor,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ScrollableTabRow(

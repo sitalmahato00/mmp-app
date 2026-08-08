@@ -52,7 +52,6 @@ fun StudentDashboard(
     onMarksClick: () -> Unit = {},
     onAssignmentsClick: () -> Unit = {},
     onNoticesClick: () -> Unit = {},
-    onFeesClick: () -> Unit = {},
     onRoutineClick: () -> Unit = {},
     onExamsClick: () -> Unit = {},
     onResultsClick: () -> Unit = {},

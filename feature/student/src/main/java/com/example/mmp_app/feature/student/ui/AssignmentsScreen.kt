@@ -9,97 +9,111 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Assignment
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.mmp_app.core.ui.SkeletonBox
-import com.example.mmp_app.domain.model.AssignmentDetailDto
-import com.example.mmp_app.domain.model.AssignmentDto
-import com.example.mmp_app.domain.model.SubmissionStatusDto
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import com.example.mmp_app.domain.model.*
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AssignmentsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showSystemHeader: Boolean = true,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
-    val viewModel: StudentViewModel = hiltViewModel()
-    val assignments by viewModel.assignments.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val viewModel: StudentAssignmentsViewModel = hiltViewModel()
+    val assignmentsState by viewModel.assignments.collectAsState()
+    val detailState by viewModel.assignmentDetail.collectAsState()
 
     var selectedAssignmentId by remember { mutableStateOf<Int?>(null) }
-    val assignmentDetail by viewModel.assignmentDetail.collectAsState()
-
     val context = LocalContext.current
 
-    LaunchedEffect(error) {
-        error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
+    LaunchedEffect(Unit) {
+        viewModel.loadAssignments()
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.loadStudentAssignments()
-    }
+    val primaryColor = Color(0xFF1565C0)
+    val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF5F7FA)
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (selectedAssignmentId == null) "Assignments" else "Assignment Detail") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (selectedAssignmentId != null) {
-                            selectedAssignmentId = null
-                            viewModel.clearAssignmentDetail()
-                        } else {
-                            onBack()
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = { Text(if (selectedAssignmentId == null) "My Assignments" else "Assignment Detail") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (selectedAssignmentId != null) {
+                                selectedAssignmentId = null
+                            } else {
+                                onBack()
+                            }
+                        }) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                         }
-                    }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                        IconButton(onClick = { 
+                            if (selectedAssignmentId == null) viewModel.loadAssignments() 
+                            else viewModel.loadAssignmentDetail(selectedAssignmentId!!)
+                        }) {
+                            Icon(Icons.Rounded.Refresh, "Refresh")
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
+        },
+        containerColor = backgroundColor,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             AnimatedContent(targetState = selectedAssignmentId, label = "screen_transition") { id ->
                 if (id == null) {
-                    AssignmentsList(
-                        assignments = assignments,
-                        isLoading = isLoading,
-                        onAssignmentClick = { 
-                            selectedAssignmentId = it.id
-                            viewModel.loadAssignmentDetail(it.id)
-                        }
+                    StudentAssignmentsList(
+                        state = assignmentsState,
+                        onAssignmentClick = { assignmentId ->
+                            selectedAssignmentId = assignmentId
+                            viewModel.loadAssignmentDetail(assignmentId)
+                        },
+                        onRetry = { viewModel.loadAssignments() }
                     )
                 } else {
-                    AssignmentDetailView(
-                        assignmentId = id,
-                        detail = assignmentDetail,
-                        isLoading = isLoading,
+                    StudentAssignmentDetailView(
+                        state = detailState,
+                        onRetry = { viewModel.loadAssignmentDetail(id) },
                         viewModel = viewModel
                     )
                 }
@@ -110,78 +124,69 @@ fun AssignmentsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AssignmentsList(
-    assignments: List<AssignmentDto>,
-    isLoading: Boolean,
-    onAssignmentClick: (AssignmentDto) -> Unit
+fun StudentAssignmentsList(
+    state: UiState<StudentAssignmentsResponse>,
+    onAssignmentClick: (Int) -> Unit,
+    onRetry: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Pending", "Submitted", "All")
-
-    val filteredAssignments = remember(assignments, selectedTab) {
-        val sorted = assignments.sortedWith(compareBy<AssignmentDto> { 
-            // Simple overdue check (naive)
-            val isOverdue = try {
-                val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                val dueDate = sdf.parse(it.dueDate)
-                dueDate?.before(Date()) ?: false
-            } catch (e: Exception) { false }
-            if (isOverdue && it.status == "not_submitted") 0 else 1
-        }.thenBy { it.dueDate })
-
-        when (selectedTab) {
-            0 -> sorted.filter { it.status == "not_submitted" || it.status == "pending" }
-            1 -> sorted.filter { it.status == "submitted" || it.status == "graded" }
-            else -> sorted
-        }
-    }
+    val tabs = listOf("ALL", "PENDING", "SUBMITTED", "GRADED")
 
     Column(modifier = Modifier.fillMaxSize()) {
-        SecondaryTabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedTab,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            containerColor = Color.White,
+            edgePadding = 16.dp,
+            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
                     onClick = { selectedTab = index },
-                    text = {
-                        Text(
-                            text = title,
-                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
+                    text = { Text(title, fontSize = 12.sp, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) }
                 )
             }
         }
 
-        if (isLoading && assignments.isEmpty()) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FF)),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(8) {
-                    SkeletonBox(modifier = Modifier.fillMaxWidth().height(100.dp), shape = RoundedCornerShape(12.dp))
+        when (state) {
+            is UiState.Loading -> {
+                LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(5) { SkeletonBox(modifier = Modifier.fillMaxWidth().height(120.dp), shape = RoundedCornerShape(16.dp)) }
                 }
             }
-        } else if (filteredAssignments.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Rounded.Assignment, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
-                    Spacer(Modifier.height(16.dp))
-                    Text("No assignments found", color = Color.Gray)
+            is UiState.Error -> {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Rounded.WifiOff, null, modifier = Modifier.size(60.dp), tint = Color.Red)
+                    Text(state.message, modifier = Modifier.padding(16.dp))
+                    Button(onClick = onRetry) { Text("Retry") }
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().background(Color(0xFFF8F9FF)),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredAssignments, key = { it.id }) { assignment ->
-                    AssignmentItem(assignment, onClick = { onAssignmentClick(assignment) })
+            is UiState.Success -> {
+                val assignments = state.data.data
+                val filteredList = when (selectedTab) {
+                    1 -> assignments.filter { it.status == "not_submitted" }
+                    2 -> assignments.filter { it.status == "submitted" }
+                    3 -> assignments.filter { it.status == "graded" }
+                    else -> assignments
+                }
+
+                if (filteredList.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No assignments yet", color = Color.Gray)
+                    }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(filteredList, key = { it.id }) { assignment ->
+                            StudentAssignmentCard(assignment, onClick = { onAssignmentClick(assignment.id) })
+                        }
+                    }
                 }
             }
         }
@@ -189,57 +194,446 @@ fun AssignmentsList(
 }
 
 @Composable
-fun AssignmentItem(assignment: AssignmentDto, onClick: () -> Unit) {
+fun StudentAssignmentCard(
+    assignment: StudentAssignmentItemDto,
+    onClick: () -> Unit
+) {
+    val isOverdue = assignment.isOverdue && assignment.status == "not_submitted"
+    val isGraded = assignment.status == "graded"
+    
+    val backgroundColor = when {
+        isOverdue -> Color(0xFFFFEBEE)
+        isGraded -> Color(0xFFE8F5E9)
+        else -> Color.White
+    }
+
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(48.dp).background(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(8.dp)
-                ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Rounded.Assignment, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = assignment.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(text = assignment.subject ?: "No Subject", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                Text(
-                    text = "Due: ${formatDate(assignment.dueDate)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-                if (assignment.obtainedMarks != null) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = Color(0xFF1565C0).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
                     Text(
-                        text = "Marks: ${assignment.obtainedMarks}",
+                        text = assignment.subjectCode ?: "N/A",
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        color = Color(0xFF1565C0),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF2E7D32),
                         fontWeight = FontWeight.Bold
                     )
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                StatusChip(assignment.status)
             }
-            StatusBadge(status = assignment.status)
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = assignment.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+            val description = assignment.description
+            if (!description.isNullOrBlank()) {
+                Text(
+                    text = description!!,
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontStyle = FontStyle.Italic,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            val dueDateColor = getDueDateColor(assignment.dueDate, assignment.isOverdue)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.CalendarToday, null, modifier = Modifier.size(16.dp), tint = dueDateColor)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = "Due: ${formatDate(assignment.dueDate)}", color = dueDateColor, style = MaterialTheme.typography.labelSmall)
+                
+                if (assignment.attachmentUrl != null) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(Icons.Rounded.AttachFile, null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                }
+            }
+
+            assignment.submission?.let { submission ->
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (!submission.studentNote.isNullOrBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Description, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Note submitted", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        }
+                    }
+                    if (submission.attachmentUrl != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.AttachFile, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                            Spacer(Modifier.width(4.dp))
+                            Text("File submitted", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        }
+                    }
+                    if (submission.marksObtained != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.CheckCircle, null, modifier = Modifier.size(14.dp), tint = Color(0xFF2E7D32))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "Graded: ${submission.marksObtained} / ${assignment.maxMarks ?: "-"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF2E7D32),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "View Details",
+                color = Color(0xFF1565C0),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.End)
+            )
         }
     }
 }
 
 @Composable
-fun StatusBadge(status: String) {
+fun StudentAssignmentDetailView(
+    state: UiState<StudentAssignmentDetailDto>,
+    onRetry: () -> Unit,
+    viewModel: StudentAssignmentsViewModel
+) {
+    val context = LocalContext.current
+
+    when (state) {
+        is UiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        }
+        is UiState.Error -> {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(state.message, modifier = Modifier.padding(16.dp))
+                Button(onClick = onRetry) { Text("Retry") }
+            }
+        }
+        is UiState.Success -> {
+            val detail = state.data
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                // Header
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = Color(0xFF1565C0).copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = detail.subjectCode ?: "N/A",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            color = Color(0xFF1565C0),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(text = detail.subject ?: "", color = Color(0xFF1565C0), style = MaterialTheme.typography.labelLarge)
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(text = detail.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.CalendarToday, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Due Date: ${formatDate(detail.dueDate)}", style = MaterialTheme.typography.bodyMedium)
+                }
+                if (detail.maxMarks != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Score, null, modifier = Modifier.size(18.dp), tint = Color.Gray)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Maximum Marks: ${detail.maxMarks}", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Assignment Description", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                val description = detail.description
+                Text(text = description ?: "No description provided.", style = MaterialTheme.typography.bodyLarge)
+
+                val attachmentUrl = detail.attachmentUrl
+                if (attachmentUrl != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    AttachmentPreview(url = attachmentUrl, label = "View Assignment File")
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Submission Section
+                val submission = detail.submission
+                if (submission == null) {
+                    SubmitWorkSection(assignmentId = detail.id, viewModel = viewModel)
+                } else {
+                    YourSubmissionSection(submission = submission, maxMarks = detail.maxMarks)
+                }
+                
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun SubmitWorkSection(
+    assignmentId: Int,
+    viewModel: StudentAssignmentsViewModel
+) {
+    val context = LocalContext.current
+    var note by remember { mutableStateOf("") }
+    var fileUri by remember { mutableStateOf<Uri?>(null) }
+    var fileName by remember { mutableStateOf<String?>(null) }
+    var isSubmitting by remember { mutableStateOf(false) }
+
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        uri?.let {
+            fileUri = it
+            fileName = getFileName(context, it)
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = "Submit Your Work", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            OutlinedTextField(
+                value = note,
+                onValueChange = { if (it.length <= 500) note = it },
+                label = { Text("Your Note") },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Add notes about your work...") },
+                minLines = 3,
+                maxLines = 5,
+                shape = RoundedCornerShape(12.dp)
+            )
+            Text(
+                text = "${note.length}/500",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.align(Alignment.End),
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text = "Attach File (optional)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Gray.copy(alpha = 0.05f))
+                    .clickable { filePicker.launch("*/*") }
+                    .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (fileName == null) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Rounded.CloudUpload, null, tint = Color.Gray)
+                        Text("Tap to attach your file or image", color = Color.Gray, fontSize = 12.sp)
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 12.dp)) {
+                        Icon(Icons.Rounded.Description, null, tint = Color(0xFF1565C0))
+                        Spacer(Modifier.width(8.dp))
+                        Text(text = fileName!!, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { fileUri = null; fileName = null }) {
+                            Icon(Icons.Rounded.Close, null, tint = Color.Red)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    isSubmitting = true
+                    viewModel.submitAssignment(
+                        assignmentId = assignmentId,
+                        note = note.ifBlank { null },
+                        fileUri = fileUri,
+                        context = context,
+                        onSuccess = {
+                            isSubmitting = false
+                            Toast.makeText(context, "Assignment submitted!", Toast.LENGTH_SHORT).show()
+                            viewModel.loadAssignmentDetail(assignmentId)
+                        },
+                        onError = {
+                            isSubmitting = false
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                        }
+                    )
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isSubmitting && (note.isNotBlank() || fileUri != null),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0))
+            ) {
+                if (isSubmitting) CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                else Text("Submit Assignment")
+            }
+        }
+    }
+}
+
+@Composable
+fun YourSubmissionSection(
+    submission: SubmissionBriefDto,
+    maxMarks: Double?
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD).copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Your Submission", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                StatusChip(if (submission.marksObtained != null) "graded" else "submitted")
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Schedule, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
+                Spacer(Modifier.width(4.dp))
+                Text(text = "Submitted on: ${submission.submittedAt}", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            }
+
+            val studentNote = submission.studentNote
+            if (!studentNote.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Your Note:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    color = Color.Gray.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = studentNote!!, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
+            val submittedAttachment = submission.attachmentUrl
+            if (submittedAttachment != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Your Attachment:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                AttachmentPreview(url = submittedAttachment, label = "View Submitted File")
+            }
+
+            if (submission.marksObtained != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Surface(
+                    color = Color(0xFF2E7D32),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Marks: ${submission.marksObtained} / ${maxMarks ?: "-"}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    }
+                }
+                
+                val feedback = submission.teacherFeedback
+                if (!feedback.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = "Teacher's Feedback:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        color = Color(0xFFFFF9C4),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = feedback!!, modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "You can only submit once. Contact your teacher to resubmit.",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                fontStyle = FontStyle.Italic
+            )
+        }
+    }
+}
+
+@Composable
+fun AttachmentPreview(url: String, label: String) {
+    val context = LocalContext.current
+    val isImage = url.lowercase().let { it.endsWith(".jpg") || it.endsWith(".jpeg") || it.endsWith(".png") || it.endsWith(".gif") }
+    
+    if (isImage) {
+        AsyncImage(
+            model = url,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    context.startActivity(intent)
+                },
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        OutlinedButton(
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                context.startActivity(intent)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Icon(Icons.Rounded.Description, null)
+            Spacer(Modifier.width(8.dp))
+            Text(label)
+        }
+    }
+}
+
+@Composable
+fun StatusChip(status: String) {
     val (color, label) = when (status.lowercase()) {
-        "not_submitted" -> Color.Red to "Not Submitted"
-        "pending" -> Color(0xFFE65100) to "Pending"
+        "not_submitted" -> Color(0xFFD32F2F) to "Not Submitted"
         "submitted" -> Color(0xFF1976D2) to "Submitted"
-        "graded" -> Color(0xFF2E7D32) to "Graded"
-        else -> MaterialTheme.colorScheme.outline to status.replaceFirstChar { it.uppercase() }
+        "graded" -> Color(0xFF388E3C) to "Graded ✓"
+        else -> Color.Gray to status.replaceFirstChar { it.uppercase() }
     }
     Surface(
         color = color.copy(alpha = 0.1f),
@@ -256,237 +650,27 @@ fun StatusBadge(status: String) {
     }
 }
 
-@Composable
-fun AssignmentDetailView(
-    assignmentId: Int,
-    detail: AssignmentDetailDto?,
-    isLoading: Boolean,
-    viewModel: StudentViewModel
-) {
-    val context = LocalContext.current
-    var showSubmitSheet by remember { mutableStateOf(false) }
-
-    if (isLoading && detail == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else if (detail != null) {
-        LaunchedEffect(assignmentId) {
-            val assignments = viewModel.assignments.value
-            val currentStatus = assignments.find { it.id == assignmentId }?.status ?: "not_submitted"
-            if (currentStatus == "submitted" || currentStatus == "graded") {
-                viewModel.loadSubmissionStatus(assignmentId) // This is a simplification, in real app you might need submissionId
-            }
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(text = detail.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(text = detail.subject ?: "General", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    DetailRow(icon = Icons.Rounded.Event, label = "Due Date", value = formatDate(detail.dueDate))
-                    DetailRow(icon = Icons.Rounded.Score, label = "Max Marks", value = detail.maxMarks?.toString() ?: "N/A")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(text = "Description", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Text(
-                text = detail.description ?: "No description provided.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            if (!detail.attachmentUrl.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(detail.attachmentUrl))
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Rounded.AttachFile, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("View Teacher Attachment")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Submission Section
-            val assignments = viewModel.assignments.collectAsState().value
-            val currentStatus = assignments.find { it.id == assignmentId }?.status ?: "not_submitted"
-
-            if (currentStatus == "submitted" || currentStatus == "graded") {
-                SubmissionStatusSection(viewModel, assignmentId)
-            } else {
-                Button(
-                    onClick = { showSubmitSheet = true },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Submit Assignment", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-
-    if (showSubmitSheet) {
-        SubmitAssignmentSheet(
-            onDismiss = { showSubmitSheet = false },
-            onSubmit = { content, fileUri ->
-                if (fileUri != null) {
-                    val part = uriToMultipart(fileUri, context)
-                    viewModel.submitAssignment(assignmentId, content, part)
-                } else {
-                    viewModel.submitAssignment(assignmentId, content)
-                }
-                showSubmitSheet = false
-            }
-        )
-    }
-}
-
-@Composable
-fun SubmissionStatusSection(viewModel: StudentViewModel, assignmentId: Int) {
-    val submissionStatus by viewModel.submissionStatus.collectAsState()
-    
-    // Note: submissionId is needed but if we don't have it, we show general status
-    // In a real flow, we'd fetch it using getSubmissionStatus if we had the ID
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = Color(0xFF2E7D32))
-                Spacer(Modifier.width(8.dp))
-                Text("Submission Received", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
-            }
-            
-            Spacer(Modifier.height(12.dp))
-            
-            if (submissionStatus != null) {
-                Text(text = "Marks: ${submissionStatus?.marksObtained ?: "Pending"}", style = MaterialTheme.typography.bodyLarge)
-                if (!submissionStatus?.feedback.isNullOrEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(text = "Feedback:", fontWeight = FontWeight.Bold)
-                    Text(text = submissionStatus?.feedback ?: "")
-                }
-            } else {
-                Text("Your assignment has been submitted and is awaiting grading.", style = MaterialTheme.typography.bodyMedium)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SubmitAssignmentSheet(
-    onDismiss: () -> Unit,
-    onSubmit: (String?, Uri?) -> Unit
-) {
-    var content by remember { mutableStateOf("") }
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
-    var fileName by remember { mutableStateOf<String?>(null) }
-    
-    val context = LocalContext.current
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        selectedFileUri = uri
-        fileName = uri?.let { getFileName(context, it) }
-    }
-
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
-        ) {
-            Text("Submit Assignment", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            OutlinedTextField(
-                value = content,
-                onValueChange = { content = it },
-                label = { Text("Add a note (optional)") },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                placeholder = { Text("Type your submission notes here...") }
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            OutlinedCard(
-                onClick = {
-                    filePickerLauncher.launch("*/*")
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Rounded.CloudUpload, contentDescription = null)
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(text = fileName ?: "Attach File", fontWeight = FontWeight.Bold)
-                        Text(text = if (fileName == null) "PDF, Word, or Images (max 10MB)" else "Tap to change file", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = { onSubmit(content.ifBlank { null }, selectedFileUri) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                enabled = content.isNotBlank() || selectedFileUri != null
-            ) {
-                Text("Confirm Submission")
-            }
-        }
-    }
-}
-
-@Composable
-fun DetailRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
-    Row(modifier = Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.outline)
-        Spacer(Modifier.width(8.dp))
-        Text(text = "$label: ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+fun getDueDateColor(dueDateStr: String, isOverdue: Boolean): Color {
+    if (isOverdue) return Color(0xFFD32F2F)
+    return try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dueDate = sdf.parse(dueDateStr)
+        val now = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.time
+        val diff = (dueDate?.time ?: 0) - now.time
+        val days = diff / (24 * 60 * 60 * 1000)
+        if (days <= 3) Color(0xFFE65100) else Color(0xFF388E3C)
+    } catch (e: Exception) {
+        Color.Gray
     }
 }
 
 fun formatDate(dateStr: String): String {
     return try {
-        // Handle various formats or fallback to original if parsing fails
         val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
         val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
         val date = inputFormat.parse(dateStr)
         outputFormat.format(date ?: "")
     } catch (e: Exception) {
-        // Fallback for Nepali date strings or other non-ISO formats
         dateStr
     }
 }
@@ -510,14 +694,4 @@ fun getFileName(context: Context, uri: Uri): String? {
         }
     }
     return result
-}
-
-fun uriToMultipart(uri: Uri, context: Context): MultipartBody.Part {
-    val contentResolver = context.contentResolver
-    val mimeType = contentResolver.getType(uri) ?: "application/octet-stream"
-    val fileName = getFileName(context, uri) ?: "upload.file"
-    val inputStream = contentResolver.openInputStream(uri)!!
-    val bytes = inputStream.readBytes()
-    val requestBody = bytes.toRequestBody(mimeType.toMediaType())
-    return MultipartBody.Part.createFormData("file", fileName, requestBody)
 }

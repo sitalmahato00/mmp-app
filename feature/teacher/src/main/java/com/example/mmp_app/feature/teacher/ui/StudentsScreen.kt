@@ -69,7 +69,8 @@ fun StudentsScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
-        containerColor = backgroundColor
+        containerColor = backgroundColor,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
 

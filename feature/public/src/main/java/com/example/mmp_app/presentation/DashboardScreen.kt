@@ -62,7 +62,6 @@ fun DashboardScreen(
     onNavigateToAttendance: () -> Unit = {},
     onNavigateToMarks: () -> Unit = {},
     onNavigateToAssignments: () -> Unit = {},
-    onNavigateToFees: () -> Unit = {},
     onNavigateToNotices: () -> Unit = {},
     onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
     onRecordMarks: (Int, String) -> Unit = { _, _ -> },
@@ -81,6 +80,8 @@ fun DashboardScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onToggleTheme: () -> Unit = {},
+    onNavigateToCreateAssignment: () -> Unit = {},
+    onViewSubmissions: (Int) -> Unit = {},
 ) {
     val viewModel: DashboardViewModel = hiltViewModel()
     val themeViewModel: ThemeViewModel = hiltViewModel()
@@ -146,7 +147,6 @@ fun DashboardScreen(
         onNavigateToAttendance = onNavigateToAttendance,
         onNavigateToMarks = onNavigateToMarks,
         onNavigateToAssignments = onNavigateToAssignments,
-        onNavigateToFees = onNavigateToFees,
         onNavigateToNotices = onNavigateToNotices,
         onRecordAttendance = onRecordAttendance,
         onRecordMarks = onRecordMarks,
@@ -173,7 +173,9 @@ fun DashboardScreen(
         onNavigateToNotifications = onNavigateToNotifications,
         unreadCount = notificationState.unreadCount,
         isDarkTheme = isDarkTheme,
-        onToggleTheme = { themeViewModel.toggleTheme() }
+        onToggleTheme = { themeViewModel.toggleTheme() },
+        onNavigateToCreateAssignment = onNavigateToCreateAssignment,
+        onViewSubmissions = onViewSubmissions
     )
 }
 
@@ -201,7 +203,6 @@ fun DashboardAdaptiveContent(
     onNavigateToAttendance: () -> Unit = {},
     onNavigateToMarks: () -> Unit = {},
     onNavigateToAssignments: () -> Unit = {},
-    onNavigateToFees: () -> Unit = {},
     onNavigateToNotices: () -> Unit = {},
     onRecordAttendance: (Int, String) -> Unit = { _, _ -> },
     onRecordMarks: (Int, String) -> Unit = { _, _ -> },
@@ -222,6 +223,8 @@ fun DashboardAdaptiveContent(
     unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
+    onNavigateToCreateAssignment: () -> Unit = {},
+    onViewSubmissions: (Int) -> Unit = {},
 ) {
     MMPAppTheme(darkTheme = isDarkTheme) {
         var selectedItem by remember { mutableIntStateOf(0) }
@@ -462,16 +465,20 @@ fun DashboardAdaptiveContent(
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     topBar = {
                         if (userProfile?.role?.lowercase() == "student") {
-                            StudentTopBar(
-                                textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B),
-                                cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
-                                primaryColor = Color(0xFF2563EB),
-                                isDarkTheme = isDarkTheme,
-                                unreadCount = unreadCount,
-                                onMenuClick = { scope.launch { drawerState.open() } },
-                                onToggleTheme = onToggleTheme,
-                                onNotificationsClick = onNavigateToNotifications
-                            )
+                            if (isTopLevelDestination) {
+                                StudentTopBar(
+                                    textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B),
+                                    cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White,
+                                    primaryColor = Color(0xFF2563EB),
+                                    isDarkTheme = isDarkTheme,
+                                    unreadCount = unreadCount,
+                                    onMenuClick = { scope.launch { drawerState.open() } },
+                                    onToggleTheme = onToggleTheme,
+                                    onNotificationsClick = onNavigateToNotifications
+                                )
+                            } else {
+                                null
+                            }
                         } else if (isTopLevelDestination) {
                             CenterAlignedTopAppBar(
                                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -662,7 +669,6 @@ fun DashboardAdaptiveContent(
                                         onNavigateToAttendance = onNavigateToAttendance,
                                         onNavigateToMarks = onNavigateToMarks,
                                         onNavigateToAssignments = onNavigateToAssignments,
-                                        onNavigateToFees = onNavigateToFees,
                                         onNavigateToNotices = onNavigateToNotices,
                                         onRecordAttendance = onRecordAttendance,
                                         onRecordMarks = onRecordMarks,
@@ -687,6 +693,8 @@ fun DashboardAdaptiveContent(
                                         onNavigateToProfile = onNavigateToProfile,
                                         onNavigateToSettings = onNavigateToSettings,
                                         onNavigateToNotifications = onNavigateToNotifications,
+                                        onNavigateToCreateAssignment = onNavigateToCreateAssignment,
+                                        onViewSubmissions = onViewSubmissions,
                                         onLogout = onLogout,
                                         onSelectItem = { selectedItem = it },
                                         unreadCount = unreadCount,
@@ -701,7 +709,10 @@ fun DashboardAdaptiveContent(
                                             showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "student") {
-                                        NoticesScreen(onBack = { selectedItem = 0 }, showSystemHeader = true)
+                                        NoticesScreen(
+                                            onBack = { selectedItem = 0 },
+                                            showSystemHeader = true
+                                        )
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
                                         com.example.mmp_app.feature.teacher.ui.TodayScheduleScreen(
                                             onBack = { selectedItem = 0 },
@@ -726,7 +737,9 @@ fun DashboardAdaptiveContent(
                                             onBack = { selectedItem = 0 },
                                             showSystemHeader = true,
                                             isDarkTheme = isDarkTheme,
-                                            onToggleTheme = onToggleTheme
+                                            onToggleTheme = onToggleTheme,
+                                            onNavigateToCreate = onNavigateToCreateAssignment,
+                                            onViewSubmissions = onViewSubmissions
                                         )
                                     } else {
                                         TimetableScreen(
@@ -843,7 +856,6 @@ fun MainDashboardContent(
     onNavigateToAttendance: () -> Unit,
     onNavigateToMarks: () -> Unit,
     onNavigateToAssignments: () -> Unit,
-    onNavigateToFees: () -> Unit,
     onNavigateToNotices: () -> Unit,
     onRecordAttendance: (Int, String) -> Unit,
     onRecordMarks: (Int, String) -> Unit,
@@ -866,7 +878,9 @@ fun MainDashboardContent(
     unreadCount: Int = 0,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {},
-    showSystemHeader: Boolean = true
+    showSystemHeader: Boolean = true,
+    onNavigateToCreateAssignment: () -> Unit = {},
+    onViewSubmissions: (Int) -> Unit = {},
 ) {
     when (userProfile?.role?.lowercase()) {
         "student" -> {
@@ -883,7 +897,6 @@ fun MainDashboardContent(
                     onMarksClick = { onSelectItem(3) },
                     onAssignmentsClick = onNavigateToAssignments,
                     onNoticesClick = { onSelectItem(1) },
-                    onFeesClick = onNavigateToFees,
                     onRoutineClick = onNavigateToRoutines,
                     onExamsClick = onNavigateToExams,
                     onResultsClick = { onSelectItem(3) },
@@ -921,6 +934,8 @@ fun MainDashboardContent(
                     onNavigateToNotices = { onSelectItem(3) },
                     onNavigateToProfile = { onSelectItem(4) },
                     onNavigateToClasses = { onSelectItem(5) },
+                    onNavigateToCreateAssignment = onNavigateToCreateAssignment,
+                    onViewSubmissions = onViewSubmissions,
                     onLogoutClick = onLogout,
                     showSystemHeader = showSystemHeader
                 )

@@ -35,6 +35,7 @@ fun StudentProfileScreen(
     onLogout: () -> Unit = {},
     onEditProfile: () -> Unit = {},
     isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
     showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
@@ -161,6 +162,9 @@ fun StudentProfileScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                         IconButton(onClick = onEditProfile) {
                             Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
                         }
@@ -171,7 +175,8 @@ fun StudentProfileScreen(
                     )
                 )
             },
-            containerColor = backgroundColor
+            containerColor = backgroundColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             content(paddingValues)
         }

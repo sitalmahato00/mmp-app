@@ -34,7 +34,9 @@ fun ChildDetailsScreen(
     onNavigateToAssignments: (Int) -> Unit,
     onNavigateToTimetable: (Int) -> Unit,
     viewModel: ChildDetailViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -43,25 +45,10 @@ fun ChildDetailsScreen(
     }
 
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
+    val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(uiState.childDetail?.name ?: "Child Details", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = textColor
-                )
-            )
-        },
-        containerColor = backgroundColor
-    ) { padding ->
+    val content = @Composable { padding: PaddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (uiState.isLoading && uiState.childDetail == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -90,7 +77,7 @@ fun ChildDetailsScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White),
+                        colors = CardDefaults.cardColors(containerColor = cardBgColor),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
@@ -189,6 +176,36 @@ fun ChildDetailsScreen(
                 }
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(uiState.childDetail?.name ?: "Child Details", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
+                )
+            },
+            containerColor = backgroundColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        ) { padding ->
+            content(padding)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 

@@ -110,7 +110,8 @@ fun TodayScheduleScreen(
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
                 )
             },
-            containerColor = backgroundColor
+            containerColor = backgroundColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             content(padding)
         }

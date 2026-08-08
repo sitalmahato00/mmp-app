@@ -36,7 +36,10 @@ import com.example.mmp_app.domain.model.*
 @Composable
 fun SubjectsScreen(
     onBack: () -> Unit,
-    onSubjectClick: (Int, String, String?) -> Unit
+    onSubjectClick: (Int, String, String?) -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: SubjectViewModel = hiltViewModel()
 
@@ -50,15 +53,23 @@ fun SubjectsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("My Subjects") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = { Text("My Subjects") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Box(
             modifier = Modifier
@@ -102,7 +113,10 @@ fun SubjectDetailScreen(
     subjectId: Int,
     subjectName: String,
     subjectCode: String?,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: SubjectViewModel = hiltViewModel()
 
@@ -121,26 +135,34 @@ fun SubjectDetailScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(text = subjectName, style = MaterialTheme.typography.titleMedium)
-                        if (subjectCode != null) {
-                            Text(
-                                text = subjectCode,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(text = subjectName, style = MaterialTheme.typography.titleMedium)
+                            if (subjectCode != null) {
+                                Text(
+                                    text = subjectCode,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
                         }
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
+                )
+            }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(
             modifier = Modifier

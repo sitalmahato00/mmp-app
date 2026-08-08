@@ -1,5 +1,6 @@
 package com.example.mmp_app.feature.parent.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -7,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -34,6 +37,7 @@ fun ChildTimetableScreen(
     onBack: () -> Unit,
     viewModel: ChildTimetableViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
     showSystemHeader: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,13 +101,19 @@ fun ChildTimetableScreen(
                             Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                         }
                     },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = cardBgColor,
                         titleContentColor = textColor
                     )
                 )
             },
-            containerColor = backgroundColor
+            containerColor = backgroundColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             content(paddingValues)
         }

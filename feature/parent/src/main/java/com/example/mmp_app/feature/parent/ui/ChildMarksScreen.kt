@@ -22,13 +22,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mmp_app.domain.model.*
 import com.example.mmp_app.feature.student.ui.OfficialMarksheetDialog
-import com.example.mmp_app.feature.student.ui.format
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +37,7 @@ fun ChildMarksScreen(
     onBack: () -> Unit,
     viewModel: ParentMarksViewModel = hiltViewModel(),
     isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
     showSystemHeader: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -61,7 +62,7 @@ fun ChildMarksScreen(
             if (uiState.isLoading && uiState.children.isEmpty()) {
                 MarksShimmer()
             } else if (uiState.error != null && uiState.marks.isEmpty()) {
-                ErrorState(message = uiState.error!!, onRetry = { viewModel.refresh() })
+                ChildMarksErrorState(message = uiState.error!!, onRetry = { viewModel.refresh() })
             } else {
                 val assessmentMarks = uiState.marks.filter { it.examType.lowercase() == "assessment" }
                 val groupedMarks = assessmentMarks.groupBy { it.exam }
@@ -139,7 +140,7 @@ fun ChildMarksScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Rounded.Assignment, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("View Marksheet", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("View Marksheet", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
                     }
                 }
             }
@@ -150,10 +151,15 @@ fun ChildMarksScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Marks", fontWeight = FontWeight.Bold) },
+                    title = { Text("Child Marks", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -162,7 +168,8 @@ fun ChildMarksScreen(
                     )
                 )
             },
-            containerColor = backgroundColor
+            containerColor = backgroundColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             content(padding)
         }
@@ -171,13 +178,11 @@ fun ChildMarksScreen(
     }
 
     if (showExamPicker) {
-        // ... dialog code ...
         val exams = uiState.marks.filter { it.examType.lowercase() == "assessment" }.map { it.exam }.distinct()
         ExamPickerDialog(
             exams = exams,
             onExamSelected = { examName ->
                 val examMarks = uiState.marks.filter { it.exam == examName && it.examType.lowercase() == "assessment" }
-                val student = mapToStudentDashboard(uiState.selectedChild)
                 val examSummary = mapToExamSummary(examName, examMarks)
                 selectedExamForMarksheet = examSummary
                 showExamPicker = false
@@ -188,11 +193,14 @@ fun ChildMarksScreen(
     }
 
     if (showMarksheet && selectedExamForMarksheet != null) {
-        OfficialMarksheetDialog(
-            student = mapToStudentDashboard(uiState.selectedChild),
-            exam = selectedExamForMarksheet!!,
-            onDismiss = { showMarksheet = false }
-        )
+        val student = mapToStudentDashboard(uiState.selectedChild)
+        if (student != null) {
+            OfficialMarksheetDialog(
+                student = student,
+                exam = selectedExamForMarksheet!!,
+                onDismiss = { showMarksheet = false }
+            )
+        }
     }
 }
 
@@ -468,4 +476,19 @@ private fun mapToExamSummary(examName: String, marks: List<ParentMarkRecordDto>)
         obtainedMarks = totalObtained,
         percentage = percentage
     )
+}
+
+@Composable
+fun ChildMarksErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Text("Retry")
+        }
+    }
 }

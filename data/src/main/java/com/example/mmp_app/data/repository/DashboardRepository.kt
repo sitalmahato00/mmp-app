@@ -89,8 +89,101 @@ class DashboardRepositoryImpl @Inject constructor(
             val response = apiService.getMarkComponents(subjectId)
             emit(Result.success(handleApiResponse(response, json)))
         } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
             if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+        }
+    }
+
+    override fun getTeacherAssignmentsList(): Flow<Result<AssignmentListResponse>> = flow {
+        try {
+            val response = apiService.getTeacherAssignments()
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!))
+            } else {
+                emit(Result.failure(Exception("Failed to load assignments")))
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+        }
+    }
+
+    override suspend fun createTeacherAssignment(
+        title: String,
+        description: String?,
+        subjectId: Int,
+        dueDate: String,
+        maxMarks: Double?,
+        attachment: Any?
+    ): Result<MessageResponse> {
+        return try {
+            val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
+            val subjectPart = subjectId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            val datePart = dueDate.toRequestBody("text/plain".toMediaTypeOrNull())
+            val maxMarksPart = maxMarks?.toString()?.toRequestBody("text/plain".toMediaTypeOrNull())
+            val descPart = description?.toRequestBody("text/plain".toMediaTypeOrNull())
+            val filePart = attachment as? okhttp3.MultipartBody.Part
+
+            val response = apiService.createAssignment(
+                titlePart, descPart, subjectPart, datePart, maxMarksPart, filePart
+            )
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to create assignment"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateTeacherAssignment(id: Int, request: UpdateAssignmentRequest): Result<MessageResponse> {
+        return try {
+            val response = apiService.updateAssignment(id, request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to update assignment"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteTeacherAssignment(id: Int): Result<MessageResponse> {
+        return try {
+            val response = apiService.deleteAssignment(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to delete assignment"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getAssignmentSubmissions(id: Int): Flow<Result<SubmissionsResponse>> = flow {
+        try {
+            val response = apiService.getSubmissions(id)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!))
+            } else {
+                emit(Result.failure(Exception("Failed to load submissions")))
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+        }
+    }
+
+    override suspend fun gradeAssignmentSubmission(submissionId: Int, request: GradeRequest): Result<MessageResponse> {
+        return try {
+            val response = apiService.gradeSubmission(submissionId, request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to grade submission"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -185,70 +278,55 @@ class DashboardRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>> = flow {
+    override fun getStudentAssignmentsList(page: Int): Flow<Result<StudentAssignmentsResponse>> = flow {
         try {
-            val response = apiService.getStudentAssignments()
-            val result = handleRawResponse(response)
-            val assignments = result.data
-            
-            // Cache assignments
-            dashboardDao.insertAssignments(assignments.map { 
-                AssignmentEntity(it.id, it.title, it.subject ?: "N/A", it.dueDate, it.status)
-            })
-            
-            emit(Result.success(assignments))
-        } catch (e: Exception) {
-            // Try to load from cache on failure
-            val cached = dashboardDao.getAssignments().firstOrNull()
-            if (!cached.isNullOrEmpty()) {
-                emit(Result.success(cached.map { 
-                    AssignmentDto(it.id, it.title, it.subject, null, it.dueDate, null, null, it.status)
-                }))
+            val response = apiService.getStudentAssignmentsList(page)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!))
             } else {
-                if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+                emit(Result.failure(Exception("Failed to load assignments")))
             }
-        }
-    }
-
-    override fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDetailDto>> = flow {
-        try {
-            val response = apiService.getAssignmentDetail(id)
-            val result = handleRawResponse(response)
-            emit(Result.success(result.data))
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
     }
 
-    override suspend fun submitAssignment(id: Int, content: String?): Result<SubmissionDto> {
-        return try {
-            val request = mutableMapOf<String, String>()
-            content?.let { request["content"] = it }
-            val response = apiService.submitAssignment(id, request)
-            val result = handleRawResponse(response)
-            Result.success(result.data ?: throw Exception("Submission failed"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun submitAssignmentWithFile(id: Int, content: String?, filePart: Any?): Result<SubmissionDto> {
-        return try {
-            val contentBody = content?.toRequestBody("text/plain".toMediaTypeOrNull())
-            val multipartFile = filePart as? MultipartBody.Part
-            val response = apiService.submitAssignmentWithFile(id, contentBody, multipartFile)
-            val result = handleRawResponse(response)
-            Result.success(result.data ?: throw Exception("Submission failed"))
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override fun getSubmissionStatus(submissionId: Int): Flow<Result<SubmissionStatusDto>> = flow {
+    override fun getStudentAssignmentDetail(id: Int): Flow<Result<StudentAssignmentDetailDto>> = flow {
         try {
-            val response = apiService.getSubmissionStatus(submissionId)
-            val result = handleRawResponse(response)
-            emit(Result.success(result.data))
+            val response = apiService.getStudentAssignmentDetail(id)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!.data))
+            } else {
+                emit(Result.failure(Exception("Failed to load assignment detail")))
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
+        }
+    }
+
+    override suspend fun submitStudentAssignment(id: Int, note: String?, attachment: Any?): Result<SubmitResponse> {
+        return try {
+            val notePart = note?.toRequestBody("text/plain".toMediaTypeOrNull())
+            val filePart = attachment as? okhttp3.MultipartBody.Part
+            val response = apiService.submitStudentAssignment(id, notePart, filePart)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to submit assignment"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getStudentSubmissionStatus(submissionId: Int): Flow<Result<SubmissionStatusDto>> = flow {
+        try {
+            val response = apiService.getStudentSubmissionStatus(submissionId)
+            if (response.isSuccessful && response.body() != null) {
+                emit(Result.success(response.body()!!.data))
+            } else {
+                emit(Result.failure(Exception("Failed to load submission status")))
+            }
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }
@@ -411,15 +489,6 @@ class DashboardRepositoryImpl @Inject constructor(
         try {
             val response = apiService.getChildDashboard(childId)
             emit(Result.success(handleApiResponse(response, json)))
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
-        }
-    }
-
-    override fun getStudentFees(): Flow<Result<FeesResponse>> = flow {
-        try {
-            val response = apiService.getStudentFees()
-            emit(Result.success(handleRawResponse(response)))
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e; emit(Result.failure(e))
         }

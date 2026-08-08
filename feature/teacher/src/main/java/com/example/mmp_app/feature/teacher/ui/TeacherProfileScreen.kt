@@ -33,7 +33,8 @@ fun TeacherProfileScreen(
     onBack: (() -> Unit)? = null,
     teacherData: TeacherDashboardDto? = null,
     isDarkTheme: Boolean = false,
-    onToggleTheme: () -> Unit = {}
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val settingsViewModel: SettingsViewModel = hiltViewModel()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -48,33 +49,7 @@ fun TeacherProfileScreen(
     val textColor = if (isDarkTheme) Color(0xFFF1F5F9) else Color(0xFF1E293B)
     val cardBgColor = if (isDarkTheme) Color(0xFF1E293B) else Color.White
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("My Profile", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onToggleTheme) {
-                        Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
-                    }
-                    IconButton(onClick = onEditProfile) {
-                        Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = textColor
-                )
-            )
-        },
-        containerColor = backgroundColor
-    ) { paddingValues ->
+    val content = @Composable { paddingValues: PaddingValues ->
         settingsState.user?.let { data ->
             LazyColumn(
                 modifier = Modifier
@@ -149,6 +124,40 @@ fun TeacherProfileScreen(
                 CircularProgressIndicator(color = primaryColor)
             }
         }
+    }
+
+    if (showSystemHeader) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("My Profile", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back", tint = primaryColor)
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                        IconButton(onClick = onEditProfile) {
+                            Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = backgroundColor,
+                        titleContentColor = textColor
+                    )
+                )
+            },
+            containerColor = backgroundColor
+        ) { paddingValues ->
+            content(paddingValues)
+        }
+    } else {
+        content(PaddingValues(0.dp))
     }
 }
 

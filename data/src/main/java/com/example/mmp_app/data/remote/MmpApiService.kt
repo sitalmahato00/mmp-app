@@ -60,27 +60,21 @@ interface MmpApiService {
     ): Response<BaseResponse<MarksheetDto>>
 
     @GET("v1/student/assignments")
-    suspend fun getStudentAssignments(@Query("page") page: Int = 1): Response<AssignmentsResponse>
+    suspend fun getStudentAssignmentsList(@Query("page") page: Int = 1): Response<StudentAssignmentsResponse>
 
     @GET("v1/student/assignments/{id}")
-    suspend fun getAssignmentDetail(@Path("id") id: Int): Response<AssignmentDetailResponse>
-
-    @POST("v1/student/assignments/{id}/submit")
-    suspend fun submitAssignment(
-        @Path("id") id: Int,
-        @Body request: Map<String, String>
-    ): Response<SubmitResponse>
+    suspend fun getStudentAssignmentDetail(@Path("id") id: Int): Response<StudentAssignmentDetailResponse>
 
     @Multipart
     @POST("v1/student/assignments/{id}/submit")
-    suspend fun submitAssignmentWithFile(
-        @Path("id") id: Int,
-        @Part("content") content: RequestBody?,
-        @Part file: MultipartBody.Part?
+    suspend fun submitStudentAssignment(
+        @Path("id") assignmentId: Int,
+        @Part("student_note") note: RequestBody?,
+        @Part attachment: MultipartBody.Part?
     ): Response<SubmitResponse>
 
     @GET("v1/student/assignments/{submissionId}/submission-status")
-    suspend fun getSubmissionStatus(@Path("submissionId") submissionId: Int): Response<SubmissionStatusResponse>
+    suspend fun getStudentSubmissionStatus(@Path("submissionId") submissionId: Int): Response<SubmissionStatusResponse>
 
     @GET("v1/student/timetable")
     suspend fun getTimetable(): Response<BaseResponse<TimetableData>>
@@ -117,7 +111,36 @@ interface MmpApiService {
     suspend fun getMarkComponents(@Path("subjectId") subjectId: Int): Response<BaseResponse<MarkComponentsDto>>
 
     @GET("v1/teacher/assignments")
-    suspend fun getTeacherAssignments(): Response<BaseResponse<List<AssignmentDto>>>
+    suspend fun getTeacherAssignments(): Response<AssignmentListResponse>
+
+    @Multipart
+    @POST("v1/teacher/assignments/create")
+    suspend fun createAssignment(
+        @Part("title") title: RequestBody,
+        @Part("description") description: RequestBody?,
+        @Part("subject_id") subjectId: RequestBody,
+        @Part("due_date") dueDate: RequestBody,
+        @Part("max_marks") maxMarks: RequestBody?,
+        @Part attachment: MultipartBody.Part?
+    ): Response<MessageResponse>
+
+    @PUT("v1/teacher/assignments/{id}")
+    suspend fun updateAssignment(
+        @Path("id") id: Int,
+        @Body request: UpdateAssignmentRequest
+    ): Response<MessageResponse>
+
+    @DELETE("v1/teacher/assignments/{id}")
+    suspend fun deleteAssignment(@Path("id") id: Int): Response<MessageResponse>
+
+    @GET("v1/teacher/assignments/{id}/submissions")
+    suspend fun getSubmissions(@Path("id") id: Int): Response<SubmissionsResponse>
+
+    @POST("v1/teacher/assignments/{submission}/grade")
+    suspend fun gradeSubmission(
+        @Path("submission") submissionId: Int,
+        @Body request: GradeRequest
+    ): Response<MessageResponse>
 
     @POST("v1/teacher/attendance/bulk-mark")
     suspend fun recordAttendance(@Body body: AttendanceRecordRequest): Response<BaseResponse<Unit>>
@@ -157,9 +180,6 @@ interface MmpApiService {
 
     @DELETE("v1/notifications/{id}")
     suspend fun deleteNotification(@Path("id") id: String): Response<BaseResponse<Unit>>
-
-    @GET("v1/student/fees")
-    suspend fun getStudentFees(): Response<FeesResponse>
 
     // User/Settings Endpoints
     @GET("v1/user")

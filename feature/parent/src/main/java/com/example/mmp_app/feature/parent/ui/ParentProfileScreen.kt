@@ -35,7 +35,8 @@ fun ParentProfileScreen(
     showSystemHeader: Boolean = true,
     viewModel: ParentProfileViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
@@ -156,6 +157,9 @@ fun ParentProfileScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                         IconButton(onClick = onEditProfile) {
                             Icon(Icons.Rounded.Edit, contentDescription = "Edit Profile", tint = primaryColor)
                         }
@@ -166,7 +170,8 @@ fun ParentProfileScreen(
                     )
                 )
             },
-            containerColor = backgroundColor
+            containerColor = backgroundColor,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             content(paddingValues)
         }

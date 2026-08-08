@@ -54,6 +54,8 @@ fun TeacherDashboard(
     onNavigateToNotices: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToClasses: () -> Unit = {},
+    onNavigateToCreateAssignment: () -> Unit = {},
+    onViewSubmissions: (Int) -> Unit = {},
     onLogoutClick: () -> Unit = {},
     showSystemHeader: Boolean = false
 ) {

@@ -46,6 +46,7 @@ import kotlin.math.roundToInt
 fun MarksScreen(
     onBack: () -> Unit,
     isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
     showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
@@ -173,13 +174,19 @@ fun MarksScreen(
                             Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                         }
                     },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = MaterialTheme.colorScheme.onBackground
                     )
                 )
             },
-            snackbarHost = { SnackbarHost(snackbarHostState) }
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             content(padding)
         }

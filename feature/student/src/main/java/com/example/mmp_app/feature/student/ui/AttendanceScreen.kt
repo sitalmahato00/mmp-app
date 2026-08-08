@@ -33,7 +33,9 @@ import com.example.mmp_app.domain.model.*
 @Composable
 fun AttendanceScreen(
     onBack: () -> Unit,
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
 
@@ -52,24 +54,30 @@ fun AttendanceScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Attendance", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO: Show Calendar */ }) {
-                        Icon(Icons.Rounded.CalendarMonth, contentDescription = "Calendar", tint = MaterialTheme.colorScheme.primary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = { Text("Attendance", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                        IconButton(onClick = { /* TODO: Show Calendar */ }) {
+                            Icon(Icons.Rounded.CalendarMonth, contentDescription = "Calendar", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
-        }
+            }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(modifier = Modifier
             .padding(padding)

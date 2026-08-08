@@ -42,6 +42,8 @@ import java.util.*
 @Composable
 fun NoticesScreen(
     onBack: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
     showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
@@ -96,9 +98,15 @@ fun NoticesScreen(
                         }) {
                             Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                         }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                     }
                 )
-            }
+            },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             content(padding)
         }

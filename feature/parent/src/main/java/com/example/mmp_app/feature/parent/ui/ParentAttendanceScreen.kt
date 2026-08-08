@@ -9,7 +9,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.EventBusy
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -37,7 +40,9 @@ fun ParentAttendanceScreen(
     childId: Int,
     onBack: () -> Unit,
     viewModel: ParentAttendanceViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val backgroundColor = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFFF8FAFC)
@@ -48,20 +53,28 @@ fun ParentAttendanceScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Attendance", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardBgColor,
-                    titleContentColor = textColor
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = { Text("Attendance", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = cardBgColor,
+                        titleContentColor = textColor
+                    )
                 )
-            )
+            }
         },
-        containerColor = backgroundColor
+        containerColor = backgroundColor,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,

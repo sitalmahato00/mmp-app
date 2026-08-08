@@ -36,7 +36,6 @@ import com.example.mmp_app.feature.parent.ui.ParentAssignmentsScreen
 import com.example.mmp_app.feature.student.ui.AssignmentsScreen
 import com.example.mmp_app.feature.student.ui.AttendanceScreen
 import com.example.mmp_app.feature.student.ui.DownloadsScreen
-import com.example.mmp_app.feature.student.ui.FeesScreen
 import com.example.mmp_app.feature.student.ui.MarksScreen
 import com.example.mmp_app.feature.student.ui.NoticesScreen
 import com.example.mmp_app.feature.student.ui.NotificationScreen
@@ -45,6 +44,8 @@ import com.example.mmp_app.feature.student.ui.StudentProfileScreen
 import com.example.mmp_app.feature.student.ui.SubjectDetailScreen
 import com.example.mmp_app.feature.student.ui.SubjectsScreen
 import com.example.mmp_app.feature.student.ui.TimetableScreen
+import com.example.mmp_app.feature.teacher.ui.AssignmentSubmissionsScreen
+import com.example.mmp_app.feature.teacher.ui.CreateAssignmentScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherAttendanceScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherMarksScreen
 import com.example.mmp_app.presentation.*
@@ -82,6 +83,7 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
     )
     val navigator = remember { Navigator(navigationState) }
     val authViewModel: AuthViewModel = hiltViewModel()
+    val themeViewModel: com.example.mmp_app.core.presentation.ThemeViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
 
     val email by authViewModel.email.collectAsState()
@@ -152,8 +154,9 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToAttendance = { navigator.navigate(Routes.Attendance) },
                 onNavigateToMarks = { navigator.navigate(Routes.Marks) },
                 onNavigateToAssignments = { navigator.navigate(Routes.Assignments) },
-                onNavigateToFees = { navigator.navigate(Routes.Fees) },
                 onNavigateToNotices = { navigator.navigate(Routes.Notices) },
+                onNavigateToCreateAssignment = { navigator.navigate(Routes.CreateAssignment) },
+                onViewSubmissions = { id -> navigator.navigate(Routes.AssignmentSubmissions(id)) },
                 onRecordAttendance = { classId, subject -> 
                     navigator.navigate(Routes.RecordAttendance(classId, subject)) 
                 },
@@ -179,23 +182,41 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
             )
         }
         entry<Routes.Attendance> {
-            AttendanceScreen(onBack = { navigator.goBack() }, isDarkTheme = isDarkTheme)
+            AttendanceScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
         }
         entry<Routes.Marks> {
-            MarksScreen(onBack = { navigator.goBack() })
+            MarksScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
         }
         entry<Routes.Results> {
-            MarksScreen(onBack = { navigator.goBack() })
+            MarksScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
         }
         entry<Routes.Assignments> {
-            AssignmentsScreen(onBack = { navigator.goBack() })
+            AssignmentsScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
         }
         entry<Routes.Subjects> {
             SubjectsScreen(
                 onBack = { navigator.goBack() },
                 onSubjectClick = { id, name, code ->
                     navigator.navigate(Routes.SubjectDetail(id, name, code))
-                }
+                },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.SubjectDetail> { route ->
@@ -203,13 +224,27 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 subjectId = route.subjectId,
                 subjectName = route.subjectName,
                 subjectCode = route.subjectCode,
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.Routines> { PlaceholderScreen("Routines", onBack = { navigator.goBack() }) }
         entry<Routes.Exams> { PlaceholderScreen("Exams", onBack = { navigator.goBack() }) }
-        entry<Routes.Timetable> { TimetableScreen(onBack = { navigator.goBack() }) }
-        entry<Routes.Downloads> { DownloadsScreen(onBack = { navigator.goBack() }) }
+        entry<Routes.Timetable> { 
+            TimetableScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            ) 
+        }
+        entry<Routes.Downloads> { 
+            DownloadsScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            ) 
+        }
         entry<Routes.Profile> {
             StudentProfileScreen(
                 onBack = { navigator.goBack() },
@@ -220,7 +255,8 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                     }
                 },
                 onEditProfile = { navigator.navigate(Routes.Settings) },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.Settings> { 
@@ -250,20 +286,29 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 }
             )
         }
-        entry<Routes.Fees> { FeesScreen(onBack = { navigator.goBack() }) }
-        entry<Routes.Notices> { NoticesScreen(onBack = { navigator.goBack() }) }
+        entry<Routes.Notices> { 
+            NoticesScreen(
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            ) 
+        }
         entry<Routes.RecordAttendance> { route ->
             TeacherAttendanceScreen(
                 classId = route.classId,
                 subject = route.subject,
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.RecordMarks> { route ->
             TeacherMarksScreen(
                 classId = route.classId,
                 subject = route.subject,
-                onBack = { navigator.goBack() }
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.ChildDetails> { route ->
@@ -274,42 +319,64 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToMarks = { id -> navigator.navigate(Routes.ChildResults(id)) },
                 onNavigateToAssignments = { id -> navigator.navigate(Routes.ChildAssignments(id)) },
                 onNavigateToTimetable = { id -> navigator.navigate(Routes.ChildTimetable(id)) },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.ChildrenList> {
             ChildrenListScreen(
                 onBack = { navigator.goBack() },
                 onNavigateToChildDetail = { id -> navigator.navigate(Routes.ChildDetails(id, "")) },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.ChildAttendance> { route ->
             ParentAttendanceScreen(
                 childId = route.childId,
                 onBack = { navigator.goBack() },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.ChildAssignments> { route ->
             ParentAssignmentsScreen(
                 childId = route.childId,
                 onBack = { navigator.goBack() },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.ChildResults> { route ->
             ChildMarksScreen(
                 childId = route.childId,
                 onBack = { navigator.goBack() },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
         entry<Routes.ChildTimetable> { route ->
             ChildTimetableScreen(
                 childId = route.childId,
                 onBack = { navigator.goBack() },
-                isDarkTheme = isDarkTheme
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
+        }
+        entry<Routes.CreateAssignment> {
+            CreateAssignmentScreen(
+                onBack = { navigator.goBack() },
+                onSuccess = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
+        }
+        entry<Routes.AssignmentSubmissions> { route ->
+            AssignmentSubmissionsScreen(
+                assignmentId = route.assignmentId,
+                onBack = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
     }

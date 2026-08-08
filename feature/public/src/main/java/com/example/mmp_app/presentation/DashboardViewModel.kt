@@ -162,8 +162,21 @@ class DashboardViewModel @Inject constructor(
     }
 
     private suspend fun fetchStudentAssignments() {
-        repository.getStudentAssignments().collect { result ->
-            result.onSuccess { _assignments.value = it }
+        repository.getStudentAssignmentsList().collect { result ->
+            result.onSuccess { response ->
+                _assignments.value = response.data.map { item ->
+                    AssignmentDto(
+                        id = item.id,
+                        title = item.title,
+                        subject = item.subject,
+                        description = item.description,
+                        dueDate = item.dueDate,
+                        maxMarks = item.maxMarks?.toFloat(),
+                        obtainedMarks = item.submission?.marksObtained?.toFloat(),
+                        status = item.status
+                    )
+                }
+            }
                 .onFailure { _error.value = it.message }
         }
     }
@@ -351,10 +364,21 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
-            repository.getStudentAssignments().collect { result ->
+            repository.getStudentAssignmentsList().collect { result ->
                 _isLoading.value = false
-                result.onSuccess {
-                    _assignments.value = it
+                result.onSuccess { response ->
+                    _assignments.value = response.data.map { item ->
+                        AssignmentDto(
+                            id = item.id,
+                            title = item.title,
+                            subject = item.subject,
+                            description = item.description,
+                            dueDate = item.dueDate,
+                            maxMarks = item.maxMarks?.toFloat(),
+                            obtainedMarks = item.submission?.marksObtained?.toFloat(),
+                            status = item.status
+                        )
+                    }
                 }.onFailure {
                     _error.value = it.message
                 }

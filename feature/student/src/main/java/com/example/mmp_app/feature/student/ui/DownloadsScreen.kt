@@ -33,7 +33,10 @@ import com.example.mmp_app.domain.model.SubjectDocument
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    showSystemHeader: Boolean = true
 ) {
     val viewModel: StudentViewModel = hiltViewModel()
     val downloads by viewModel.downloads.collectAsState()
@@ -59,15 +62,23 @@ fun DownloadsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Study Materials") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+            if (showSystemHeader) {
+                TopAppBar(
+                    title = { Text("Study Materials") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         Column(
             modifier = Modifier

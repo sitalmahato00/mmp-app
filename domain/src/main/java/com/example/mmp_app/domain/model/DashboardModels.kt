@@ -81,6 +81,145 @@ data class MarkDto(
 )
 
 @Serializable
+data class AssignmentListResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: List<AssignmentItemDto>,
+    @SerialName("meta") val meta: AssignmentMetaDto? = null
+)
+
+@Serializable
+data class AssignmentItemDto(
+    @SerialName("id") val id: Int,
+    @SerialName("title") val title: String,
+    @SerialName("description") val description: String? = null,
+    @SerialName("subject_id") val subjectId: Int,
+    @SerialName("subject") val subject: String? = null,
+    @SerialName("subject_code") val subjectCode: String? = null,
+    @SerialName("due_date") val dueDate: String,
+    @SerialName("max_marks") val maxMarks: Double? = null,
+    @SerialName("attachment_url") val attachmentUrl: String? = null,
+    @SerialName("submissions_count") val submissionsCount: Int = 0,
+    @SerialName("is_overdue") val isOverdue: Boolean = false,
+    @SerialName("created_at") val createdAt: String? = null
+)
+
+@Serializable
+data class AssignmentMetaDto(
+    @SerialName("total") val total: Int,
+    @SerialName("upcoming") val upcoming: Int,
+    @SerialName("overdue") val overdue: Int
+)
+
+@Serializable
+data class SubmissionsResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: SubmissionsDataDto
+)
+
+@Serializable
+data class SubmissionsDataDto(
+    @SerialName("assignment") val assignment: AssignmentBriefDto,
+    @SerialName("total") val total: Int,
+    @SerialName("submissions") val submissions: List<SubmissionItemDto>
+)
+
+@Serializable
+data class AssignmentBriefDto(
+    @SerialName("id") val id: Int,
+    @SerialName("title") val title: String,
+    @SerialName("max_marks") val maxMarks: Double? = null,
+    @SerialName("due_date") val dueDate: String,
+    @SerialName("attachment_url") val attachmentUrl: String? = null
+)
+
+@Serializable
+data class SubmissionItemDto(
+    @SerialName("id") val id: Int,
+    @SerialName("student_id") val studentId: Int,
+    @SerialName("student_name") val studentName: String? = null,
+    @SerialName("student_no") val studentNo: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("student_note") val studentNote: String? = null,
+    @SerialName("attachment_url") val attachmentUrl: String? = null,
+    @SerialName("status") val status: String,            // "submitted", "graded", "late"
+    @SerialName("marks_obtained") val marksObtained: Double? = null,
+    @SerialName("teacher_feedback") val teacherFeedback: String? = null,
+    @SerialName("submitted_at") val submittedAt: String
+)
+
+@Serializable
+data class MessageResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("message") val message: String
+)
+
+@Serializable
+data class GradeRequest(
+    @SerialName("marks_obtained") val marksObtained: Double,
+    @SerialName("teacher_feedback") val teacherFeedback: String? = null
+)
+
+@Serializable
+data class UpdateAssignmentRequest(
+    @SerialName("title") val title: String? = null,
+    @SerialName("description") val description: String? = null,
+    @SerialName("due_date") val dueDate: String? = null,
+    @SerialName("max_marks") val maxMarks: Double? = null
+)
+
+@Serializable
+data class StudentAssignmentsResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: List<StudentAssignmentItemDto>,
+    @SerialName("pagination") val pagination: PaginationDto
+)
+
+@Serializable
+data class StudentAssignmentItemDto(
+    @SerialName("id") val id: Int,
+    @SerialName("title") val title: String,
+    @SerialName("subject") val subject: String? = null,
+    @SerialName("subject_code") val subjectCode: String? = null,
+    @SerialName("description") val description: String? = null,
+    @SerialName("due_date") val dueDate: String,
+    @SerialName("max_marks") val maxMarks: Double? = null,
+    @SerialName("attachment_url") val attachmentUrl: String? = null,
+    @SerialName("status") val status: String,                // "not_submitted", "submitted", "graded"
+    @SerialName("is_overdue") val isOverdue: Boolean = false,
+    @SerialName("submission") val submission: SubmissionBriefDto? = null
+)
+
+@Serializable
+data class SubmissionBriefDto(
+    @SerialName("id") val id: Int,
+    @SerialName("student_note") val studentNote: String? = null,
+    @SerialName("attachment_url") val attachmentUrl: String? = null,
+    @SerialName("marks_obtained") val marksObtained: Double? = null,
+    @SerialName("teacher_feedback") val teacherFeedback: String? = null,
+    @SerialName("submitted_at") val submittedAt: String
+)
+
+@Serializable
+data class StudentAssignmentDetailResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("data") val data: StudentAssignmentDetailDto
+)
+
+@Serializable
+data class StudentAssignmentDetailDto(
+    @SerialName("id") val id: Int,
+    @SerialName("title") val title: String,
+    @SerialName("subject") val subject: String? = null,
+    @SerialName("subject_code") val subjectCode: String? = null,
+    @SerialName("description") val description: String? = null,
+    @SerialName("due_date") val dueDate: String,
+    @SerialName("max_marks") val maxMarks: Double? = null,
+    @SerialName("attachment_url") val attachmentUrl: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("submission") val submission: SubmissionBriefDto? = null
+)
+
+@Serializable
 data class AssignmentDto(
     @SerialName("id") val id: Int,
     @SerialName("title") val title: String,
@@ -155,23 +294,6 @@ data class SubmitResponse(
     @SerialName("success") val success: Boolean,
     @SerialName("message") val message: String,
     @SerialName("data") val data: SubmissionDto? = null
-)
-
-@Serializable
-data class FeeDto(
-    @SerialName("id") val id: Int,
-    @SerialName("title") val title: String,
-    @SerialName("amount") val amount: Double,
-    @SerialName("is_paid") val isPaid: Boolean,
-    @SerialName("due_date") val dueDate: String? = null
-)
-
-@Serializable
-data class FeesResponse(
-    @SerialName("success") val success: Boolean,
-    @SerialName("total_due") val totalDue: Double,
-    @SerialName("last_date") val lastDate: String,
-    @SerialName("data") val data: List<FeeDto>
 )
 
 @Serializable

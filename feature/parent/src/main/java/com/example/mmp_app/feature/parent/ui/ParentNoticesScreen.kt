@@ -13,7 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +36,8 @@ fun ParentNoticesScreen(
     onMenuClick: (() -> Unit)? = null,
     showSystemHeader: Boolean = true,
     viewModel: ParentNoticesViewModel = hiltViewModel(),
-    isDarkTheme: Boolean = false
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     
@@ -86,12 +90,18 @@ fun ParentNoticesScreen(
                             }
                         }
                     },
+                    actions = {
+                        IconButton(onClick = onToggleTheme) {
+                            Icon(if (isDarkTheme) Icons.Rounded.LightMode else Icons.Rounded.DarkMode, "Toggle Theme")
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = cardBgColor,
                         titleContentColor = textColor
                     )
                 )
-            }
+            },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             content(padding)
         }

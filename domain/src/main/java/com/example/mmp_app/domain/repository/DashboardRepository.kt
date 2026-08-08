@@ -11,17 +11,29 @@ interface DashboardRepository {
     fun getTeacherClasses(): Flow<Result<List<TeacherSubjectDto>>>
     fun getTeacherStudentsBySubject(subjectId: Int): Flow<Result<TeacherStudentsResponseDto>>
     fun getMarkComponents(subjectId: Int): Flow<Result<MarkComponentsDto>>
+    fun getTeacherAssignmentsList(): Flow<Result<AssignmentListResponse>>
+    suspend fun createTeacherAssignment(
+        title: String,
+        description: String?,
+        subjectId: Int,
+        dueDate: String,
+        maxMarks: Double?,
+        attachment: Any? // Could be MultipartBody.Part or Uri or File
+    ): Result<MessageResponse>
+    suspend fun updateTeacherAssignment(id: Int, request: UpdateAssignmentRequest): Result<MessageResponse>
+    suspend fun deleteTeacherAssignment(id: Int): Result<MessageResponse>
+    fun getAssignmentSubmissions(id: Int): Flow<Result<SubmissionsResponse>>
+    suspend fun gradeAssignmentSubmission(submissionId: Int, request: GradeRequest): Result<MessageResponse>
     fun getParentDashboard(): Flow<Result<ParentDashboardDto>>
     fun getStudentMarks(): Flow<Result<List<MarkDto>>>
     fun getStudentMarksSummary(): Flow<Result<MarksSummaryDto>>
     fun getMarksByExam(examId: Int): Flow<Result<ExamDetailDto>>
     fun getMarksBySubject(subjectId: Int): Flow<Result<SubjectMarkDto>>
     fun getMarksheet(examId: Int? = null): Flow<Result<MarksheetDto>>
-    fun getStudentAssignments(): Flow<Result<List<AssignmentDto>>>
-    fun getAssignmentDetail(id: Int): Flow<Result<AssignmentDetailDto>>
-    suspend fun submitAssignment(id: Int, content: String?): Result<SubmissionDto>
-    suspend fun submitAssignmentWithFile(id: Int, content: String?, filePart: Any?): Result<SubmissionDto>
-    fun getSubmissionStatus(submissionId: Int): Flow<Result<SubmissionStatusDto>>
+    fun getStudentAssignmentsList(page: Int = 1): Flow<Result<StudentAssignmentsResponse>>
+    fun getStudentAssignmentDetail(id: Int): Flow<Result<StudentAssignmentDetailDto>>
+    suspend fun submitStudentAssignment(id: Int, note: String?, attachment: Any?): Result<SubmitResponse>
+    fun getStudentSubmissionStatus(submissionId: Int): Flow<Result<SubmissionStatusDto>>
     fun getStudentAttendance(): Flow<Result<List<AttendanceDto>>>
     fun getStudentAttendanceSummary(): Flow<Result<AttendanceSummaryDto>>
     fun getStudentAttendanceBySubject(subjectId: Int): Flow<Result<AttendanceBySubjectDto>>
@@ -37,5 +49,4 @@ interface DashboardRepository {
     suspend fun recordMarks(request: MarkRecordRequest): Result<Unit>
     suspend fun getClassStudents(classId: Int): Result<List<UserDto>>
     fun getChildDashboard(childId: Int): Flow<Result<StudentDashboardDto>>
-    fun getStudentFees(): Flow<Result<FeesResponse>>
 }

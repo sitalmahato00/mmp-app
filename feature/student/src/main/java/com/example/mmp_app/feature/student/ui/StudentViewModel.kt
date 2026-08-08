@@ -84,9 +84,6 @@ class StudentViewModel @Inject constructor(
     private val _subjects = MutableStateFlow<List<SubjectDto>>(emptyList())
     val subjects = _subjects.asStateFlow()
 
-    private val _fees = MutableStateFlow<FeesResponse?>(null)
-    val fees = _fees.asStateFlow()
-
     private val _notices = MutableStateFlow<List<NoticeDto>>(emptyList())
     val notices = _notices.asStateFlow()
 
@@ -196,9 +193,22 @@ class StudentViewModel @Inject constructor(
     fun loadStudentAssignments() {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.getStudentAssignments().collect { result ->
+            repository.getStudentAssignmentsList().collect { result ->
                 _isLoading.value = false
-                result.onSuccess { _assignments.value = it }.onFailure { _error.value = it.message }
+                result.onSuccess { response ->
+                    _assignments.value = response.data.map { item ->
+                        AssignmentDto(
+                            id = item.id,
+                            title = item.title,
+                            subject = item.subject,
+                            description = item.description,
+                            dueDate = item.dueDate,
+                            maxMarks = item.maxMarks?.toFloat(),
+                            obtainedMarks = item.submission?.marksObtained?.toFloat(),
+                            status = item.status
+                        )
+                    }
+                }.onFailure { _error.value = it.message }
             }
         }
     }
@@ -207,9 +217,19 @@ class StudentViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _assignmentDetail.value = null
-            repository.getAssignmentDetail(id).collect { result ->
+            repository.getStudentAssignmentDetail(id).collect { result ->
                 _isLoading.value = false
-                result.onSuccess { _assignmentDetail.value = it }.onFailure { _error.value = it.message }
+                result.onSuccess { item ->
+                    _assignmentDetail.value = AssignmentDetailDto(
+                        id = item.id,
+                        title = item.title,
+                        subject = item.subject,
+                        description = item.description,
+                        dueDate = item.dueDate,
+                        maxMarks = item.maxMarks?.toFloat(),
+                        attachmentUrl = item.attachmentUrl
+                    )
+                }.onFailure { _error.value = it.message }
             }
         }
     }
@@ -218,7 +238,7 @@ class StudentViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             _submissionStatus.value = null
-            repository.getSubmissionStatus(submissionId).collect { result ->
+            repository.getStudentSubmissionStatus(submissionId).collect { result ->
                 _isLoading.value = false
                 result.onSuccess { _submissionStatus.value = it }.onFailure { _error.value = it.message }
             }
@@ -228,11 +248,7 @@ class StudentViewModel @Inject constructor(
     fun submitAssignment(id: Int, content: String?, filePart: Any? = null) {
         viewModelScope.launch {
             _isLoading.value = true
-            val result = if (filePart != null) {
-                repository.submitAssignmentWithFile(id, content, filePart)
-            } else {
-                repository.submitAssignment(id, content)
-            }
+            val result = repository.submitStudentAssignment(id, content, filePart)
             _isLoading.value = false
             result.onSuccess {
                 loadStudentAssignments() // Refresh list
@@ -268,16 +284,6 @@ class StudentViewModel @Inject constructor(
             repository.getStudentAttendanceBySubject(subjectId).collect { result ->
                 _isLoading.value = false
                 result.onSuccess { _attendanceBySubject.value = it }.onFailure { _error.value = it.message }
-            }
-        }
-    }
-
-    fun loadStudentFees() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.getStudentFees().collect { result ->
-                _isLoading.value = false
-                result.onSuccess { _fees.value = it }.onFailure { _error.value = it.message }
             }
         }
     }
