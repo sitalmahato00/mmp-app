@@ -145,6 +145,21 @@ interface MmpApiService {
     @POST("v1/teacher/attendance/bulk-mark")
     suspend fun recordAttendance(@Body body: AttendanceRecordRequest): Response<BaseResponse<Unit>>
 
+    @POST("v1/teacher/attendance/start-session")
+    suspend fun startAttendanceSession(@Body body: StartSessionRequest): Response<StartSessionResponse>
+
+    @POST("v1/teacher/attendance/bulk-mark")
+    suspend fun bulkMarkAttendance(@Body body: BulkMarkRequest): Response<MessageResponse>
+
+    @POST("v1/teacher/attendance/mark")
+    suspend fun markSingleAttendance(@Body body: SingleMarkRequest): Response<MessageResponse>
+
+    @GET("v1/teacher/attendance/session/{id}")
+    suspend fun getAttendanceSession(@Path("id") id: Int): Response<SessionDetailResponse>
+
+    @GET("v1/teacher/attendance/history")
+    suspend fun getAttendanceHistory(@Query("page") page: Int = 1): Response<HistoryResponse>
+
     @POST("v1/teacher/marks/submit")
     suspend fun recordMarks(@Body body: MarkRecordRequest): Response<BaseResponse<Unit>>
 

@@ -25,6 +25,9 @@ sealed interface Routes : NavKey, Parcelable {
     @Serializable @Parcelize data object Settings : Routes
     @Serializable @Parcelize data object Notifications : Routes
     @Serializable @Parcelize data class RecordAttendance(val classId: Int, val subject: String) : Routes
+    @Serializable @Parcelize data object TeacherAttendanceHistory : Routes
+    @Serializable @Parcelize data object TakeAttendance : Routes
+    @Serializable @Parcelize data class AttendanceSessionDetail(val sessionId: Int) : Routes
     @Serializable @Parcelize data class RecordMarks(val classId: Int, val subject: String) : Routes
     @Serializable @Parcelize data class ChildDetails(val childId: Int, val name: String) : Routes
     @Serializable @Parcelize data class ChildAttendance(val childId: Int) : Routes

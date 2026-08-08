@@ -546,4 +546,73 @@ class DashboardRepositoryImpl @Inject constructor(
         }
         emit(result)
     }
+
+    override fun getAttendanceHistory(page: Int): Flow<Result<HistoryResponse>> = flow {
+        val result = try {
+            val response = apiService.getAttendanceHistory(page)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to load attendance history"))
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
+        emit(result)
+    }
+
+    override fun getAttendanceSession(id: Int): Flow<Result<SessionDetailResponse>> = flow {
+        val result = try {
+            val response = apiService.getAttendanceSession(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to load session detail"))
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            Result.failure(e)
+        }
+        emit(result)
+    }
+
+    override suspend fun startAttendanceSession(request: StartSessionRequest): Result<StartSessionResponse> {
+        return try {
+            val response = apiService.startAttendanceSession(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to start session"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun bulkMarkAttendance(request: BulkMarkRequest): Result<MessageResponse> {
+        return try {
+            val response = apiService.bulkMarkAttendance(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to save attendance"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun markSingleAttendance(request: SingleMarkRequest): Result<MessageResponse> {
+        return try {
+            val response = apiService.markSingleAttendance(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to mark attendance"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

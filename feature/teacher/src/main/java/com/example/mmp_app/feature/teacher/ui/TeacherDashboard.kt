@@ -49,6 +49,8 @@ fun TeacherDashboard(
     unreadCount: Int = 0,
     onNavigateToSchedule: () -> Unit = {},
     onNavigateToAttendance: () -> Unit = {},
+    onNavigateToAttendanceHistory: () -> Unit = {},
+    onNavigateToTakeAttendance: () -> Unit = {},
     onNavigateToMarks: () -> Unit = {},
     onNavigateToAssignments: () -> Unit = {},
     onNavigateToNotices: () -> Unit = {},
@@ -97,7 +99,7 @@ fun TeacherDashboard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     QuickActionCard("Schedule", Icons.Rounded.CalendarMonth, primaryColor, cardBgColor, Modifier.weight(1f), onNavigateToSchedule)
-                    QuickActionCard("Attendance", Icons.Rounded.CheckCircle, primaryColor, cardBgColor, Modifier.weight(1f), onNavigateToAttendance)
+                    QuickActionCard("Attendance", Icons.Rounded.CheckCircle, primaryColor, cardBgColor, Modifier.weight(1f), onNavigateToAttendanceHistory)
                     QuickActionCard("Marks", Icons.Rounded.EditNote, primaryColor, cardBgColor, Modifier.weight(1f), onNavigateToMarks)
                     QuickActionCard("Assignments", Icons.AutoMirrored.Rounded.Assignment, primaryColor, cardBgColor, Modifier.weight(1f), onNavigateToAssignments)
                 }
@@ -176,7 +178,9 @@ fun TeacherDashboard(
                     onNotificationsClick = onNotificationsClick,
                     onProfileClick = onNavigateToProfile,
                     onLogoutClick = onLogoutClick,
-                    unreadCount = unreadCount
+                    unreadCount = unreadCount,
+                    onNavigateToAttendanceHistory = onNavigateToAttendanceHistory,
+                    onNavigateToAttendance = onNavigateToTakeAttendance
                 )
             }
         ) {
@@ -709,7 +713,9 @@ fun TeacherDrawerContent(
     onNotificationsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    unreadCount: Int
+    unreadCount: Int,
+    onNavigateToAttendanceHistory: () -> Unit,
+    onNavigateToAttendance: () -> Unit
 ) {
     ModalDrawerSheet(
         drawerContainerColor = cardBgColor,
@@ -768,7 +774,10 @@ fun TeacherDrawerContent(
                 TeacherExpandableDrawerItem(
                     "Attendance",
                     Icons.Rounded.CheckCircle,
-                    listOf("Mark Attendance" to onAttendanceClick, "History" to {})
+                    listOf(
+                        "History" to { onCloseDrawer(); onNavigateToAttendanceHistory() },
+                        "Mark Attendance" to { onCloseDrawer(); onNavigateToAttendance() }
+                    )
                 )
             }
             item {

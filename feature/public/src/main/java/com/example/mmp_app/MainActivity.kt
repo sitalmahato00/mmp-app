@@ -45,8 +45,11 @@ import com.example.mmp_app.feature.student.ui.SubjectDetailScreen
 import com.example.mmp_app.feature.student.ui.SubjectsScreen
 import com.example.mmp_app.feature.student.ui.TimetableScreen
 import com.example.mmp_app.feature.teacher.ui.AssignmentSubmissionsScreen
+import com.example.mmp_app.feature.teacher.ui.AttendanceSessionDetailScreen
 import com.example.mmp_app.feature.teacher.ui.CreateAssignmentScreen
 import com.example.mmp_app.feature.teacher.ui.EditAssignmentScreen
+import com.example.mmp_app.feature.teacher.ui.TakeAttendanceScreen
+import com.example.mmp_app.feature.teacher.ui.TeacherAttendanceHistoryScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherAttendanceScreen
 import com.example.mmp_app.feature.teacher.ui.TeacherMarksScreen
 import com.example.mmp_app.presentation.*
@@ -179,7 +182,10 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 onNavigateToProfile = { navigator.navigate(Routes.Profile) },
                 onNavigateToSettings = { navigator.navigate(Routes.Settings) },
                 onNavigateToNotifications = { navigator.navigate(Routes.Notifications) },
-                onNavigateToChildrenList = { navigator.navigate(Routes.ChildrenList) }
+                onNavigateToChildrenList = { navigator.navigate(Routes.ChildrenList) },
+                onNavigateToAttendanceHistory = { navigator.navigate(Routes.TeacherAttendanceHistory) },
+                onNavigateToTakeAttendance = { navigator.navigate(Routes.TakeAttendance) },
+                onNavigateToAttendanceSessionDetail = { id -> navigator.navigate(Routes.AttendanceSessionDetail(id)) }
             )
         }
         entry<Routes.Attendance> {
@@ -385,6 +391,31 @@ fun MainContent(authRepository: AuthRepository, isDarkTheme: Boolean) {
                 assignmentId = route.assignmentId,
                 onBack = { navigator.goBack() },
                 onSuccess = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
+        }
+        entry<Routes.TeacherAttendanceHistory> {
+            TeacherAttendanceHistoryScreen(
+                onBack = { navigator.goBack() },
+                onTakeAttendance = { navigator.navigate(Routes.TakeAttendance) },
+                onViewDetail = { id -> navigator.navigate(Routes.AttendanceSessionDetail(id)) },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
+        }
+        entry<Routes.TakeAttendance> {
+            TakeAttendanceScreen(
+                onBack = { navigator.goBack() },
+                onFinish = { navigator.goBack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = { themeViewModel.toggleTheme() }
+            )
+        }
+        entry<Routes.AttendanceSessionDetail> { route ->
+            AttendanceSessionDetailScreen(
+                sessionId = route.sessionId,
+                onBack = { navigator.goBack() },
                 isDarkTheme = isDarkTheme,
                 onToggleTheme = { themeViewModel.toggleTheme() }
             )

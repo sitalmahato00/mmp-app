@@ -49,4 +49,11 @@ interface DashboardRepository {
     suspend fun recordMarks(request: MarkRecordRequest): Result<Unit>
     suspend fun getClassStudents(classId: Int): Result<List<UserDto>>
     fun getChildDashboard(childId: Int): Flow<Result<StudentDashboardDto>>
+
+    // Teacher Attendance
+    fun getAttendanceHistory(page: Int = 1): Flow<Result<HistoryResponse>>
+    fun getAttendanceSession(id: Int): Flow<Result<SessionDetailResponse>>
+    suspend fun startAttendanceSession(request: StartSessionRequest): Result<StartSessionResponse>
+    suspend fun bulkMarkAttendance(request: BulkMarkRequest): Result<MessageResponse>
+    suspend fun markSingleAttendance(request: SingleMarkRequest): Result<MessageResponse>
 }

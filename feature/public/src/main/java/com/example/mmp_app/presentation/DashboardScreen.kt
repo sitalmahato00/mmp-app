@@ -83,6 +83,9 @@ fun DashboardScreen(
     onNavigateToCreateAssignment: () -> Unit = {},
     onNavigateToEditAssignment: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
+    onNavigateToAttendanceHistory: () -> Unit = {},
+    onNavigateToTakeAttendance: () -> Unit = {},
+    onNavigateToAttendanceSessionDetail: (Int) -> Unit = {},
 ) {
     val viewModel: DashboardViewModel = hiltViewModel()
     val themeViewModel: ThemeViewModel = hiltViewModel()
@@ -180,7 +183,10 @@ fun DashboardScreen(
         onToggleTheme = { themeViewModel.toggleTheme() },
         onNavigateToCreateAssignment = onNavigateToCreateAssignment,
         onNavigateToEditAssignment = onNavigateToEditAssignment,
-        onViewSubmissions = onViewSubmissions
+        onViewSubmissions = onViewSubmissions,
+        onNavigateToAttendanceHistory = onNavigateToAttendanceHistory,
+        onNavigateToTakeAttendance = onNavigateToTakeAttendance,
+        onNavigateToAttendanceSessionDetail = onNavigateToAttendanceSessionDetail
     )
 }
 
@@ -233,6 +239,9 @@ fun DashboardAdaptiveContent(
     onNavigateToCreateAssignment: () -> Unit = {},
     onNavigateToEditAssignment: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
+    onNavigateToAttendanceHistory: () -> Unit = {},
+    onNavigateToTakeAttendance: () -> Unit = {},
+    onNavigateToAttendanceSessionDetail: (Int) -> Unit = {},
 ) {
     MMPAppTheme(darkTheme = isDarkTheme) {
         var selectedItem by remember { mutableIntStateOf(0) }
@@ -304,7 +313,9 @@ fun DashboardAdaptiveContent(
                             onNotificationsClick = { onNavigateToNotifications() },
                             onProfileClick = { selectedItem = 4 },
                             onLogoutClick = onLogout,
-                            unreadCount = unreadCount
+                            unreadCount = unreadCount,
+                            onNavigateToAttendanceHistory = onNavigateToAttendanceHistory,
+                            onNavigateToAttendance = onNavigateToTakeAttendance
                         )
                     } else {
                         ModalDrawerSheet {
@@ -704,6 +715,9 @@ fun DashboardAdaptiveContent(
                                         onNavigateToCreateAssignment = onNavigateToCreateAssignment,
                                         onNavigateToEditAssignment = onNavigateToEditAssignment,
                                         onViewSubmissions = onViewSubmissions,
+                                        onNavigateToAttendanceHistory = onNavigateToAttendanceHistory,
+                                        onNavigateToTakeAttendance = onNavigateToTakeAttendance,
+                                        onNavigateToAttendanceSessionDetail = onNavigateToAttendanceSessionDetail,
                                         onLogout = onLogout,
                                         onSelectItem = { selectedItem = it },
                                         selectedChildId = selectedChildId,
@@ -725,11 +739,10 @@ fun DashboardAdaptiveContent(
                                             showSystemHeader = true
                                         )
                                     } else if (userProfile?.role?.lowercase() == "teacher") {
-                                        com.example.mmp_app.feature.teacher.ui.TodayScheduleScreen(
+                                        com.example.mmp_app.feature.teacher.ui.TeacherAttendanceHistoryScreen(
                                             onBack = { selectedItem = 0 },
-                                            onNavigateToTimetable = { /* TODO */ },
-                                            onNavigateToClasses = { selectedItem = 5 },
-                                            showSystemHeader = true,
+                                            onTakeAttendance = onNavigateToTakeAttendance,
+                                            onViewDetail = onNavigateToAttendanceSessionDetail,
                                             isDarkTheme = isDarkTheme,
                                             onToggleTheme = onToggleTheme
                                         )
@@ -896,6 +909,9 @@ fun MainDashboardContent(
     onNavigateToCreateAssignment: () -> Unit = {},
     onNavigateToEditAssignment: (Int) -> Unit = {},
     onViewSubmissions: (Int) -> Unit = {},
+    onNavigateToAttendanceHistory: () -> Unit = {},
+    onNavigateToTakeAttendance: () -> Unit = {},
+    onNavigateToAttendanceSessionDetail: (Int) -> Unit = {},
 ) {
     when (userProfile?.role?.lowercase()) {
         "student" -> {
@@ -952,6 +968,8 @@ fun MainDashboardContent(
                     onNavigateToCreateAssignment = onNavigateToCreateAssignment,
                     onNavigateToEditAssignment = onNavigateToEditAssignment,
                     onViewSubmissions = onViewSubmissions,
+                    onNavigateToTakeAttendance = onNavigateToTakeAttendance,
+                    onNavigateToAttendanceHistory = onNavigateToAttendanceHistory,
                     onLogoutClick = onLogout,
                     showSystemHeader = showSystemHeader
                 )
